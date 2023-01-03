@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -26,7 +27,7 @@ public static class RetryHelper
             }
             catch (Exception ex) when (attempt < maxRetries)
             {
-                if (shouldRetry != null && !shouldRetry(ex, attempt))
+                if (shouldRetry is not null && !shouldRetry(ex, attempt))
                     throw;
 
                 attempt++;

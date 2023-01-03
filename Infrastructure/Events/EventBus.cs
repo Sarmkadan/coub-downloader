@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -55,7 +56,7 @@ public class InProcessEventBus : IEventBus
             _handlers.TryGetValue(eventType, out handlerList);
         }
 
-        if (handlerList == null) return;
+        if (handlerList is null) return;
 
         var tasks = handlerList
             .Cast<Func<TEvent, Task>>()

@@ -2,7 +2,7 @@
 
 Download and convert Coub videos to MP4/Shorts format with FFmpeg integration, audio loop synchronization, and batch processing capabilities.
 
-## 🚀 Overview
+## Overview
 
 **Coub Downloader** is a production-grade .NET 10 application that enables you to download Coub videos and convert them to multiple formats (MP4, Shorts) with advanced features like:
 
@@ -20,7 +20,7 @@ Download and convert Coub videos to MP4/Shorts format with FFmpeg integration, a
 
 Coub is a popular platform for short-form video content, but downloading and converting videos for offline use or reposting to platforms like TikTok, Instagram Reels, or YouTube Shorts requires significant technical knowledge. This tool automates the entire process, handling audio synchronization, video encoding, and batch operations.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Features](#features)
 - [System Requirements](#system-requirements)
@@ -37,7 +37,7 @@ Coub is a popular platform for short-form video content, but downloading and con
 - [Contributing](#contributing)
 - [License](#license)
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 
@@ -65,7 +65,7 @@ Coub is a popular platform for short-form video content, but downloading and con
 - **Middleware**: Error handling, logging, and request processing
 - **Background Jobs**: Process downloads asynchronously
 
-## 🖥️ System Requirements
+## System Requirements
 
 ### Minimum
 

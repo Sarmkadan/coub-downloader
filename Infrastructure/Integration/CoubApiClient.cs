@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -65,7 +66,7 @@ public class CoubApiClient : ICoubApiClient
             var json = await response.Content.ReadAsStringAsync();
             var info = JsonSerializer.Deserialize<CoubVideoInfo>(json);
 
-            if (info != null)
+            if (info is not null)
             {
                 _cache.Set(cacheKey, info, CacheTtl);
                 _logger.LogInfo($"Retrieved video info for {url}", "CoubApiClient");
@@ -88,7 +89,7 @@ public class CoubApiClient : ICoubApiClient
             return cached;
 
         var info = await GetVideoInfoAsync(url);
-        var exists = info != null;
+        var exists = info is not null;
 
         _cache.Set(cacheKey, exists, TimeSpan.FromHours(24));
         return exists;

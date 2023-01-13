@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -92,7 +93,7 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
         lock (_lock)
         {
             var videos = _videos.Values
-                .Where(v => v.CreatorName != null && v.CreatorName.Contains(creatorName, StringComparison.OrdinalIgnoreCase))
+                .Where(v => v.CreatorName is not null && v.CreatorName.Contains(creatorName, StringComparison.OrdinalIgnoreCase))
                 .AsEnumerable();
             return Task.FromResult(videos);
         }

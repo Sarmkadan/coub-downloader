@@ -28,6 +28,14 @@ public class CoubDownloadService : ICoubDownloadService
         _httpClient.DefaultRequestHeaders.Add("User-Agent", ApplicationConstants.DefaultUserAgent);
     }
 
+    /// <summary>
+    /// Downloads a Coub video: fetches metadata from the API, extracts the video source URL,
+    /// and persists the video record to the repository.
+    /// </summary>
+    /// <param name="coubUrl">Full URL of the Coub video (e.g., "https://coub.com/view/xxxxx").</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The persisted <see cref="CoubVideo"/> with metadata and source URL populated.</returns>
+    /// <exception cref="MetadataExtractionException">Thrown when the video ID cannot be extracted from the URL.</exception>
     public async Task<CoubVideo> DownloadVideoAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
@@ -43,6 +51,10 @@ public class CoubDownloadService : ICoubDownloadService
         return savedVideo;
     }
 
+    /// <summary>
+    /// Fetches video metadata from the Coub API without downloading the video file.
+    /// Extracts the video ID from the URL and constructs a metadata record.
+    /// </summary>
     public async Task<CoubVideo> FetchMetadataAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);

@@ -14,9 +14,9 @@ namespace CoubDownloader.Infrastructure.Integration;
 /// <summary>HTTP client for Coub API integration</summary>
 public interface ICoubApiClient
 {
-    Task<CoubVideoInfo?> GetVideoInfoAsync(string url);
-    Task<bool> VerifyVideoExistsAsync(string url);
-    Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10);
+    Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default);
+    Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default);
+    Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
 }
 
 /// <summary>Coub API client implementation</summary>
@@ -38,7 +38,7 @@ public class CoubApiClient : ICoubApiClient
         _rateLimiter = new RateLimitingService(maxRequestsPerWindow: 30);
     }
 
-    public async Task<CoubVideoInfo?> GetVideoInfoAsync(string url)
+    public async Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"video_info_{url.GetHashCode()}";
 
@@ -60,10 +60,17 @@ public class CoubApiClient : ICoubApiClient
             if (string.IsNullOrEmpty(videoId))
                 return null;
 
-            var response = await _httpClient.GetAsync($"{BaseUrl}/coubs/{videoId}");
+            var response = await _httpClient.GetAsync($"{BaseUrl}/coubs/{videoId}", cancellationToken);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogWarning($"Video not found (404) for {url}", "CoubApiClient");
+                return null;
+            }
+
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var info = JsonSerializer.Deserialize<CoubVideoInfo>(json);
 
             if (info is not null)
@@ -81,21 +88,21 @@ public class CoubApiClient : ICoubApiClient
         }
     }
 
-    public async Task<bool> VerifyVideoExistsAsync(string url)
+    public async Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"video_exists_{url.GetHashCode()}";
 
         if (_cache.TryGet(cacheKey, out bool cached))
             return cached;
 
-        var info = await GetVideoInfoAsync(url);
+        var info = await GetVideoInfoAsync(url, cancellationToken);
         var exists = info is not null;
 
         _cache.Set(cacheKey, exists, TimeSpan.FromHours(24));
         return exists;
     }
 
-    public async Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10)
+    public async Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
         var cacheKey = $"search_{query}_{limit}".ToLower();
 
@@ -109,11 +116,11 @@ public class CoubApiClient : ICoubApiClient
         {
             var encodedQuery = Uri.EscapeDataString(query);
             var response = await _httpClient.GetAsync(
-                $"{BaseUrl}/search/coubs?q={encodedQuery}&limit={limit}");
+                $"{BaseUrl}/search/coubs?q={encodedQuery}&limit={limit}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadAsStringAsync();
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
             var root = JsonSerializer.Deserialize<JsonElement>(json);
 
             var videos = root.GetProperty("coubs")

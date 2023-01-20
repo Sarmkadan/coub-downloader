@@ -127,7 +127,7 @@ public class VideoConversionService : IVideoConversionService
         }
         catch (JsonException ex)
         {
-            throw new VideoConversionException($"Failed to parse ffprobe JSON output: {ex.Message}", filePath, "metadata_extraction", ex);
+            throw new VideoConversionException($"Failed to parse ffprobe JSON output: {ex.Message}", filePath, "metadata_extraction");
         }
 
         return metadata;

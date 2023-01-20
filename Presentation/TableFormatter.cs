@@ -4,8 +4,6 @@
 // CTO & Software Architect
 // =============================================================================
 
-using CoubDownloader.Domain.Models;
-
 namespace CoubDownloader.Presentation;
 
 // Re-export for convenience

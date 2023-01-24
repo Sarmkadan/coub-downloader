@@ -1,8 +1,9 @@
-[![Build](https://github.com/sarmkadan/coub-downloader/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/coub-downloader/actions/workflows/build.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET](https://img.shields.io/badge/.NET-10.0-purple.svg)](https://dotnet.microsoft.com/)
-
 # Coub Downloader
+
+[![CI](https://github.com/sarmkadan/coub-downloader/actions/workflows/ci.yml/badge.svg)](https://github.com/sarmkadan/coub-downloader/actions/workflows/ci.yml)
+[![Build](https://github.com/sarmkadan/coub-downloader/actions/workflows/build.yml/badge.svg)](https://github.com/sarmkadan/coub-downloader/actions/workflows/build.yml)
+[![License](https://img.shields.io/github/license/sarmkadan/coub-downloader)](https://github.com/sarmkadan/coub-downloader/blob/main/LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-10.0-512BD4)](https://dotnet.microsoft.com/)
 
 Download and convert Coub videos to MP4/Shorts format with FFmpeg integration, audio loop synchronization, and batch processing capabilities.
 

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -50,7 +51,7 @@ public class ObjectPool<T> where T : class
     /// <summary>Return an object to the pool</summary>
     public void Return(T item)
     {
-        if (item == null) return;
+        if (item is null) return;
 
         lock (_lockObj)
         {
@@ -109,7 +110,7 @@ public struct PooledObject<T> : IDisposable where T : class
     {
         if (_disposed) return;
 
-        if (_object != null)
+        if (_object is not null)
             _pool.Return(_object);
 
         _disposed = true;

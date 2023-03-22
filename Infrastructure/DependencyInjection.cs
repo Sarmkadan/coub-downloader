@@ -25,6 +25,13 @@ public static class DependencyInjection
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
             });
+        
+        // Register Coub API Client
+        services.AddHttpClient<ICoubApiClient, CoubApiClient>()
+            .ConfigureHttpClient(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(15); // Shorter timeout for API calls
+            });
 
         // Register FFmpegWrapper
         services.AddSingleton<IFFmpegWrapper, FFmpegWrapper>();

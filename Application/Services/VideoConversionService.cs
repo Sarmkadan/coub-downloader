@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Enums;
@@ -48,9 +49,9 @@ public class VideoConversionService : IVideoConversionService
 
         try
         {
-            var exitCode = await RunFfmpegAsync(ffmpegArgs, progress, cancellationToken);
+            var (exitCode, _, standardError) = await RunFfmpegAsync(ffmpegArgs, progress, cancellationToken);
             if (exitCode != 0)
-                throw new VideoConversionException($"FFmpeg exited with code {exitCode}", inputPath, outputPath);
+                throw new VideoConversionException($"FFmpeg exited with code {exitCode}. Error: {standardError}", inputPath, outputPath);
 
             return outputPath;
         }
@@ -67,12 +68,69 @@ public class VideoConversionService : IVideoConversionService
         if (!File.Exists(filePath))
             throw new FileNotFoundException($"Video file not found: {filePath}");
 
-        var fileInfo = new FileInfo(filePath);
-        var metadata = new VideoMetadata { FileSizeBytes = fileInfo.Length };
+        var ffprobeArgs = $"-v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
 
-        // In a real implementation, would parse ffprobe JSON output
-        // For now, return basic metadata
-        return await Task.FromResult(metadata);
+        var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
+
+        if (exitCode != 0)
+            throw new VideoConversionException($"FFprobe exited with code {exitCode}. Error: {standardError}", filePath, "metadata_extraction");
+
+        var metadata = new VideoMetadata();
+
+        try
+        {
+            using (JsonDocument doc = JsonDocument.Parse(standardOutput))
+            {
+                var root = doc.RootElement;
+
+                // Format information
+                if (root.TryGetProperty("format", out JsonElement formatElement))
+                {
+                    metadata.Format = formatElement.TryGetProperty("format_name", out var formatName) ? formatName.GetString() : null;
+                    metadata.FileSizeBytes = formatElement.TryGetProperty("size", out var size) && long.TryParse(size.GetString(), out var fileSize) ? fileSize : 0;
+                    metadata.Duration = formatElement.TryGetProperty("duration", out var duration) && double.TryParse(duration.GetString(), out var dur) ? dur : 0;
+                    metadata.VideoBitrate = formatElement.TryGetProperty("bit_rate", out var formatBitRate) && int.TryParse(formatBitRate.GetString(), out var fb) ? fb : 0;
+                }
+
+                // Stream information
+                if (root.TryGetProperty("streams", out JsonElement streamsElement) && streamsElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var stream in streamsElement.EnumerateArray())
+                    {
+                        var codecType = stream.TryGetProperty("codec_type", out var ct) ? ct.GetString() : null;
+
+                        if (codecType == "video")
+                        {
+                            metadata.Width = stream.TryGetProperty("width", out var width) ? width.GetInt32() : 0;
+                            metadata.Height = stream.TryGetProperty("height", out var height) ? height.GetInt32() : 0;
+                            metadata.VideoCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
+                            if (stream.TryGetProperty("r_frame_rate", out var frameRateString))
+                            {
+                                var parts = frameRateString.GetString()?.Split('/');
+                                if (parts?.Length == 2 && int.TryParse(parts[0], out var num) && int.TryParse(parts[1], out var den) && den != 0)
+                                {
+                                    metadata.FrameRate = num / den;
+                                }
+                            }
+                            // If stream has its own bitrate, use it. Otherwise, rely on format bitrate.
+                            metadata.VideoBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : metadata.VideoBitrate;
+                        }
+                        else if (codecType == "audio")
+                        {
+                            metadata.AudioCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
+                            metadata.AudioBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : 0;
+                            metadata.HasAudio = true;
+                        }
+                    }
+                }
+            }
+        }
+        catch (JsonException ex)
+        {
+            throw new VideoConversionException($"Failed to parse ffprobe JSON output: {ex.Message}", filePath, "metadata_extraction", ex);
+        }
+
+        return metadata;
     }
 
     public async Task<string> ApplyAudioTrackAsync(
@@ -94,9 +152,9 @@ public class VideoConversionService : IVideoConversionService
         var args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a {settings.AudioCodec} " +
                    $"-b:a {settings.AudioBitrate}k -shortest \"{outputPath}\" -y";
 
-        var exitCode = await RunFfmpegAsync(args, null, cancellationToken);
+        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
         if (exitCode != 0)
-            throw new VideoConversionException($"Failed to apply audio track", videoPath, outputPath);
+            throw new VideoConversionException($"Failed to apply audio track. Error: {standardError}", videoPath, outputPath);
 
         return outputPath;
     }
@@ -163,9 +221,9 @@ public class VideoConversionService : IVideoConversionService
         var args = $"-i \"{inputPath}\" -vf scale={width}:{height} -c:v h264 -crf 23 " +
                    $"-c:a aac -b:a 128k \"{outputPath}\" -y";
 
-        var exitCode = await RunFfmpegAsync(args, null, cancellationToken);
+        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
         if (exitCode != 0)
-            throw new VideoConversionException($"Failed to rescale video to {width}x{height}", inputPath, outputPath);
+            throw new VideoConversionException($"Failed to rescale video to {width}x{height}. Error: {standardError}", inputPath, outputPath);
 
         return outputPath;
     }
@@ -194,12 +252,16 @@ public class VideoConversionService : IVideoConversionService
     }
 
     /// <summary>Run FFmpeg process with arguments</summary>
-    private async Task<int> RunFfmpegAsync(string arguments, IProgress<int>? progress, CancellationToken cancellationToken)
+    private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunFfmpegAsync(
+        string arguments,
+        IProgress<int>? progress,
+        CancellationToken cancellationToken)
     {
         var psi = new ProcessStartInfo
         {
             FileName = _ffmpegPath,
             Arguments = arguments,
+            RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
             CreateNoWindow = true
@@ -209,8 +271,25 @@ public class VideoConversionService : IVideoConversionService
         if (process is null)
             throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
 
+        var stdOutput = new StringWriter();
+        var stdError = new StringWriter();
+
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (e.Data != null) stdOutput.WriteLine(e.Data);
+        };
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (e.Data != null) stdError.WriteLine(e.Data);
+            // Optionally, parse FFmpeg progress here and report to 'progress'
+        };
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
         await process.WaitForExitAsync(cancellationToken);
-        return process.ExitCode;
+        
+        return (process.ExitCode, stdOutput.ToString(), stdError.ToString());
     }
 
     /// <summary>Resolve executable path from PATH environment variable</summary>

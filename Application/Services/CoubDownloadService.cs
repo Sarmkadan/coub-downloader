@@ -49,7 +49,7 @@ public class CoubDownloadService : ICoubDownloadService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl);
+        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
 
         if (videoInfo == null)
             throw new MetadataExtractionException("Failed to fetch video metadata", coubUrl);
@@ -76,7 +76,7 @@ public class CoubDownloadService : ICoubDownloadService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl);
+        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
 
         if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
             throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);

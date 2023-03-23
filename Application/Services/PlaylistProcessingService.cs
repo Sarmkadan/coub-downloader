@@ -42,7 +42,7 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
     }
 
     /// <inheritdoc/>
-    public async Task<CoubPlaylist> FetchPlaylistAsync(string playlistUrl, CancellationToken cancellationToken = default)
+    public async Task<CoubPlaylist> FetchPlaylistAsync(string playlistUrl, int? maxPages = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playlistUrl);
 
@@ -57,6 +57,9 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         for (var page = 1; videoUrls.Count < MaxFetchableVideos; page++)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (maxPages.HasValue && page > maxPages.Value)
+                break;
 
             var apiUrl = type == "tag"
                 ? $"{ApplicationConstants.CoubApiBaseUrl}/tags/{Uri.EscapeDataString(slug)}/coubs?page={page}&per_page={PageSize}&order_by=newest"
@@ -107,12 +110,13 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         string playlistUrl,
         string outputDirectory,
         ConversionSettings? settings = null,
+        int? maxPages = null,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(playlistUrl);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
 
-        var playlist = await FetchPlaylistAsync(playlistUrl, cancellationToken);
+        var playlist = await FetchPlaylistAsync(playlistUrl, maxPages, cancellationToken);
         return await QueuePlaylistAsync(playlist, outputDirectory, settings, cancellationToken);
     }
 

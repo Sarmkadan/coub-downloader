@@ -1,6 +1,5 @@
 # =============================================================================
 # Docker Compose configuration for Coub Downloader
-# Author: Vladyslav Zaiets | https://sarmkadan.com
 # =============================================================================
 
 version: '3.8'
@@ -11,7 +10,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: coub-downloader
-    image: vladyslav-zaiets/coub-downloader:latest
+    image: coub-downloader:latest
 
     # Volume mounts
     volumes:
@@ -50,10 +49,6 @@ services:
           cpus: '1'
           memory: 1G
 
-    # Network settings
-    ports:
-      - "5000:5000"
-
     # Restart policy
     restart: unless-stopped
 
@@ -63,24 +58,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-    # Health check
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-# Named volumes for persistence
-volumes:
-  cache:
-    driver: local
-
-# Network configuration
-networks:
-  default:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16

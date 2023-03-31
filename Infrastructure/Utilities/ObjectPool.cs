@@ -7,7 +7,7 @@
 namespace CoubDownloader.Infrastructure.Utilities;
 
 /// <summary>Generic object pool for reusing expensive resources</summary>
-public class ObjectPool<T> where T : class
+public sealed class ObjectPool<T> where T : class
 {
     private readonly Stack<T> _available = [];
     private readonly HashSet<T> _inUse = [];
@@ -118,7 +118,7 @@ public struct PooledObject<T> : IDisposable where T : class
 }
 
 /// <summary>Connection pool for managing multiple connections</summary>
-public class ConnectionPool
+public sealed class ConnectionPool
 {
     private readonly Stack<ConnectionHandle> _available = [];
     private readonly HashSet<ConnectionHandle> _inUse = [];
@@ -147,11 +147,14 @@ public class ConnectionPool
                 _inUse.Add(connection);
                 return connection;
             }
+        }
 
-            if (_inUse.Count + _available.Count < _maxConnections)
+        if (TotalConnections < _maxConnections)
+        {
+            var connection = await _connectionFactory();
+
+            lock (_lockObj)
             {
-                // Create new connection
-                var connection = _connectionFactory().Result;
                 _inUse.Add(connection);
                 return connection;
             }
@@ -205,7 +208,7 @@ public class ConnectionPool
 }
 
 /// <summary>Represents a connection in the pool</summary>
-public class ConnectionHandle : IDisposable
+public sealed class ConnectionHandle : IDisposable
 {
     private bool _disposed;
 

@@ -12,8 +12,16 @@ using CoubDownloader.Infrastructure.Middleware;
 namespace CoubDownloader.Infrastructure.Integration;
 
 /// <summary>Wrapper for FFmpeg command-line tool</summary>
-public class FFmpegWrapper : IFFmpegWrapper
+public sealed class FFmpegWrapper : IFFmpegWrapper
 {
+    private static class FFmpegConstants
+    {
+        public const string FFmpegCategory = "FFmpeg";
+        public const string FFprobeCategory = "FFprobe";
+        public const string PipePrefix = "pipe:";
+        public const string UnknownVersion = "Unknown";
+    }
+
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
     private readonly ILoggingService _logger;
@@ -45,14 +53,14 @@ public class FFmpegWrapper : IFFmpegWrapper
         try
         {
             var result = await ExecuteAsync(new[] { "-version" }, TimeSpan.FromSeconds(5));
-            if (!result.Success) return "Unknown";
+            if (!result.Success) return FFmpegConstants.UnknownVersion;
 
             var lines = result.Output.Split(Environment.NewLine);
-            return lines.FirstOrDefault()?.Trim() ?? "Unknown";
+            return lines.FirstOrDefault()?.Trim() ?? FFmpegConstants.UnknownVersion;
         }
         catch
         {
-            return "Unknown";
+            return FFmpegConstants.UnknownVersion;
         }
     }
 
@@ -80,10 +88,13 @@ public class FFmpegWrapper : IFFmpegWrapper
             if (process is null)
                 return new FFmpegResult { Success = false, Error = "Failed to start FFmpeg process" };
 
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask = process.StandardError.ReadToEndAsync();
+            var exitTask = process.WaitForExitAsync();
 
-            if (!process.WaitForExit((int)processTimeout.TotalMilliseconds))
+            var completedTask = await Task.WhenAny(exitTask, Task.Delay(processTimeout));
+
+            if (completedTask != exitTask)
             {
                 process.Kill();
                 return new FFmpegResult
@@ -93,11 +104,13 @@ public class FFmpegWrapper : IFFmpegWrapper
                 };
             }
 
+            var output = await outputTask;
+            var error = await errorTask;
             var success = process.ExitCode == 0;
 
             _logger.LogDebug(
                 $"FFmpeg command: {string.Join(" ", arguments)} - Exit code: {process.ExitCode}",
-                "FFmpeg");
+                FFmpegConstants.FFmpegCategory);
 
             return new FFmpegResult
             {
@@ -109,7 +122,7 @@ public class FFmpegWrapper : IFFmpegWrapper
         }
         catch (Exception ex)
         {
-            _logger.LogError("FFmpeg execution failed", ex, "FFmpeg");
+            _logger.LogError("FFmpeg execution failed", ex, FFmpegConstants.FFmpegCategory);
             return new FFmpegResult
             {
                 Success = false,
@@ -231,7 +244,7 @@ public class FFmpegWrapper : IFFmpegWrapper
 
             if (process.ExitCode != 0)
             {
-                _logger.LogWarning($"ffprobe exited with code {process.ExitCode} for {filePath}", "FFprobe");
+                _logger.LogWarning($"ffprobe exited with code {process.ExitCode} for {filePath}", FFmpegConstants.FFprobeCategory);
                 return null;
             }
 
@@ -240,7 +253,7 @@ public class FFmpegWrapper : IFFmpegWrapper
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Failed to get media info for {filePath}: {ex.Message}", ex, "FFprobe");
+            _logger.LogError($"Failed to get media info for {filePath}: {ex.Message}", ex, FFmpegConstants.FFprobeCategory);
             return null;
         }
     }
@@ -252,7 +265,7 @@ public class FFmpegWrapper : IFFmpegWrapper
 }
 
 /// <summary>Parameters for video conversion</summary>
-public class ConversionParameters
+public sealed class ConversionParameters
 {
     public string VideoCodec { get; set; } = "libx264";
     public string AudioCodec { get; set; } = "aac";
@@ -265,7 +278,7 @@ public class ConversionParameters
 }
 
 /// <summary>FFmpeg command execution result</summary>
-public class FFmpegResult
+public sealed class FFmpegResult
 {
     public bool Success { get; set; }
     public string Output { get; set; } = "";

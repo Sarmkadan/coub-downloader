@@ -231,11 +231,7 @@ public class VideoConversionService : IVideoConversionService
         }
         catch (Exception ex)
         {
-            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable)
-            {
-                ToolName = ApplicationConstants.FFmpegExecutable,
-                Source = ex
-            };
+            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable, ex);
         }
     }
 
@@ -269,11 +265,7 @@ public class VideoConversionService : IVideoConversionService
         }
         catch (Exception ex)
         {
-            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable)
-            {
-                ToolName = ApplicationConstants.FFmpegExecutable,
-                Source = ex
-            };
+            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable, ex);
         }
     }
 
@@ -496,11 +488,7 @@ public class VideoConversionService : IVideoConversionService
         }
         catch (Exception ex)
         {
-            throw new ToolNotFoundException(executableName)
-            {
-                ToolName = executableName,
-                Source = ex
-            };
+            throw new ToolNotFoundException(executableName, ex);
         }
     }
 }

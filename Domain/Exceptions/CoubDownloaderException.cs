@@ -35,6 +35,12 @@ public class VideoDownloadException : CoubDownloaderException
         VideoUrl = videoUrl;
         HttpStatusCode = statusCode;
     }
+
+    public VideoDownloadException(string message, string videoUrl, Exception inner)
+        : base($"Failed to download video from {videoUrl}: {message}", inner)
+    {
+        VideoUrl = videoUrl;
+    }
 }
 
 /// <summary>
@@ -47,6 +53,13 @@ public class VideoConversionException : CoubDownloaderException
 
     public VideoConversionException(string message, string inputPath, string outputPath)
         : base($"Failed to convert video from {inputPath} to {outputPath}: {message}")
+    {
+        InputPath = inputPath;
+        OutputPath = outputPath;
+    }
+
+    public VideoConversionException(string message, string inputPath, string outputPath, Exception inner)
+        : base($"Failed to convert video from {inputPath} to {outputPath}: {message}", inner)
     {
         InputPath = inputPath;
         OutputPath = outputPath;
@@ -65,6 +78,12 @@ public class AudioProcessingException : CoubDownloaderException
     {
         AudioFilePath = audioPath;
     }
+
+    public AudioProcessingException(string message, string audioPath, Exception inner)
+        : base($"Failed to process audio from {audioPath}: {message}", inner)
+    {
+        AudioFilePath = audioPath;
+    }
 }
 
 /// <summary>
@@ -79,6 +98,12 @@ public class ToolNotFoundException : CoubDownloaderException
     {
         ToolName = toolName;
     }
+
+    public ToolNotFoundException(string toolName, Exception inner)
+        : base($"Required tool '{toolName}' not found. Please ensure {toolName} is installed and available in PATH.", inner)
+    {
+        ToolName = toolName;
+    }
 }
 
 /// <summary>
@@ -90,6 +115,12 @@ public class MetadataExtractionException : CoubDownloaderException
 
     public MetadataExtractionException(string message, string sourceUrl)
         : base($"Failed to extract metadata from {sourceUrl}: {message}")
+    {
+        SourceUrl = sourceUrl;
+    }
+
+    public MetadataExtractionException(string message, string sourceUrl, Exception inner)
+        : base($"Failed to extract metadata from {sourceUrl}: {message}", inner)
     {
         SourceUrl = sourceUrl;
     }

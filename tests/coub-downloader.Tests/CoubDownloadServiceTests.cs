@@ -16,15 +16,6 @@ using System.Net;
 
 namespace CoubDownloader.Tests;
 
-// Dummy record for CoubVideoInfo, as it's an internal DTO not exposed publicly
-public record CoubVideoInfo(
-    string Id,
-    string Title,
-    double Duration,
-    string? ChannelUrl,
-    long ViewCount,
-    bool HasAudio
-);
 
 public class CoubDownloadServiceTests
 {

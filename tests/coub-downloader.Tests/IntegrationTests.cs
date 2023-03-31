@@ -21,18 +21,6 @@ using System.Collections.Generic; // Added for List
 
 namespace CoubDownloader.Tests;
 
-// Dummy record for CoubVideoInfo, as it's an internal DTO not exposed publicly
-// This is needed because CoubVideoInfo is defined in CoubApiClient.cs, not a shared Domain.Models file
-// A better long-term solution is to move CoubVideoInfo to Domain.Models.
-public record CoubVideoInfo
-{
-    public string Id { get; set; } = "";
-    public string Title { get; set; } = "";
-    public double Duration { get; set; }
-    public bool HasAudio { get; set; }
-    public string? ChannelUrl { get; set; }
-    public long ViewCount { get; set; }
-}
 
 public class IntegrationTests
 {

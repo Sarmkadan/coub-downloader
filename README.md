@@ -503,26 +503,39 @@ Options:
 
 ## Configuration
 
-### Configuration File (appsettings.json)
+The application uses the .NET Options pattern for configuration. Settings are loaded from `appsettings.json` (or `appsettings.example.json` can be used as a template) and are validated at startup.
+
+### Configuration Sections
+
+| Section | Description | Validation |
+| :--- | :--- | :--- |
+| `Download` | Download settings (paths, retries, timeout) | Required fields, range checks |
+| `Conversion` | Video conversion (ffmpeg path, codec, quality) | Required fields, range checks |
+| `Audio` | Audio processing (sample rate, bitrate) | Required fields, range checks |
+| `Api` | Coub API settings (base URL, timeouts, limits) | URL, range checks |
+| `Logging` | Logging settings (levels, file output) | Path, range checks |
+
+### Example Configuration (appsettings.example.json)
 
 ```json
 {
-  "CoubDownloader": {
-    "OutputPath": "/downloads",
-    "CachePath": "/tmp/coub-cache",
+  "Download": {
+    "OutputPath": "./downloads",
+    "CachePath": "./cache",
     "MaxRetries": 3,
     "TimeoutSeconds": 300,
     "EnableCaching": true,
     "MaxCacheSizeGb": 1.0,
-    "ParallelDownloads": 4,
-    "LogLevel": "Information"
+    "ParallelDownloads": 4
   },
   "Conversion": {
     "DefaultQuality": "High",
     "DefaultFormat": "MP4",
     "DefaultFrameRate": 30,
-    "EnableHardwareAcceleration": true,
-    "FFmpegPath": "/usr/bin/ffmpeg"
+    "EnableHardwareAcceleration": false,
+    "FFmpegPath": "ffmpeg",
+    "FFprobePath": "ffprobe",
+    "ThreadCount": 4
   },
   "Audio": {
     "DefaultLoopStrategy": "Repeat",
@@ -534,25 +547,32 @@ Options:
     "CoubBaseUrl": "https://coub.com",
     "TimeoutSeconds": 30,
     "RateLimitPerMinute": 60,
-    "RetryPolicy": "exponential"
+    "RetryPolicy": "exponential",
+    "VerifySSL": true
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "System": "Warning"
+    },
+    "File": {
+      "Enabled": false,
+      "Path": "./logs/app.log",
+      "MaxFileSizeBytes": 10485760,
+      "MaxBackupFiles": 3
+    }
   }
 }
 ```
 
 ### Environment Variables
 
-```bash
-COUB_OUTPUT_PATH=/downloads
-COUB_CACHE_PATH=/tmp/coub-cache
-COUB_MAX_RETRIES=3
-COUB_TIMEOUT_SECONDS=300
-COUB_ENABLE_CACHING=true
-COUB_PARALLEL_DOWNLOADS=4
-COUB_LOG_LEVEL=Information
-COUB_FFMPEG_PATH=/usr/bin/ffmpeg
-COUB_ENABLE_GPU_ACCELERATION=true
-COUB_GPU_CODEC=h264_nvenc
-```
+Settings can be overridden via environment variables using the `COUB_` prefix.
+
+Examples:
+- `COUB_DOWNLOAD__OUTPUTPATH=/downloads`
+- `COUB_API__TIMEOUTSECONDS=60`
 
 ## Testing
 

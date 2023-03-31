@@ -6,6 +6,7 @@
 
 using CoubDownloader.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace CoubDownloader.Infrastructure;
 
@@ -46,10 +47,10 @@ public static class VideoEditorExtensions
     /// </remarks>
     /// <param name="services">The service collection to configure.</param>
     /// <returns>The same <paramref name="services"/> instance for method chaining.</returns>
-    public static IServiceCollection AddCoubDownloaderWithEditor(this IServiceCollection services)
+    public static IServiceCollection AddCoubDownloaderWithEditor(this IServiceCollection services, IConfiguration configuration)
     {
         return services
-            .AddCoubDownloaderServices()
+            .AddCoubDownloaderServices(configuration)
             .AddPhase2Services()
             .AddVideoEditorServices();
     }

@@ -5,19 +5,19 @@
 // =============================================================================
 
 using CoubDownloader.Application.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CoubDownloader.Infrastructure;
 
 /// <summary>
-/// Extension methods for registering the v2.0 video editor feature in the DI container.
+/// Provides extension methods for registering video editor services in the dependency injection container.
 /// </summary>
 public static class VideoEditorExtensions
 {
     /// <summary>
     /// Registers <see cref="IVideoEditorService"/> and <see cref="VideoEditorService"/>
-    /// as a scoped dependency.
+    /// as scoped dependencies in the dependency injection container.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -28,10 +28,15 @@ public static class VideoEditorExtensions
     /// <see cref="AddCoubDownloaderWithEditor"/> which satisfies all prerequisites automatically.
     /// </para>
     /// </remarks>
-    /// <param name="services">The service collection to configure.</param>
+    /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="services"/> is <see langword="null"/>.
+    /// </exception>
     /// <returns>The same <paramref name="services"/> instance for method chaining.</returns>
     public static IServiceCollection AddVideoEditorServices(this IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
+
         services.AddScoped<IVideoEditorService, VideoEditorService>();
         return services;
     }
@@ -45,10 +50,19 @@ public static class VideoEditorExtensions
     /// <see cref="DependencyInjectionExtended.AddPhase2Services"/>, and
     /// <see cref="AddVideoEditorServices"/> in sequence.
     /// </remarks>
-    /// <param name="services">The service collection to configure.</param>
+    /// <param name="services">The <see cref="IServiceCollection"/> to configure.</param>
+    /// <param name="configuration">The <see cref="IConfiguration"/> containing application configuration.</param>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown if <paramref name="services"/> or <paramref name="configuration"/> is <see langword="null"/>.
+    /// </exception>
     /// <returns>The same <paramref name="services"/> instance for method chaining.</returns>
-    public static IServiceCollection AddCoubDownloaderWithEditor(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddCoubDownloaderWithEditor(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
         return services
             .AddCoubDownloaderServices(configuration)
             .AddPhase2Services()

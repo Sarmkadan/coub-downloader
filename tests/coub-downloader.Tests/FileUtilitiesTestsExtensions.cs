@@ -4,16 +4,23 @@ using System.Threading.Tasks;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Extension methods for <see cref="FileUtilitiesTests"/> that provide test utilities for file operations.
+/// </summary>
 public static class FileUtilitiesTestsExtensions
 {
     /// <summary>
     /// Creates a temporary file with the specified content and returns its path.
     /// The file will be automatically deleted when disposed.
     /// </summary>
-    /// <param name="content">The content to write to the file.</param>
+    /// <param name="_">The test instance.</param>
+    /// <param name="content">The content to write to the file. If null, creates an empty file.</param>
     /// <returns>A tuple containing the file path and a disposable that cleans it up.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="_"/> is null.</exception>
     public static (string path, IDisposable cleanup) CreateTempFile(this FileUtilitiesTests _, string content = null)
     {
+        ArgumentNullException.ThrowIfNull(_);
+
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         if (content != null)
         {
@@ -27,9 +34,13 @@ public static class FileUtilitiesTestsExtensions
     /// Creates a temporary directory and returns its path.
     /// The directory will be automatically deleted when disposed.
     /// </summary>
+    /// <param name="_">The test instance.</param>
     /// <returns>A tuple containing the directory path and a disposable that cleans it up.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="_"/> is null.</exception>
     public static (string path, IDisposable cleanup) CreateTempDirectory(this FileUtilitiesTests _)
     {
+        ArgumentNullException.ThrowIfNull(_);
+
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(path);
         return (path, new TempDirectoryCleanup(path));
@@ -41,8 +52,14 @@ public static class FileUtilitiesTestsExtensions
     /// <param name="fileUtilitiesTests">The test instance.</param>
     /// <param name="expectedPath">The expected file path.</param>
     /// <param name="actualPath">The actual file path to verify.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="expectedPath"/> or <paramref name="actualPath"/> is null.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when either file does not exist.</exception>
     public static void ShouldContainSameContentAs(this FileUtilitiesTests fileUtilitiesTests, string expectedPath, string actualPath)
     {
+        ArgumentNullException.ThrowIfNull(fileUtilitiesTests);
+        ArgumentNullException.ThrowIfNull(expectedPath);
+        ArgumentNullException.ThrowIfNull(actualPath);
+
         if (!File.Exists(expectedPath))
         {
             throw new FileNotFoundException($"Expected file not found: {expectedPath}");
@@ -58,17 +75,23 @@ public static class FileUtilitiesTestsExtensions
 
         if (expectedContent != actualContent)
         {
-            throw new Exception($"File content mismatch.\nExpected: {expectedContent}\nActual: {actualContent}");
+            throw new FileNotFoundException($"File content mismatch.\nExpected: {expectedContent}\nActual: {actualContent}");
         }
     }
 
     /// <summary>
     /// Creates a temporary file with random content of specified size.
     /// </summary>
-    /// <param name="size">The size of random content to generate in bytes.</param>
+    /// <param name="_">The test instance.</param>
+    /// <param name="size">The size of random content to generate in bytes. Must be positive.</param>
     /// <returns>A tuple containing the file path and a disposable that cleans it up.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="_"/> is null.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="size"/> is not positive.</exception>
     public static (string path, IDisposable cleanup) CreateTempFileWithRandomContent(this FileUtilitiesTests _, int size = 1024)
     {
+        ArgumentNullException.ThrowIfNull(_);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(size, 0);
+
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         var random = new Random();
         var bytes = new byte[size];
@@ -82,10 +105,7 @@ public static class FileUtilitiesTestsExtensions
         private readonly string _path;
         private bool _disposed;
 
-        public TempFileCleanup(string path)
-        {
-            _path = path;
-        }
+        public TempFileCleanup(string path) => _path = path;
 
         public void Dispose()
         {
@@ -98,9 +118,13 @@ public static class FileUtilitiesTestsExtensions
                     File.Delete(_path);
                 }
             }
-            catch
+            catch (IOException)
             {
-                // Best effort cleanup
+                // Best effort cleanup - file may be locked or in use
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Best effort cleanup - may not have permissions
             }
 
             _disposed = true;
@@ -112,10 +136,7 @@ public static class FileUtilitiesTestsExtensions
         private readonly string _path;
         private bool _disposed;
 
-        public TempDirectoryCleanup(string path)
-        {
-            _path = path;
-        }
+        public TempDirectoryCleanup(string path) => _path = path;
 
         public void Dispose()
         {
@@ -125,12 +146,16 @@ public static class FileUtilitiesTestsExtensions
             {
                 if (Directory.Exists(_path))
                 {
-                    Directory.Delete(_path, true);
+                    Directory.Delete(_path, recursive: true);
                 }
             }
-            catch
+            catch (IOException)
             {
-                // Best effort cleanup
+                // Best effort cleanup - directory may contain locked files
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Best effort cleanup - may not have permissions
             }
 
             _disposed = true;

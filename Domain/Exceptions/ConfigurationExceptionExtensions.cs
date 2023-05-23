@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using System;
 using System.Text;
@@ -20,12 +20,10 @@ public static class ConfigurationExceptionExtensions
     /// </summary>
     /// <param name="exception">The configuration exception to format.</param>
     /// <returns>A formatted error message string.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/></exception>
     public static string GetDetailedMessage(this ConfigurationException exception)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
 
         var messageBuilder = new StringBuilder();
         messageBuilder.AppendLine(exception.Message);
@@ -35,7 +33,7 @@ public static class ConfigurationExceptionExtensions
             messageBuilder.AppendLine($"Configuration Key: {exception.ConfigurationKey}");
         }
 
-        if (exception.InnerException != null)
+        if (exception.InnerException is not null)
         {
             messageBuilder.AppendLine($"Inner Exception: {exception.InnerException.GetType().Name}: {exception.InnerException.Message}");
         }
@@ -49,17 +47,12 @@ public static class ConfigurationExceptionExtensions
     /// <param name="exception">The configuration exception to check.</param>
     /// <param name="key">The configuration key to match against.</param>
     /// <returns>True if the exception's configuration key matches the specified key; otherwise, false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="key"/> is <see langword="null"/> or empty</exception>
     public static bool IsForKey(this ConfigurationException exception, string key)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
-
-        if (string.IsNullOrEmpty(key))
-        {
-            throw new ArgumentException("Key cannot be null or empty.", nameof(key));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentException.ThrowIfNullOrEmpty(key);
 
         return string.Equals(exception.ConfigurationKey, key, StringComparison.Ordinal);
     }
@@ -70,17 +63,12 @@ public static class ConfigurationExceptionExtensions
     /// <param name="exception">The original configuration exception.</param>
     /// <param name="newMessage">The new error message.</param>
     /// <returns>A new ConfigurationException instance.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="newMessage"/> is <see langword="null"/> or empty</exception>
     public static ConfigurationException WithMessage(this ConfigurationException exception, string newMessage)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
-
-        if (string.IsNullOrEmpty(newMessage))
-        {
-            throw new ArgumentException("New message cannot be null or empty.", nameof(newMessage));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentException.ThrowIfNullOrEmpty(newMessage);
 
         return exception.ConfigurationKey is null
             ? new ConfigurationException(newMessage)
@@ -93,19 +81,14 @@ public static class ConfigurationExceptionExtensions
     /// <param name="exception">The original configuration exception.</param>
     /// <param name="additionalContext">Additional context to include in the message.</param>
     /// <returns>A new ConfigurationException instance with the original as inner exception.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="exception"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="additionalContext"/> is <see langword="null"/> or empty</exception>
     public static ConfigurationException WithContext(this ConfigurationException exception, string additionalContext)
     {
-        if (exception is null)
-        {
-            throw new ArgumentNullException(nameof(exception));
-        }
+        ArgumentNullException.ThrowIfNull(exception);
+        ArgumentException.ThrowIfNullOrEmpty(additionalContext);
 
-        if (string.IsNullOrEmpty(additionalContext))
-        {
-            throw new ArgumentException("Additional context cannot be null or empty.", nameof(additionalContext));
-        }
-
-        var newMessage = $"{exception.Message} ({additionalContext})\n{exception.GetDetailedMessage()}";
+        var newMessage = $"{exception.Message} ({additionalContext}){Environment.NewLine}{exception.GetDetailedMessage()}";
         return exception.ConfigurationKey is null
             ? new ConfigurationException(newMessage, exception)
             : new ConfigurationException(newMessage, exception.ConfigurationKey, exception);

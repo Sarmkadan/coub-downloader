@@ -22,6 +22,10 @@ public static class VideoEditorServiceExtensions
     /// <param name="progress">Optional progress reporter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task that represents the asynchronous operation with the edit result</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="inputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
+    /// <exception cref="ArgumentException"><paramref name="outputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="duration"/> is less than or equal to <see cref="TimeSpan.Zero"/></exception>
     public static async Task<VideoEditResult> TrimFirstSecondsAsync(
         this VideoEditorService service,
         string inputPath,
@@ -52,6 +56,9 @@ public static class VideoEditorServiceExtensions
     /// <param name="progress">Optional progress reporter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task that represents the asynchronous operation with the edit result</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="sourceFilePath"/> is <see langword="null"/>, empty, or whitespace</exception>
+    /// <exception cref="ArgumentException"><paramref name="outputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
     public static async Task<VideoEditResult> TrimAndRenderAsync(
         this VideoEditorService service,
         string sourceFilePath,
@@ -93,6 +100,10 @@ public static class VideoEditorServiceExtensions
     /// <param name="scaleFactor">Scaling factor for the preview (1.0 = original size)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task that represents the asynchronous operation with the edit result</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="outputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="scaleFactor"/> is less than or equal to 0.0</exception>
     public static async Task<VideoEditResult> GenerateStandardPreviewAsync(
         this VideoEditorService service,
         VideoEditSession session,
@@ -129,6 +140,10 @@ public static class VideoEditorServiceExtensions
     /// <param name="progress">Optional progress reporter</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A task that represents the asynchronous operation with the edit result</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="effects"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentException"><paramref name="inputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
+    /// <exception cref="ArgumentException"><paramref name="outputPath"/> is <see langword="null"/>, empty, or whitespace</exception>
     public static async Task<VideoEditResult> ApplyEffectsAsync(
         this VideoEditorService service,
         string inputPath,
@@ -152,6 +167,8 @@ public static class VideoEditorServiceExtensions
     /// <param name="includeTimestamps">Whether to include timestamps in the output</param>
     /// <param name="maxLength">Optional maximum number of history entries to return</param>
     /// <returns>Formatted list of edit operations</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="session"/> is <see langword="null"/></exception>
     public static IReadOnlyList<string> GetEditHistory(
         this VideoEditorService service,
         VideoEditSession session,
@@ -163,19 +180,13 @@ public static class VideoEditorServiceExtensions
 
         var history = service.GetEditHistory(session);
 
-        if (!includeTimestamps)
-        {
-            return maxLength.HasValue
+        return includeTimestamps
+            ? maxLength.HasValue
+                ? history.Take(maxLength.Value).ToList()
+                : history
+            : maxLength.HasValue
                 ? history.Select(h => h[(h.IndexOf(']') + 2)..]).Take(maxLength.Value).ToList()
                 : history.Select(h => h[(h.IndexOf(']') + 2)..]).ToList();
-        }
-
-        if (maxLength.HasValue)
-        {
-            return history.Take(maxLength.Value).ToList();
-        }
-
-        return history;
     }
 
     /// <summary>
@@ -185,6 +196,9 @@ public static class VideoEditorServiceExtensions
     /// <param name="baseSession">The base session to extend</param>
     /// <param name="operations">Operations to add to the session</param>
     /// <returns>A new session with the additional operations</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="baseSession"/> is <see langword="null"/></exception>
+    /// <exception cref="ArgumentNullException"><paramref name="operations"/> is <see langword="null"/></exception>
     public static VideoEditSession WithOperations(
         this VideoEditorService service,
         VideoEditSession baseSession,

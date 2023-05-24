@@ -21,12 +21,10 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result to check</param>
     /// <returns>True if successful and file exists; otherwise false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static bool IsSuccessfulWithFile(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         return result.Success && !string.IsNullOrEmpty(result.OutputFilePath);
     }
@@ -36,12 +34,10 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result</param>
     /// <returns>Formatted string with file size and quality</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static string GetFormattedFileInfo(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         var fileSize = result.FormatFileSize(result.OutputFileSizeBytes);
         return $"{fileSize} - {result.Quality}";
@@ -52,12 +48,10 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result to copy</param>
     /// <returns>A new DownloadResult instance with copied values</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static DownloadResult Clone(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         return new DownloadResult
         {
@@ -85,12 +79,10 @@ public static class DownloadResultExtensions
     /// <param name="result">The download result</param>
     /// <param name="thresholdMs">Threshold in milliseconds</param>
     /// <returns>True if processing time exceeded threshold</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static bool ExceededProcessingTime(this DownloadResult result, long thresholdMs)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         return result.ProcessingTimeMs > thresholdMs;
     }
@@ -100,22 +92,14 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result</param>
     /// <returns>Formatted time string (e.g., "2.5s", "150ms")</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static string FormatProcessingTime(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
-        if (result.ProcessingTimeMs < 1000)
-        {
-            return $"{result.ProcessingTimeMs}ms";
-        }
-        else
-        {
-            double seconds = result.ProcessingTimeMs / 1000.0;
-            return $"{seconds:0.##}s";
-        }
+        return result.ProcessingTimeMs < 1000
+            ? $"{result.ProcessingTimeMs}ms"
+            : $"{result.ProcessingTimeMs / 1000.0:0.##}s";
     }
 
     /// <summary>
@@ -123,12 +107,10 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result</param>
     /// <returns>True if has critical error</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static bool HasCriticalError(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         return !string.IsNullOrEmpty(result.ErrorType);
     }
@@ -138,19 +120,14 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result</param>
     /// <returns>Combined warnings or empty string if none</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static string GetWarningsSummary(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
-        if (result.Warnings.Count == 0)
-        {
-            return string.Empty;
-        }
-
-        return string.Join("; ", result.Warnings);
+        return result.Warnings.Count == 0
+            ? string.Empty
+            : string.Join("; ", result.Warnings);
     }
 
     /// <summary>
@@ -160,12 +137,10 @@ public static class DownloadResultExtensions
     /// <param name="minSizeBytes">Minimum expected size in bytes</param>
     /// <param name="maxSizeBytes">Maximum expected size in bytes</param>
     /// <returns>True if file size is within bounds</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static bool IsFileSizeWithinBounds(this DownloadResult result, long minSizeBytes, long maxSizeBytes)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
         return result.OutputFileSizeBytes >= minSizeBytes && result.OutputFileSizeBytes <= maxSizeBytes;
     }
@@ -175,34 +150,37 @@ public static class DownloadResultExtensions
     /// </summary>
     /// <param name="result">The download result</param>
     /// <returns>Status emoji: ✓ for success, ✗ for failure, ⚠ for warnings</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
     public static string GetStatusEmoji(this DownloadResult result)
     {
-        if (result == null)
-        {
-            throw new ArgumentNullException(nameof(result));
-        }
+        ArgumentNullException.ThrowIfNull(result);
 
-        if (result.Success)
-        {
-            return result.HasWarnings ? "⚠" : "✓";
-        }
-
-        return "✗";
+        return result.Success
+            ? result.HasWarnings ? "⚠" : "✓"
+            : "✗";
     }
 
     /// <summary>
-    /// Helper method to format file size (reused from DownloadResult)
+    /// Formats the file size in human-readable format (bytes, KB, MB, GB).
     /// </summary>
+    /// <param name="_">The download result (unused)</param>
+    /// <param name="bytes">File size in bytes</param>
+    /// <returns>Formatted string with appropriate unit</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when bytes is negative</exception>
     private static string FormatFileSize(this DownloadResult _, long bytes)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(bytes);
+
         string[] sizes = { "B", "KB", "MB", "GB" };
         double len = bytes;
         int order = 0;
+
         while (len >= 1024 && order < sizes.Length - 1)
         {
             order++;
             len = len / 1024;
         }
+
         return $"{len:0.##} {sizes[order]}";
     }
 }

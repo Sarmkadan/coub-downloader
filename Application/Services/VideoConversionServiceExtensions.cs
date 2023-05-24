@@ -20,6 +20,11 @@ public static class VideoConversionServiceExtensions
     /// <param name="outputPath">Path where the output video will be saved</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The path to the converted video file</returns>
+    /// <exception cref="ArgumentException"><paramref name="inputPath"/> or <paramref name="outputPath"/> is null or whitespace</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null</exception>
+    /// <exception cref="FileOperationException">Input video file not found</exception>
+    /// <exception cref="ProcessExecutionException">FFmpeg execution failed</exception>
+    /// <exception cref="VideoConversionException">Video conversion failed</exception>
     public static async Task<string> ConvertToSquareAsync(
         this VideoConversionService service,
         string inputPath,
@@ -29,6 +34,9 @@ public static class VideoConversionServiceExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
         ArgumentNullException.ThrowIfNull(service);
+
+        if (!File.Exists(inputPath))
+            throw new FileOperationException("Video file not found", inputPath, FileOperationType.Read);
 
         var settings = new ConversionSettings
         {
@@ -53,6 +61,11 @@ public static class VideoConversionServiceExtensions
     /// <param name="audioOutputPath">Path where the extracted audio will be saved</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The path to the extracted audio file</returns>
+    /// <exception cref="ArgumentException"><paramref name="videoPath"/> or <paramref name="audioOutputPath"/> is null or whitespace</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null</exception>
+    /// <exception cref="FileOperationException">Video file not found</exception>
+    /// <exception cref="ProcessExecutionException">FFmpeg execution failed</exception>
+    /// <exception cref="VideoConversionException">Audio extraction failed</exception>
     public static async Task<string> ExtractAudioAsync(
         this VideoConversionService service,
         string videoPath,
@@ -78,7 +91,8 @@ public static class VideoConversionServiceExtensions
             if (runFfmpegMethod == null)
                 throw new InvalidOperationException("RunFfmpegAsync method not found");
 
-            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
+            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)
+                runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
             var exitCode = result.ExitCode;
             var standardError = result.StandardError;
 
@@ -116,6 +130,12 @@ public static class VideoConversionServiceExtensions
     /// <param name="height">Height of the thumbnail (default: 240)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The path to the generated thumbnail</returns>
+    /// <exception cref="ArgumentException"><paramref name="videoPath"/> or <paramref name="thumbnailPath"/> is null or whitespace</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null</exception>
+    /// <exception cref="ValidationException">Invalid parameters provided</exception>
+    /// <exception cref="FileOperationException">Video file not found</exception>
+    /// <exception cref="ProcessExecutionException">FFmpeg execution failed</exception>
+    /// <exception cref="VideoConversionException">Thumbnail creation failed</exception>
     public static async Task<string> CreateThumbnailAsync(
         this VideoConversionService service,
         string videoPath,
@@ -129,8 +149,8 @@ public static class VideoConversionServiceExtensions
         ArgumentException.ThrowIfNullOrWhiteSpace(thumbnailPath);
         ArgumentNullException.ThrowIfNull(service);
 
-        if (timestampSeconds < 0)
-            throw new ValidationException("Timestamp must be non-negative", nameof(timestampSeconds), timestampSeconds);
+        if (timestampSeconds <= 0)
+            throw new ValidationException("Timestamp must be greater than 0", nameof(timestampSeconds), timestampSeconds);
 
         if (width <= 0 || height <= 0)
             throw new ValidationException("Width and height must be greater than 0", nameof(width), width);
@@ -154,7 +174,8 @@ public static class VideoConversionServiceExtensions
             if (runFfmpegMethod == null)
                 throw new InvalidOperationException("RunFfmpegAsync method not found");
 
-            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
+            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)
+                runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
             var exitCode = result.ExitCode;
             var standardError = result.StandardError;
 
@@ -188,6 +209,9 @@ public static class VideoConversionServiceExtensions
     /// <param name="filePath">Path to the video file</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Formatted duration string (HH:MM:SS)</returns>
+    /// <exception cref="ArgumentException"><paramref name="filePath"/> is null or whitespace</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="service"/> is null</exception>
+    /// <exception cref="FileOperationException">Video file not found</exception>
     public static async Task<string> GetVideoDurationFormattedAsync(
         this VideoConversionService service,
         string filePath,

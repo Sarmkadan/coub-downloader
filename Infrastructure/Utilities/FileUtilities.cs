@@ -9,12 +9,17 @@ namespace CoubDownloader.Infrastructure.Utilities;
 /// <summary>File system and path utilities</summary>
 public static class FileUtilities
 {
+    // Union of characters that are invalid in file names on Windows, Linux and macOS,
+    // so generated names stay portable regardless of the OS the file was created on.
+    // Control characters (below 0x20) are filtered separately.
+    private static readonly char[] CrossPlatformInvalidFileNameChars =
+        ['"', '<', '>', '|', ':', '*', '?', '\\', '/'];
+
     /// <summary>Generate safe filename from text</summary>
     public static string GenerateSafeFileName(string input, string extension = ".mp4")
     {
-        var invalidChars = Path.GetInvalidFileNameChars();
         var safeName = new string(input
-            .Where(c => !invalidChars.Contains(c))
+            .Where(c => c >= ' ' && !CrossPlatformInvalidFileNameChars.Contains(c))
             .Take(200)
             .ToArray());
 

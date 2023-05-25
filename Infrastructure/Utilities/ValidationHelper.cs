@@ -62,8 +62,14 @@ public static class ValidationHelper
     /// <summary>Validate video URL (Coub format)</summary>
     public static bool IsValidCoubUrl(string url)
     {
-        if (!IsValidUrl(url)) return false;
-        return url.Contains("coub.com") && (url.Contains("/view/") || url.Contains("coub.com/"));
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return false;
+
+        if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+            return false;
+
+        return uri.Host.Equals("coub.com", StringComparison.OrdinalIgnoreCase)
+            || uri.Host.EndsWith(".coub.com", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Validate bitrate value</summary>
@@ -95,10 +101,15 @@ public static class ValidationHelper
     {
         try
         {
-            var fullBasePath = Path.GetFullPath(basePath);
-            var fullRequestedPath = Path.GetFullPath(requestedPath);
+            var fullBasePath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(basePath));
+            var fullRequestedPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(requestedPath));
 
-            return fullRequestedPath.StartsWith(fullBasePath);
+            if (fullRequestedPath.Equals(fullBasePath, StringComparison.Ordinal))
+                return true;
+
+            // Require a directory separator right after the base path so that
+            // "/data/basement" is not treated as being inside "/data/base".
+            return fullRequestedPath.StartsWith(fullBasePath + Path.DirectorySeparatorChar, StringComparison.Ordinal);
         }
         catch
         {

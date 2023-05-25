@@ -5,6 +5,8 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using CoubDownloader.Infrastructure.Middleware;
@@ -12,7 +14,7 @@ using CoubDownloader.Infrastructure.Middleware;
 namespace CoubDownloader.Infrastructure.Integration;
 
 /// <summary>Wrapper for FFmpeg command-line tool</summary>
-public sealed class FFmpegWrapper : IFFmpegWrapper
+public class FFmpegWrapper : IFFmpegWrapper
 {
     private static class FFmpegConstants
     {
@@ -34,7 +36,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Check if FFmpeg is available</summary>
-    public async Task<bool> IsAvailableAsync()
+    public virtual async Task<bool> IsAvailableAsync()
     {
         try
         {
@@ -48,7 +50,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Get FFmpeg version</summary>
-    public async Task<string> GetVersionAsync()
+    public virtual async Task<string> GetVersionAsync()
     {
         try
         {
@@ -65,7 +67,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Execute FFmpeg command</summary>
-    public async Task<FFmpegResult> ExecuteAsync(string[] arguments, TimeSpan? timeout = null)
+    public virtual async Task<FFmpegResult> ExecuteAsync(string[] arguments, TimeSpan? timeout = null)
     {
         var processTimeout = timeout ?? TimeSpan.FromMinutes(10);
 
@@ -96,7 +98,15 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
 
             if (completedTask != exitTask)
             {
-                process.Kill();
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process exited between the timeout and the kill.
+                }
+
                 return new FFmpegResult
                 {
                     Success = false,
@@ -132,7 +142,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Convert video file with progress callback</summary>
-    public async Task<FFmpegResult> ConvertVideoAsync(
+    public virtual async Task<FFmpegResult> ConvertVideoAsync(
         string inputFile,
         string outputFile,
         ConversionParameters parameters,
@@ -156,11 +166,121 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
 
         args.AddRange(new[] { "-progress", "pipe:1", "-y", outputFile });
 
-        return await ExecuteAsync(args.ToArray());
+        if (progress is null)
+            return await ExecuteAsync(args.ToArray());
+
+        var mediaInfo = await GetMediaInfoAsync(inputFile);
+        var totalDurationSeconds = mediaInfo?.DurationInSeconds ?? 0;
+
+        return await ExecuteWithProgressAsync(args.ToArray(), totalDurationSeconds, progress);
+    }
+
+    /// <summary>
+    /// Execute FFmpeg while parsing "-progress pipe:1" key=value output from stdout
+    /// and reporting completion percentage based on the input duration.
+    /// </summary>
+    private async Task<FFmpegResult> ExecuteWithProgressAsync(
+        string[] arguments,
+        double totalDurationSeconds,
+        IProgress<int> progress,
+        TimeSpan? timeout = null)
+    {
+        var processTimeout = timeout ?? TimeSpan.FromMinutes(10);
+
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            foreach (var arg in arguments)
+                psi.ArgumentList.Add(arg);
+
+            using var process = Process.Start(psi);
+
+            if (process is null)
+                return new FFmpegResult { Success = false, Error = "Failed to start FFmpeg process" };
+
+            using var timeoutCts = new CancellationTokenSource(processTimeout);
+            var errorTask = process.StandardError.ReadToEndAsync(timeoutCts.Token);
+            var output = new StringBuilder();
+
+            try
+            {
+                string? line;
+                while ((line = await process.StandardOutput.ReadLineAsync(timeoutCts.Token)) is not null)
+                {
+                    output.AppendLine(line);
+
+                    // FFmpeg reports position as "out_time_us=<microseconds>"
+                    // (older builds emit the same microsecond value as "out_time_ms=").
+                    var valueStart = line.StartsWith("out_time_us=", StringComparison.Ordinal)
+                        ? "out_time_us=".Length
+                        : line.StartsWith("out_time_ms=", StringComparison.Ordinal)
+                            ? "out_time_ms=".Length
+                            : -1;
+
+                    if (valueStart > 0
+                        && totalDurationSeconds > 0
+                        && long.TryParse(line.AsSpan(valueStart), NumberStyles.Integer, CultureInfo.InvariantCulture, out var microseconds))
+                    {
+                        var percent = (int)Math.Clamp(microseconds / 1_000_000.0 / totalDurationSeconds * 100.0, 0, 100);
+                        progress.Report(percent);
+                    }
+                }
+
+                await process.WaitForExitAsync(timeoutCts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                try
+                {
+                    process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process exited between the timeout and the kill.
+                }
+
+                return new FFmpegResult { Success = false, Error = "FFmpeg operation timed out" };
+            }
+
+            var error = await errorTask;
+            var success = process.ExitCode == 0;
+
+            if (success)
+                progress.Report(100);
+
+            _logger.LogDebug(
+                $"FFmpeg command: {string.Join(" ", arguments)} - Exit code: {process.ExitCode}",
+                FFmpegConstants.FFmpegCategory);
+
+            return new FFmpegResult
+            {
+                Success = success,
+                Output = output.ToString(),
+                Error = error,
+                ExitCode = process.ExitCode
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError("FFmpeg execution failed", ex, FFmpegConstants.FFmpegCategory);
+            return new FFmpegResult
+            {
+                Success = false,
+                Error = ex.Message
+            };
+        }
     }
 
     /// <summary>Extract audio from video</summary>
-    public async Task<FFmpegResult> ExtractAudioAsync(string inputFile, string outputFile)
+    public virtual async Task<FFmpegResult> ExtractAudioAsync(string inputFile, string outputFile)
     {
         var args = new[]
         {
@@ -174,7 +294,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Concatenate multiple videos</summary>
-    public async Task<FFmpegResult> ConcatenateVideosAsync(
+    public virtual async Task<FFmpegResult> ConcatenateVideosAsync(
         List<string> inputFiles,
         string outputFile)
     {
@@ -205,7 +325,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Loop audio to match video duration</summary>
-    public async Task<FFmpegResult> LoopAudioAsync(
+    public virtual async Task<FFmpegResult> LoopAudioAsync(
         string audioFile,
         double targetDuration,
         string outputFile)
@@ -214,7 +334,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
         {
             "-stream_loop", "-1",
             "-i", audioFile,
-            "-t", targetDuration.ToString("F2"),
+            "-t", targetDuration.ToString("F2", CultureInfo.InvariantCulture),
             "-c:a", "aac",
             "-y", outputFile
         };
@@ -223,7 +343,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
     }
 
     /// <summary>Get media information using ffprobe</summary>
-    public async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
+    public virtual async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
     {
         try
         {
@@ -290,11 +410,72 @@ public sealed class FFmpegResult
 public record MediaInfo
 {
     [JsonPropertyName("duration")]
+    [JsonConverter(typeof(FfprobeDoubleConverter))]
     public double? DurationInSeconds { get; init; }
 
     [JsonPropertyName("size")]
+    [JsonConverter(typeof(FfprobeLongConverter))]
     public long? Size { get; init; }
 
     [JsonPropertyName("bit_rate")]
+    [JsonConverter(typeof(FfprobeLongConverter))]
     public long? BitRate { get; init; }
+}
+
+/// <summary>
+/// Reads ffprobe numeric fields that are serialized as JSON strings
+/// (e.g. "duration": "12.345000"); "N/A" and other non-numeric values map to null.
+/// </summary>
+internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
+{
+    public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number)
+            return reader.GetDouble();
+
+        if (reader.TokenType == JsonTokenType.String
+            && double.TryParse(reader.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options)
+    {
+        if (value.HasValue)
+            writer.WriteNumberValue(value.Value);
+        else
+            writer.WriteNullValue();
+    }
+}
+
+/// <summary>
+/// Reads ffprobe integer fields that are serialized as JSON strings
+/// (e.g. "size": "1048576"); "N/A" and other non-numeric values map to null.
+/// </summary>
+internal sealed class FfprobeLongConverter : JsonConverter<long?>
+{
+    public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Number)
+            return reader.GetInt64();
+
+        if (reader.TokenType == JsonTokenType.String
+            && long.TryParse(reader.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
+        {
+            return value;
+        }
+
+        return null;
+    }
+
+    public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
+    {
+        if (value.HasValue)
+            writer.WriteNumberValue(value.Value);
+        else
+            writer.WriteNullValue();
+    }
 }

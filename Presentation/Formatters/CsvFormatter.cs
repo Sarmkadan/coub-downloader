@@ -24,10 +24,10 @@ public class CsvFormatter
             var creator = EscapeCSV(video.CreatorName);
             var description = EscapeCSV(video.Description ?? "");
 
-            sb.AppendLine(
-                $"{video.Id},{title},{video.Url},{video.Duration}," +
-                $"{video.Width},{video.Height},{creator},{video.ViewCount}," +
-                $"{video.HasAudio},{video.UploadedDate:yyyy-MM-dd}");
+            sb.AppendLine(FormattableString.Invariant(
+                $"{video.Id},{title},{video.Url},{video.Duration},") +
+                FormattableString.Invariant($"{video.Width},{video.Height},{creator},{video.ViewCount},") +
+                FormattableString.Invariant($"{video.HasAudio},{video.UploadedDate:yyyy-MM-dd}"));
         }
 
         return sb.ToString();
@@ -44,9 +44,9 @@ public class CsvFormatter
             var url = EscapeCSV(task.Url);
             var path = EscapeCSV(task.OutputPath);
 
-            sb.AppendLine(
-                $"{task.Id},{task.VideoId},{url},{path}," +
-                $"{task.State},{task.Format},{task.Quality},{task.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+            sb.AppendLine(FormattableString.Invariant(
+                $"{task.Id},{task.VideoId},{url},{path},") +
+                FormattableString.Invariant($"{task.State},{task.Format},{task.Quality},{task.CreatedAt:yyyy-MM-dd HH:mm:ss}"));
         }
 
         return sb.ToString();
@@ -63,9 +63,9 @@ public class CsvFormatter
             var path = EscapeCSV(result.OutputFilePath ?? "");
             var error = EscapeCSV(result.ErrorMessage ?? "");
 
-            sb.AppendLine(
-                $"{result.TaskId},{result.Success},{path},{result.OutputFileSizeBytes}," +
-                $"{result.ProcessingTimeMs},{result.Format},{result.Quality},{error}");
+            sb.AppendLine(FormattableString.Invariant(
+                $"{result.TaskId},{result.Success},{path},{result.OutputFileSizeBytes},") +
+                FormattableString.Invariant($"{result.ProcessingTimeMs},{result.Format},{result.Quality},{error}"));
         }
 
         return sb.ToString();
@@ -74,7 +74,7 @@ public class CsvFormatter
     private string EscapeCSV(string value)
     {
         if (string.IsNullOrEmpty(value)) return "";
-        if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
+        if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";
         }

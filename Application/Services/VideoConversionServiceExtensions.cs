@@ -83,18 +83,7 @@ public static class VideoConversionServiceExtensions
 
             var args = $@"-i ""{videoPath}"" -vn -acodec copy ""{audioOutputPath}"" -y";
 
-            // Use reflection to access the private RunFfmpegAsync method
-            var runFfmpegMethod = typeof(VideoConversionService).GetMethod(
-                "RunFfmpegAsync",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-
-            if (runFfmpegMethod == null)
-                throw new InvalidOperationException("RunFfmpegAsync method not found");
-
-            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)
-                runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
-            var exitCode = result.ExitCode;
-            var standardError = result.StandardError;
+            var (exitCode, _, standardError) = await service.RunFfmpegAsync(args, null, cancellationToken);
 
             if (exitCode != 0)
             {
@@ -166,18 +155,7 @@ public static class VideoConversionServiceExtensions
 
             var args = $@"-i ""{videoPath}"" -ss {timestampSeconds} -vframes 1 -vf scale={width}:{height} -y ""{thumbnailPath}""";
 
-            // Use reflection to access the private RunFfmpegAsync method
-            var runFfmpegMethod = typeof(VideoConversionService).GetMethod(
-                "RunFfmpegAsync",
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-
-            if (runFfmpegMethod == null)
-                throw new InvalidOperationException("RunFfmpegAsync method not found");
-
-            var result = await (Task<(int ExitCode, string StandardOutput, string StandardError)>)
-                runFfmpegMethod.Invoke(service, new object[] { args, null, cancellationToken });
-            var exitCode = result.ExitCode;
-            var standardError = result.StandardError;
+            var (exitCode, _, standardError) = await service.RunFfmpegAsync(args, null, cancellationToken);
 
             if (exitCode != 0)
             {

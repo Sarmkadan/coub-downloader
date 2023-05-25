@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Enums;
@@ -117,7 +118,8 @@ public class AudioProcessingService : IAudioProcessingService
                 var filterComplex = new List<string>();
                 for (int i = 0; i < numLoops; i++)
                 {
-                    filterComplex.Add($"[{i}:0]adelay={i * audioDuration * 1000}|{i * audioDuration * 1000}[a{i}]");
+                    var delayMs = (long)Math.Round(i * audioDuration * 1000);
+                    filterComplex.Add(FormattableString.Invariant($"[{i}:0]adelay={delayMs}|{delayMs}[a{i}]"));
                 }
                 filterComplex.Add(string.Join("", Enumerable.Range(0, numLoops).Select(i => $"[a{i}]")) + $"amix=inputs={numLoops}:duration=longest:dropout_transition=0,apad[aout]");
 
@@ -126,18 +128,29 @@ public class AudioProcessingService : IAudioProcessingService
                     "-filter_complex", string.Join(";", filterComplex),
                     "-map", "[aout]",
                     "-c:a", "aac",
-                    "-t", targetDuration.ToString("F3"),
+                    "-t", targetDuration.ToString("F3", CultureInfo.InvariantCulture),
                     "-y", outputPath
                 }).ToArray();
 
                 result = await _ffmpegWrapper.ExecuteAsync(args);
             }
-            else // AudioLoopStrategy.Stretch, for now just copy the audio as before
+            else // AudioLoopStrategy.Stretch: time-stretch the audio to the target duration
             {
-                // Hotfix: BuildStretchCommand and BuildCrossfadeCommand were removed.
-                // For stretch, we'll just copy the audio. If actual stretching is needed,
-                // this logic would need to be enhanced with ffmpeg's atempo filter.
-                args = new[] { "-i", audioPath, "-c:a", "aac", "-y", outputPath };
+                var audioDuration = await GetAudioDurationAsync(audioPath, cancellationToken);
+                if (audioDuration <= 0)
+                    throw new AudioProcessingException("Could not determine audio duration for stretch.", audioPath);
+
+                var tempo = audioDuration / targetDuration;
+                var atempoChain = BuildAtempoChain(tempo);
+
+                args = new[]
+                {
+                    "-i", audioPath,
+                    "-af", atempoChain,
+                    "-c:a", "aac",
+                    "-t", targetDuration.ToString("F3", CultureInfo.InvariantCulture),
+                    "-y", outputPath
+                };
                 result = await _ffmpegWrapper.ExecuteAsync(args);
             }
 
@@ -187,13 +200,13 @@ public class AudioProcessingService : IAudioProcessingService
             var afFilter = new List<string>();
 
             if (trackSettings.FadeInMs > 0)
-                afFilter.Add($"afade=t=in:d={fadeInMs}");
+                afFilter.Add(FormattableString.Invariant($"afade=t=in:d={fadeInMs}"));
 
             if (trackSettings.FadeOutMs > 0)
-                afFilter.Add($"afade=t=out:st={trackSettings.Duration - fadeOutMs}:d={fadeOutMs}");
+                afFilter.Add(FormattableString.Invariant($"afade=t=out:st={trackSettings.Duration - fadeOutMs}:d={fadeOutMs}"));
 
             if (Math.Abs(volume - 1.0) > 0.01)
-                afFilter.Add($"volume={volume}");
+                afFilter.Add(FormattableString.Invariant($"volume={volume}"));
 
             var filterChain = string.Join(",", afFilter);
             var args = string.IsNullOrEmpty(filterChain)
@@ -326,7 +339,7 @@ public class AudioProcessingService : IAudioProcessingService
             if (!string.IsNullOrEmpty(directory))
                 Directory.CreateDirectory(directory);
 
-            var args = new[] { "-i", audioPath, "-af", $"volume={volumeLevel}", "-c:a", "aac", "-y", outputPath };
+            var args = new[] { "-i", audioPath, "-af", FormattableString.Invariant($"volume={volumeLevel}"), "-c:a", "aac", "-y", outputPath };
 
             var result = await _ffmpegWrapper.ExecuteAsync(args);
             if (!result.Success)
@@ -347,6 +360,35 @@ public class AudioProcessingService : IAudioProcessingService
         {
             throw new AudioProcessingException("Failed to adjust audio volume", audioPath, ex);
         }
+    }
+
+    /// <summary>
+    /// Build an atempo filter chain for the given tempo factor.
+    /// A single atempo instance only accepts 0.5-2.0, so factors outside
+    /// that range are decomposed into a chain of atempo filters.
+    /// </summary>
+    private static string BuildAtempoChain(double tempo)
+    {
+        if (tempo <= 0 || double.IsNaN(tempo) || double.IsInfinity(tempo))
+            throw new ValidationException("Tempo factor must be a positive finite number", nameof(tempo), tempo);
+
+        var factors = new List<double>();
+
+        while (tempo > 2.0)
+        {
+            factors.Add(2.0);
+            tempo /= 2.0;
+        }
+
+        while (tempo < 0.5)
+        {
+            factors.Add(0.5);
+            tempo /= 0.5;
+        }
+
+        factors.Add(tempo);
+
+        return string.Join(",", factors.Select(f => FormattableString.Invariant($"atempo={f:0.######}")));
     }
 
     /// <summary>Extract duration from audio/video file</summary>

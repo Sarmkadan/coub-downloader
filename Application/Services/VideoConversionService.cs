@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using CoubDownloader.Domain.Constants;
@@ -17,8 +18,14 @@ namespace CoubDownloader.Application.Services;
 /// <summary>
 /// Service for FFmpeg-based video conversion and processing.
 /// </summary>
-public class VideoConversionService : IVideoConversionService
+public partial class VideoConversionService : IVideoConversionService
 {
+    [GeneratedRegex(@"Duration:\s*(\d{2,}:\d{2}:\d{2}\.\d+)", RegexOptions.CultureInvariant)]
+    private static partial Regex DurationRegex();
+
+    [GeneratedRegex(@"\btime=(\d{2,}:\d{2}:\d{2}\.\d+)", RegexOptions.CultureInvariant)]
+    private static partial Regex ProgressTimeRegex();
+
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
 
@@ -81,7 +88,7 @@ public class VideoConversionService : IVideoConversionService
             if (!File.Exists(filePath))
                 throw new FileOperationException("Video file not found", filePath, FileOperationType.Read);
 
-            var ffprobeArgs = $"-v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
+            var ffprobeArgs = $"{_ffprobePath} -v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
 
             var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
 
@@ -105,9 +112,9 @@ public class VideoConversionService : IVideoConversionService
                     if (root.TryGetProperty("format", out JsonElement formatElement))
                     {
                         metadata.Format = formatElement.TryGetProperty("format_name", out var formatName) ? formatName.GetString() : null;
-                        metadata.FileSizeBytes = formatElement.TryGetProperty("size", out var size) && long.TryParse(size.GetString(), out var fileSize) ? fileSize : 0;
-                        metadata.Duration = formatElement.TryGetProperty("duration", out var duration) && double.TryParse(duration.GetString(), out var dur) ? dur : 0;
-                        metadata.VideoBitrate = formatElement.TryGetProperty("bit_rate", out var formatBitRate) && int.TryParse(formatBitRate.GetString(), out var fb) ? fb : 0;
+                        metadata.FileSizeBytes = formatElement.TryGetProperty("size", out var size) && long.TryParse(size.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var fileSize) ? fileSize : 0;
+                        metadata.Duration = formatElement.TryGetProperty("duration", out var duration) && double.TryParse(duration.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var dur) ? dur : 0;
+                        metadata.VideoBitrate = formatElement.TryGetProperty("bit_rate", out var formatBitRate) && int.TryParse(formatBitRate.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var fb) ? fb : 0;
                     }
 
                     // Stream information
@@ -125,18 +132,21 @@ public class VideoConversionService : IVideoConversionService
                                 if (stream.TryGetProperty("r_frame_rate", out var frameRateString))
                                 {
                                     var parts = frameRateString.GetString()?.Split('/');
-                                    if (parts?.Length == 2 && int.TryParse(parts[0], out var num) && int.TryParse(parts[1], out var den) && den != 0)
+                                    if (parts?.Length == 2
+                                        && int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var num)
+                                        && int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var den)
+                                        && den != 0)
                                     {
-                                        metadata.FrameRate = num / den;
+                                        metadata.FrameRate = (int)Math.Round((double)num / den);
                                     }
                                 }
                                 // If stream has its own bitrate, use it. Otherwise, rely on format bitrate.
-                                metadata.VideoBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : metadata.VideoBitrate;
+                                metadata.VideoBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var sb) ? sb : metadata.VideoBitrate;
                             }
                             else if (codecType == "audio")
                             {
                                 metadata.AudioCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
-                                metadata.AudioBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : 0;
+                                metadata.AudioBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var sb) ? sb : 0;
                                 metadata.HasAudio = true;
                             }
                         }
@@ -209,7 +219,7 @@ public class VideoConversionService : IVideoConversionService
         }
     }
 
-    public async Task<bool> IsFfmpegAvailableAsync()
+    public virtual async Task<bool> IsFfmpegAvailableAsync()
     {
         try
         {
@@ -235,7 +245,7 @@ public class VideoConversionService : IVideoConversionService
         }
     }
 
-    public async Task<string> GetFfmpegVersionAsync()
+    public virtual async Task<string> GetFfmpegVersionAsync()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(_ffmpegPath);
 
@@ -331,7 +341,7 @@ public class VideoConversionService : IVideoConversionService
             {
                 var fadeIn = settings.FadeInMs / 1000.0;
                 var fadeOut = settings.FadeOutMs / 1000.0;
-                fades = $",fade=t=in:st=0:d={fadeIn},fade=t=out:st=10:d={fadeOut}";
+                fades = FormattableString.Invariant($",fade=t=in:st=0:d={fadeIn},fade=t=out:st=10:d={fadeOut}");
             }
 
             var args = $"-i \"{inputPath}\" -vf \"{scaleFilter}{fades}\" -r {settings.FrameRate} " +
@@ -346,19 +356,37 @@ public class VideoConversionService : IVideoConversionService
         }
     }
 
-    /// <summary>Run FFmpeg process with arguments</summary>
-    private async Task<(int ExitCode, string StandardOutput, string StandardError)> RunFfmpegAsync(
+    /// <summary>
+    /// Run an FFmpeg tool process with arguments. When the argument string starts with the
+    /// resolved ffprobe or ffmpeg path followed by a space, that executable is used and the
+    /// prefix is stripped; otherwise the arguments are passed to ffmpeg.
+    /// </summary>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="arguments"/> is null or whitespace.</exception>
+    /// <exception cref="ToolNotFoundException">Thrown when the process cannot be started.</exception>
+    /// <exception cref="ProcessExecutionException">Thrown when process execution fails unexpectedly.</exception>
+    protected internal virtual async Task<(int ExitCode, string StandardOutput, string StandardError)> RunFfmpegAsync(
         string arguments,
         IProgress<int>? progress,
         CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(arguments);
 
+        var fileName = _ffmpegPath;
+        if (arguments.StartsWith(_ffprobePath + " ", StringComparison.Ordinal))
+        {
+            fileName = _ffprobePath;
+            arguments = arguments[(_ffprobePath.Length + 1)..];
+        }
+        else if (arguments.StartsWith(_ffmpegPath + " ", StringComparison.Ordinal))
+        {
+            arguments = arguments[(_ffmpegPath.Length + 1)..];
+        }
+
         try
         {
             var psi = new ProcessStartInfo
             {
-                FileName = _ffmpegPath,
+                FileName = fileName,
                 Arguments = arguments,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -372,23 +400,87 @@ public class VideoConversionService : IVideoConversionService
 
             var stdOutput = new StringWriter();
             var stdError = new StringWriter();
+            var totalDurationSeconds = 0.0;
+            var errorLock = new object();
 
             process.OutputDataReceived += (sender, e) =>
             {
-                if (e.Data != null) stdOutput.WriteLine(e.Data);
+                if (e.Data != null)
+                {
+                    lock (stdOutput)
+                    {
+                        stdOutput.WriteLine(e.Data);
+                    }
+                }
             };
             process.ErrorDataReceived += (sender, e) =>
             {
-                if (e.Data != null) stdError.WriteLine(e.Data);
-                // Optionally, parse FFmpeg progress here and report to 'progress'
+                if (e.Data is null)
+                    return;
+
+                lock (errorLock)
+                {
+                    stdError.WriteLine(e.Data);
+                }
+
+                if (progress is null)
+                    return;
+
+                // FFmpeg writes "Duration: HH:MM:SS.cc" once per input and
+                // "time=HH:MM:SS.cc" on every status line; combine them into a percentage.
+                var durationMatch = DurationRegex().Match(e.Data);
+                if (durationMatch.Success && TryParseFfmpegTimestamp(durationMatch.Groups[1].Value, out var total))
+                {
+                    Interlocked.Exchange(ref totalDurationSeconds, total);
+                    return;
+                }
+
+                var timeMatch = ProgressTimeRegex().Match(e.Data);
+                var knownDuration = Volatile.Read(ref totalDurationSeconds);
+                if (timeMatch.Success && knownDuration > 0 && TryParseFfmpegTimestamp(timeMatch.Groups[1].Value, out var elapsed))
+                {
+                    var percent = (int)Math.Clamp(elapsed / knownDuration * 100.0, 0, 100);
+                    progress.Report(percent);
+                }
             };
 
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
 
-            await process.WaitForExitAsync(cancellationToken);
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                try
+                {
+                    if (!process.HasExited)
+                        process.Kill(entireProcessTree: true);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Process exited between the check and the kill.
+                }
 
-            return (process.ExitCode, stdOutput.ToString(), stdError.ToString());
+                throw;
+            }
+
+            if (process.ExitCode == 0)
+                progress?.Report(100);
+
+            string standardOutput;
+            string standardError;
+            lock (stdOutput)
+            {
+                standardOutput = stdOutput.ToString();
+            }
+            lock (errorLock)
+            {
+                standardError = stdError.ToString();
+            }
+
+            return (process.ExitCode, standardOutput, standardError);
         }
         catch (OperationCanceledException)
         {
@@ -458,6 +550,26 @@ public class VideoConversionService : IVideoConversionService
         {
             throw new VideoConversionException(ex.Message, inputPath, outputPath, ex);
         }
+    }
+
+    /// <summary>Parse an FFmpeg "HH:MM:SS.cc" timestamp into total seconds</summary>
+    private static bool TryParseFfmpegTimestamp(string value, out double seconds)
+    {
+        seconds = 0;
+
+        var parts = value.Split(':');
+        if (parts.Length != 3)
+            return false;
+
+        if (!int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var hours)
+            || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes)
+            || !double.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out var secondsPart))
+        {
+            return false;
+        }
+
+        seconds = hours * 3600 + minutes * 60 + secondsPart;
+        return true;
     }
 
     /// <summary>Resolve executable path from PATH environment variable</summary>

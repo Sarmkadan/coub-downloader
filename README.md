@@ -47,3 +47,29 @@ The following public members are available:
 *   `UseMultipleConnectionsAsync<T>(Func<T, Task>[])`: Asynchronously uses multiple pooled objects as connections and automatically returns them to the pool.
 
 // ... (rest of the README.md content remains the same)
+
+## CoubVideoTestsExtensions
+
+`CoubVideoTestsExtensions` provides a collection of helper methods used in unit‑tests to create `CoubVideo` instances with specific characteristics and to query common video‑related properties. These methods make it easy to set up test data for different resolutions, durations, and processing requirements.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Tests;
+
+// Create various test videos
+var verticalVideo   = CoubVideoTestsExtensions.CreateVerticalVideo();
+var hdLandscapeVideo = CoubVideoTestsExtensions.CreateHdLandscapeVideo();
+var video4k         = CoubVideoTestsExtensions.Create4kVideo();
+var shortVideo      = CoubVideoTestsExtensions.CreateShortDurationVideo();
+
+// Query properties of the created videos
+bool isPopular          = CoubVideoTestsExtensions.IsPopular(verticalVideo);
+string resolutionCategory = CoubVideoTestsExtensions.GetResolutionCategory(hdLandscapeVideo);
+double totalDuration    = CoubVideoTestsExtensions.GetTotalDurationWithAudio(video4k);
+bool canBeProcessed     = CoubVideoTestsExtensions.IsProcessable(shortVideo);
+```
+
+These helpers simplify test setup and make test code more expressive and maintainable.
+
+// ... (rest of the README.md content remains the same)

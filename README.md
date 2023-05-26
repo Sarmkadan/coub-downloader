@@ -1,44 +1,31 @@
-// ... (rest of the README.md content remains the same)
+## DownloadResultExtensions
 
-## FileUtilitiesTestsExtensions
-
-`FileUtilitiesTestsExtensions` provides a set of helper methods for creating temporary files and directories, as well as verifying their contents. These extensions simplify the process of testing file-related functionality.
+`DownloadResultExtensions` provides helper methods to analyze and format `DownloadResult` instances, offering insights into download success status, file metadata, processing time, and error conditions.
 
 ### Usage Example
 
 ```csharp
-using CoubDownloader.Tests;
+using CoubDownloader.Domain.Models;
 
-// Create a temporary file
-var (filePath, cleanup) = FileUtilitiesTestsExtensions.CreateTempFile();
-using (cleanup)
+// Analyze a download result
+var result = GetDownloadResult(); // Assume this retrieves a DownloadResult instance
+
+if (result.IsSuccessfulWithFile())
 {
-    // Use the temporary file
-    File.WriteAllText(filePath, "Hello, World!");
+    Console.WriteLine(result.GetFormattedFileInfo());
+    Console.WriteLine($"Status: {result.GetStatusEmoji()}");
+    Console.WriteLine($"Processing time: {result.FormatProcessingTime()}");
+    Console.WriteLine($"File size valid: {result.IsFileSizeWithinBounds()}");
 }
-
-// Create a temporary directory
-var (directoryPath, cleanup) = FileUtilitiesTestsExtensions.CreateTempDirectory();
-using (cleanup)
+else
 {
-    // Use the temporary directory
-    Directory.CreateDirectory($"{directoryPath}/subdir");
-}
-
-// Verify the contents of a file
-FileUtilitiesTestsExtensions.ShouldContainSameContentAs("expected.txt", "actual.txt");
-
-// Create a temporary file with random content
-var (filePath, cleanup) = FileUtilitiesTestsExtensions.CreateTempFileWithRandomContent();
-using (cleanup)
-{
-    // Use the temporary file
-    var randomContent = new byte[1024];
-    using var rng = RandomNumberGenerator.Create();
-    rng.GetBytes(randomContent);
-    File.WriteAllBytes(filePath, randomContent);
+    Console.WriteLine($"Error: {result.HasCriticalError}");
+    Console.WriteLine($"Warnings: {result.GetWarningsSummary()}");
+    Console.WriteLine($"Processing time exceeded: {result.ExceededProcessingTime()}");
+    
+    // Create a copy of the result for logging
+    var clonedResult = result.Clone();
 }
 ```
 
 // ... (rest of the README.md content remains the same)
-```

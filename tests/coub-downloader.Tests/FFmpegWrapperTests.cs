@@ -13,11 +13,22 @@ using System.Text.Json;
 
 namespace CoubDownloader.Tests;
 
-/// <summary>Minimal file-system abstraction used to mock File.WriteAllText/Delete in tests.</summary>
+/// <summary>
+/// Minimal file-system abstraction used to mock <see cref="File.WriteAllText"/> and <see cref="File.Delete"/> operations in tests.
+/// </summary>
 public interface IFileAdapter
 {
-    void WriteAllText(string path, string contents);
-    void Delete(string path);
+    	/// <summary>
+	/// Writes the specified contents to the file at the given path.
+	/// </summary>
+	/// <param name="path">The path to the file to write.</param>
+	/// <param name="contents">The content to write to the file.</param>
+	void WriteAllText(string path, string contents);
+    	/// <summary>
+	/// Deletes the file at the specified path.
+	/// </summary>
+	/// <param name="path">The path to the file to delete.</param>
+	void Delete(string path);
 }
 
 public class FFmpegWrapperTests

@@ -12,8 +12,17 @@ using Xunit;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="CoubVideo"/> class.
+/// Tests various properties and methods of coub videos including validation, aspect ratio calculation,
+/// duration categorization, view count formatting, and quality detection.
+/// </summary>
 public class CoubVideoTests
 {
+    /// <summary>
+    /// Creates a valid test video with default properties for testing.
+    /// </summary>
+    /// <returns>A <see cref="CoubVideo"/> instance with valid test data.</returns>
     private static CoubVideo ValidVideo() => new()
     {
         Id = "abc123",
@@ -24,6 +33,9 @@ public class CoubVideoTests
         Height = 720
     };
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsValid()"/> returns true when all required fields are present.
+    /// </summary>
     [Fact]
     public void IsValid_AllRequiredFieldsPresent_ReturnsTrue()
     {
@@ -31,6 +43,9 @@ public class CoubVideoTests
         video.IsValid().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsValid()"/> returns false when the video ID is missing.
+    /// </summary>
     [Fact]
     public void IsValid_MissingId_ReturnsFalse()
     {
@@ -39,6 +54,9 @@ public class CoubVideoTests
         video.IsValid().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsValid()"/> returns false when duration is zero.
+    /// </summary>
     [Fact]
     public void IsValid_ZeroDuration_ReturnsFalse()
     {
@@ -47,6 +65,9 @@ public class CoubVideoTests
         video.IsValid().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.GetAspectRatio()"/> returns a value greater than 1 for landscape videos.
+    /// </summary>
     [Fact]
     public void GetAspectRatio_LandscapeVideo_ReturnsRatioGreaterThanOne()
     {
@@ -54,6 +75,9 @@ public class CoubVideoTests
         video.GetAspectRatio().Should().BeGreaterThan(1m);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsVerticalFormat()"/> returns true for portrait orientation videos.
+    /// </summary>
     [Fact]
     public void IsVerticalFormat_PortraitDimensions_ReturnsTrue()
     {
@@ -63,6 +87,9 @@ public class CoubVideoTests
         video.IsVerticalFormat().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsVerticalFormat()"/> returns false for landscape orientation videos.
+    /// </summary>
     [Fact]
     public void IsVerticalFormat_LandscapeDimensions_ReturnsFalse()
     {
@@ -70,6 +97,11 @@ public class CoubVideoTests
         video.IsVerticalFormat().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.GetDurationCategory()"/> returns the correct duration category for various video durations.
+    /// </summary>
+    /// <param name="duration">The duration of the video in seconds.</param>
+    /// <param name="expected">The expected duration category string.</param>
     [Theory]
     [InlineData(3.0, "Short")]
     [InlineData(8.0, "Medium")]
@@ -82,6 +114,11 @@ public class CoubVideoTests
         video.GetDurationCategory().Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.GetFormattedViewCount()"/> formats view counts correctly for various values.
+    /// </summary>
+    /// <param name="views">The number of views.</param>
+    /// <param name="expected">The expected formatted string representation.</param>
     [Theory]
     [InlineData(500, "500")]
     [InlineData(1500, "1K")]
@@ -93,6 +130,9 @@ public class CoubVideoTests
         video.GetFormattedViewCount().Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.IsHdQuality()"/> returns true for videos with HD resolution (720p or higher).
+    /// </summary>
     [Fact]
     public void IsHdQuality_VideoAbove720p_ReturnsTrue()
     {
@@ -100,6 +140,9 @@ public class CoubVideoTests
         video.IsHdQuality().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.Is4kQuality()"/> returns false for standard HD videos (720p).
+    /// </summary>
     [Fact]
     public void Is4kQuality_StandardHD_ReturnsFalse()
     {
@@ -107,6 +150,9 @@ public class CoubVideoTests
         video.Is4kQuality().Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideo.Is4kQuality()"/> returns true for Ultra HD videos (4K resolution).
+    /// </summary>
     [Fact]
     public void Is4kQuality_UltraHDDimensions_ReturnsTrue()
     {
@@ -116,6 +162,9 @@ public class CoubVideoTests
         video.Is4kQuality().Should().BeTrue();
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideoExtensions.CalculateRequiredAudioDuration(CoubVideo)"/> returns the next multiple of audio duration when video is longer than audio.
+    /// </summary>
     [Fact]
     public void CalculateRequiredAudioDuration_AudioShorterThanVideo_ReturnsNextMultiple()
     {
@@ -133,6 +182,9 @@ public class CoubVideoTests
         result.Should().Be(12.0);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubVideoExtensions.CalculateRequiredAudioDuration(CoubVideo)"/> returns 0 when there is no audio track.
+    /// </summary>
     [Fact]
     public void CalculateRequiredAudioDuration_NoAudioTrack_ReturnsZero()
     {
@@ -142,6 +194,7 @@ public class CoubVideoTests
         var result = CoubVideoExtensions.CalculateRequiredAudioDuration(video);
         result.Should().Be(0);
     }
+
 }
 
 public class BatchJobTests

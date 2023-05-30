@@ -6,8 +6,14 @@ using System;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Tests for the PathUtilities class.
+/// </summary>
 public class PathUtilitiesTests
 {
+    /// <summary>
+    /// Tests the NormalizePath method.
+    /// </summary>
     [Theory]
     [InlineData("folder\\file.txt", "folder/file.txt")]
     [InlineData("folder/file.txt", "folder/file.txt")]
@@ -20,6 +26,9 @@ public class PathUtilitiesTests
         result.Should().Be(expectedNormalized);
     }
 
+    /// <summary>
+    /// Tests the GetRelativePath method.
+    /// </summary>
     [Fact]
     public void GetRelativePath_ShouldReturnCorrectRelativePath()
     {
@@ -31,6 +40,9 @@ public class PathUtilitiesTests
         result.Should().Be(Path.Combine("subdir", "file.txt").Replace('\\', '/'));
     }
 
+    /// <summary>
+    /// Tests the CombinePaths method.
+    /// </summary>
     [Fact]
     public void CombinePaths_ShouldCombinePathsCorrectly()
     {

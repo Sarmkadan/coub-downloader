@@ -9,8 +9,17 @@ using CoubDownloader.Infrastructure.Utilities;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Tests for the FileUtilities class.
+/// </summary>
 public class FileUtilitiesTests
 {
+    /// <summary>
+    /// Tests the GenerateSafeFileName method.
+    /// </summary>
+    /// <param name="input">The input string to generate a safe file name from.</param>
+    /// <param name="extension">The file extension.</param>
+    /// <param name="expected">The expected safe file name.</param>
     [Theory]
     [InlineData("valid_file_name", ".mp4", "valid_file_name.mp4")]
     [InlineData("invalid/file\\name", ".webm", "invalidfilename.webm")]
@@ -21,6 +30,11 @@ public class FileUtilitiesTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the FormatFileSize method.
+    /// </summary>
+    /// <param name="bytes">The file size in bytes.</param>
+    /// <param name="expected">The expected human-readable file size.</param>
     [Theory]
     [InlineData(100, "100.00 B")]
     [InlineData(2048, "2.00 KB")]
@@ -32,6 +46,11 @@ public class FileUtilitiesTests
         result.Should().Be(expected);
     }
 
+    /// <summary>
+    /// Tests the EnsureDirectory method.
+    /// </summary>
+    /// <param name="path">The directory path to ensure exists.</param>
+    /// <returns>The ensured directory path.</returns>
     [Fact]
     public void EnsureDirectory_ShouldCreateDirectoryIfDoesNotExist()
     {
@@ -48,6 +67,11 @@ public class FileUtilitiesTests
         }
     }
 
+    /// <summary>
+    /// Tests the GetUniqueFileName method when the file does not exist.
+    /// </summary>
+    /// <param name="path">The file path to get a unique name for.</param>
+    /// <returns>The unique file name.</returns>
     [Fact]
     public void GetUniqueFileName_ShouldReturnOriginalIfFileDoesNotExist()
     {
@@ -58,6 +82,11 @@ public class FileUtilitiesTests
         result.Should().Be(path);
     }
 
+    /// <summary>
+    /// Tests the GetUniqueFileName method when the file exists.
+    /// </summary>
+    /// <param name="path">The file path to get a unique name for.</param>
+    /// <returns>The unique file name.</returns>
     [Fact]
     public void GetUniqueFileName_ShouldReturnNewNameIfFileExists()
     {
@@ -77,6 +106,11 @@ public class FileUtilitiesTests
         }
     }
 
+    /// <summary>
+    /// Tests the CopyFileWithProgressAsync method.
+    /// </summary>
+    /// <param name="sourcePath">The source file path.</param>
+    /// <param name="destPath">The destination file path.</param>
     [Fact]
     public async Task CopyFileWithProgressAsync_ShouldCopyFileSuccessfully()
     {
@@ -97,6 +131,11 @@ public class FileUtilitiesTests
         }
     }
 
+    /// <summary>
+    /// Tests the DeleteDirectoryRecursively method.
+    /// </summary>
+    /// <param name="path">The directory path to delete recursively.</param>
+    /// <returns>True if the directory was deleted successfully, false otherwise.</returns>
     [Fact]
     public void DeleteDirectoryRecursively_ShouldDeleteDirectory()
     {

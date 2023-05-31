@@ -16,6 +16,10 @@ using System.Text.Json;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Unit tests for the <see cref="CoubApiClient"/> class.
+/// Tests various scenarios including cache hits, API calls, error handling, and invalid inputs.
+/// </summary>
 public class CoubApiClientTests
 {
     private readonly Mock<ILoggingService> _mockLogger;
@@ -24,6 +28,10 @@ public class CoubApiClientTests
     private readonly HttpClient _httpClient;
     private readonly CoubApiClient _sut;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CoubApiClientTests"/> class.
+    /// Sets up mock dependencies for testing the <see cref="CoubApiClient"/> functionality.
+    /// </summary>
     public CoubApiClientTests()
     {
         _mockLogger = new Mock<ILoggingService>();
@@ -41,7 +49,11 @@ public class CoubApiClientTests
         _sut = new CoubApiClient(_httpClient, _mockLogger.Object, _mockCache.Object);
     }
 
-    // Helper to setup mock HttpMessageHandler for specific responses
+    /// <summary>
+    /// Helper method to configure the mock HTTP message handler with specific responses.
+    /// </summary>
+    /// <param name="statusCode">The HTTP status code to return in the response.</param>
+    /// <param name="content">Optional response content as a string. If null, no content is returned.</param>
     private void SetupHttpResponse(HttpStatusCode statusCode, string? content = null)
     {
         _mockHttpMessageHandler
@@ -57,7 +69,10 @@ public class CoubApiClientTests
             });
     }
 
-    // Test cases for GetVideoInfoAsync
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> returns cached video info when available,
+    /// avoiding an actual API call.
+    /// </summary>
     [Fact]
     public async Task GetVideoInfoAsync_CacheHit_ReturnsCachedInfo()
     {
@@ -77,6 +92,10 @@ public class CoubApiClientTests
         _mockHttpMessageHandler.Protected().Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> successfully fetches video info from the API when not cached,
+    /// deserializes the response, and caches the result for future use.
+    /// </summary>
     [Fact]
     public async Task GetVideoInfoAsync_SuccessfulApiCall_ReturnsVideoInfoAndCaches()
     {
@@ -113,6 +132,9 @@ public class CoubApiClientTests
         _mockLogger.Verify(l => l.LogInfo(It.IsAny<string>(), "CoubApiClient"), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> returns null and logs a warning when the API returns a 404 Not Found response.
+    /// </summary>
     [Fact]
     public async Task GetVideoInfoAsync_ApiReturnsNotFound_ReturnsNullAndLogsWarning()
     {
@@ -137,6 +159,9 @@ public class CoubApiClientTests
         _mockCache.Verify(c => c.Set(It.IsAny<string>(), It.IsAny<CoubVideoInfo>(), It.IsAny<TimeSpan>()), Times.Never);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> returns null and logs an error when an HTTP request exception occurs.
+    /// </summary>
     [Fact]
     public async Task GetVideoInfoAsync_HttpRequestException_ReturnsNullAndLogsError()
     {
@@ -161,6 +186,10 @@ public class CoubApiClientTests
         _mockLogger.Verify(l => l.LogError(It.IsAny<string>(), It.IsAny<HttpRequestException>(), "CoubApiClient"), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> returns null for various invalid URL formats without making API calls.
+    /// </summary>
+    /// <param name="url">The invalid URL to test. Can be null, empty, whitespace, or malformed.</param>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -181,7 +210,10 @@ public class CoubApiClientTests
         _mockHttpMessageHandler.Protected().Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
-    // Test cases for VerifyVideoExistsAsync
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.VerifyVideoExistsAsync"/> returns cached boolean value when available,
+    /// avoiding an actual API call.
+    /// </summary>
     [Fact]
     public async Task VerifyVideoExistsAsync_CacheHit_ReturnsCachedValue()
     {
@@ -200,6 +232,9 @@ public class CoubApiClientTests
         _mockHttpMessageHandler.Protected().Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.VerifyVideoExistsAsync"/> returns true and caches the result when the video exists in the API.
+    /// </summary>
     [Fact]
     public async Task VerifyVideoExistsAsync_VideoExists_ReturnsTrueAndCaches()
     {
@@ -223,6 +258,9 @@ public class CoubApiClientTests
         _mockCache.Verify(c => c.Set(It.IsAny<string>(), true, It.IsAny<TimeSpan>()), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.VerifyVideoExistsAsync"/> returns false and caches the result when the video does not exist in the API.
+    /// </summary>
     [Fact]
     public async Task VerifyVideoExistsAsync_VideoDoesNotExist_ReturnsFalseAndCaches()
     {
@@ -244,7 +282,10 @@ public class CoubApiClientTests
         _mockCache.Verify(c => c.Set(It.IsAny<string>(), false, It.IsAny<TimeSpan>()), Times.Once);
     }
 
-    // Test cases for SearchVideosAsync
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.SearchVideosAsync"/> returns cached list of videos when available,
+    /// avoiding an actual API call.
+    /// </summary>
     [Fact]
     public async Task SearchVideosAsync_CacheHit_ReturnsCachedList()
     {
@@ -264,6 +305,10 @@ public class CoubApiClientTests
         _mockHttpMessageHandler.Protected().Verify("SendAsync", Times.Never(), ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>());
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.SearchVideosAsync"/> successfully fetches a limited list of videos from the API when not cached,
+    /// deserializes the response, and caches the result for future use.
+    /// </summary>
     [Fact]
     public async Task SearchVideosAsync_SuccessfulApiCall_ReturnsVideosAndCaches()
     {
@@ -302,6 +347,9 @@ public class CoubApiClientTests
         _mockCache.Verify(c => c.Set(It.IsAny<string>(), It.Is<List<CoubVideoInfo>>(list => list.Count == limit), It.IsAny<TimeSpan>()), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.SearchVideosAsync"/> returns an empty list and logs an error when an HTTP request exception occurs.
+    /// </summary>
     [Fact]
     public async Task SearchVideosAsync_HttpRequestException_ReturnsEmptyListAndLogsError()
     {
@@ -329,6 +377,9 @@ public class CoubApiClientTests
         _mockCache.Verify(c => c.Set(It.IsAny<string>(), It.IsAny<List<CoubVideoInfo>>(), It.IsAny<TimeSpan>()), Times.Never);
     }
 
+    /// <summary>
+    /// Tests that <see cref="CoubApiClient.SearchVideosAsync"/> returns an empty list and logs an error when the API returns malformed JSON.
+    /// </summary>
     [Fact]
     public async Task SearchVideosAsync_ApiReturnsMalformedJson_ReturnsEmptyListAndLogsError()
     {

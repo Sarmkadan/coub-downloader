@@ -18,11 +18,19 @@ using System.Text.RegularExpressions;
 
 namespace coub_downloader.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="AudioProcessingService"/> class.
+/// Tests various audio processing operations including duration extraction, audio looping, and audio-video synchronization.
+/// </summary>
 public class AudioProcessingServiceTests
 {
     private readonly Mock<IFFmpegWrapper> _mockFFmpegWrapper;
     private readonly AudioProcessingService _audioProcessingService;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AudioProcessingServiceTests"/> class.
+    /// Sets up mock dependencies and common mock behaviors for FFmpeg operations.
+    /// </summary>
     public AudioProcessingServiceTests()
     {
         _mockFFmpegWrapper = new Mock<IFFmpegWrapper>();
@@ -48,6 +56,9 @@ public class AudioProcessingServiceTests
             });
     }
 
+    /// <summary>
+    /// Tests that <see cref="AudioProcessingService.GetAudioDurationAsync"/> returns the correct duration when the audio file exists.
+    /// </summary>
     [Fact]
     public async Task GetAudioDurationAsync_ReturnsCorrectDuration_WhenFileExists()
     {
@@ -66,6 +77,9 @@ public class AudioProcessingServiceTests
         File.Delete(tempAudioFile);
     }
 
+    /// <summary>
+    /// Tests that <see cref="AudioProcessingService.LoopAudioAsync"/> with <see cref="AudioLoopStrategy.Repeat"/> calls the FFmpeg wrapper's LoopAudioAsync method.
+    /// </summary>
     [Fact]
     public async Task LoopAudioAsync_RepeatStrategy_CallsFFmpegWrapperLoopAudioAsync()
     {
@@ -87,6 +101,9 @@ public class AudioProcessingServiceTests
         File.Delete(outputPath);
     }
 
+    /// <summary>
+    /// Tests that <see cref="AudioProcessingService.LoopAudioAsync"/> with <see cref="AudioLoopStrategy.Crossfade"/> calls the FFmpeg wrapper's ExecuteAsync method with the correct filter complex arguments.
+    /// </summary>
     [Fact]
     public async Task LoopAudioAsync_CrossfadeStrategy_CallsFFmpegWrapperExecuteAsyncWithCorrectArgs()
     {
@@ -122,6 +139,9 @@ public class AudioProcessingServiceTests
         File.Delete(outputPath);
     }
 
+    /// <summary>
+    /// Tests that <see cref="AudioProcessingService.SyncAudioWithVideoAsync"/> calls the LoopAudioAsync method with the video duration as the target duration.
+    /// </summary>
     [Fact]
     public async Task SyncAudioWithVideoAsync_CallsLoopAudioAsyncWithVideoDuration()
     {

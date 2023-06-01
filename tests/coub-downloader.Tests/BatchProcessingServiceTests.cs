@@ -15,6 +15,11 @@ using System.IO;
 
 namespace CoubDownloader.Tests;
 
+/// <summary>
+/// Contains unit tests for the <see cref="BatchProcessingService"/> class.
+/// Tests various scenarios for batch job creation, task management, batch processing,
+/// cancellation, status retrieval, and deletion.
+/// </summary>
 public class BatchProcessingServiceTests
 {
     private readonly Mock<IBatchJobRepository> _mockBatchRepository;
@@ -34,6 +39,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for CreateBatchJobAsync
+/// <summary>
+/// Tests that creating a batch job with valid inputs returns a new batch job with correct properties.
+/// Verifies that the batch job is created with Pending state and stored via repository.
+/// </summary>
     [Fact]
     public async Task CreateBatchJobAsync_ValidInputs_ReturnsNewBatchJob()
     {
@@ -66,6 +75,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for AddTasksAsync
+/// <summary>
+/// Tests that adding tasks to a valid batch updates the batch with the new tasks.
+/// Verifies that tasks are created, assigned to batch, and output paths are generated.
+/// </summary>
     [Fact]
     public async Task AddTasksAsync_ValidInputs_AddsTasksToBatch()
     {
@@ -99,6 +112,10 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Verify(repo => repo.UpdateAsync(batch), Times.Once);
     }
 
+/// <summary>
+/// Tests that adding tasks to a non-existent batch throws ResourceNotFoundException.
+/// Verifies error handling when batch does not exist.
+/// </summary>
     [Fact]
     public async Task AddTasksAsync_BatchNotFound_ThrowsResourceNotFoundException()
     {
@@ -111,6 +128,10 @@ public class BatchProcessingServiceTests
         await Assert.ThrowsAsync<ResourceNotFoundException>(() => _sut.AddTasksAsync(batchId, tasks));
     }
 
+/// <summary>
+/// Tests that adding tasks to a batch that is not in Pending state throws InvalidOperationException.
+/// Verifies that tasks cannot be added to batches that are already processing.
+/// </summary>
     [Fact]
     public async Task AddTasksAsync_BatchNotPending_ThrowsInvalidOperationException()
     {
@@ -127,6 +148,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for StartBatchAsync
+/// <summary>
+/// Tests that starting a batch with valid tasks processes all tasks successfully.
+/// Verifies that batch state transitions to Completed, all tasks complete, and progress is updated.
+/// </summary>
     [Fact]
     public async Task StartBatchAsync_SuccessfulProcessing_UpdatesBatchStateToCompleted()
     {
@@ -179,6 +204,10 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Verify(repo => repo.UpdateProgressAsync(batchId, 2, 0), Times.Once);
     }
 
+/// <summary>
+/// Tests that starting a batch where some tasks fail updates batch state to Failed when ContinueOnError is true.
+/// Verifies that successful tasks complete while failed tasks are marked as Failed.
+/// </summary>
     [Fact]
     public async Task StartBatchAsync_SomeTasksFail_UpdatesBatchStateToFailed()
     {
@@ -226,6 +255,10 @@ public class BatchProcessingServiceTests
         result.Tasks.First(t => t.Id == "task2").ErrorMessage.Should().Contain("Download failed");
     }
 
+/// <summary>
+/// Tests that starting a non-existent batch throws ResourceNotFoundException.
+/// Verifies error handling when batch does not exist.
+/// </summary>
     [Fact]
     public async Task StartBatchAsync_BatchNotFound_ThrowsResourceNotFoundException()
     {
@@ -237,6 +270,10 @@ public class BatchProcessingServiceTests
         await Assert.ThrowsAsync<ResourceNotFoundException>(() => _sut.StartBatchAsync(batchId));
     }
 
+/// <summary>
+/// Tests that starting a batch with no tasks throws InvalidOperationException.
+/// Verifies that batches must have tasks to be started.
+/// </summary>
     [Fact]
     public async Task StartBatchAsync_BatchCannotStart_ThrowsInvalidOperationException()
     {
@@ -257,6 +294,10 @@ public class BatchProcessingServiceTests
         await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.StartBatchAsync(batchId));
     }
 
+/// <summary>
+/// Tests that starting a batch can be cancelled via CancellationToken.
+/// Verifies that both batch and tasks are marked as Cancelled when cancellation is requested.
+/// </summary>
     [Fact]
     public async Task StartBatchAsync_CancellationRequested_CancelsBatchAndTasks()
     {
@@ -301,6 +342,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for CancelBatchAsync
+/// <summary>
+/// Tests that cancelling a valid batch updates batch and running tasks to Cancelled state.
+/// Verifies that only running tasks are cancelled while pending tasks remain unchanged.
+/// </summary>
     [Fact]
     public async Task CancelBatchAsync_ValidBatch_UpdatesBatchAndTasksToCancelled()
     {
@@ -335,6 +380,10 @@ public class BatchProcessingServiceTests
         _mockTaskRepository.Verify(repo => repo.UpdateAsync(It.Is<DownloadTask>(t => t.Id == "task2")), Times.Never);
     }
 
+/// <summary>
+/// Tests that cancelling a non-existent batch does nothing.
+/// Verifies that the method handles non-existent batches gracefully.
+/// </summary>
     [Fact]
     public async Task CancelBatchAsync_BatchNotFound_DoesNothing()
     {
@@ -351,6 +400,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for GetBatchStatusAsync
+/// <summary>
+/// Tests that retrieving batch status with a valid batch ID returns the batch job.
+/// Verifies that the repository is called and the correct batch is returned.
+/// </summary>
     [Fact]
     public async Task GetBatchStatusAsync_ValidBatchId_ReturnsBatchJob()
     {
@@ -366,6 +419,10 @@ public class BatchProcessingServiceTests
         result.Should().Be(expectedBatch);
     }
 
+/// <summary>
+/// Tests that retrieving batch status for a non-existent batch throws ResourceNotFoundException.
+/// Verifies error handling when batch does not exist.
+/// </summary>
     [Fact]
     public async Task GetBatchStatusAsync_BatchNotFound_ThrowsResourceNotFoundException()
     {
@@ -378,6 +435,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for GetAllBatchesAsync
+/// <summary>
+/// Tests that retrieving all batches returns the complete list of batch jobs.
+/// Verifies that the repository's GetAllAsync method is called and results are returned.
+/// </summary>
     [Fact]
     public async Task GetAllBatchesAsync_ReturnsAllBatches()
     {
@@ -396,6 +457,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for GetActiveBatchesAsync
+/// <summary>
+/// Tests that retrieving active batches returns only batches that are not completed.
+/// Verifies that Completed batches are filtered out from the results.
+/// </summary>
     [Fact]
     public async Task GetActiveBatchesAsync_ReturnsOnlyActiveBatches()
     {
@@ -421,6 +486,10 @@ public class BatchProcessingServiceTests
     }
 
     // Test cases for DeleteBatchAsync
+/// <summary>
+/// Tests that deleting a completed batch successfully deletes it and returns true.
+/// Verifies that the repository's DeleteAsync method is called and returns true.
+/// </summary>
     [Fact]
     public async Task DeleteBatchAsync_ValidBatch_ReturnsTrueAndDeletes()
     {
@@ -438,6 +507,10 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Verify(repo => repo.DeleteAsync(batchId), Times.Once);
     }
 
+/// <summary>
+/// Tests that deleting a non-existent batch returns false.
+/// Verifies that the method handles non-existent batches gracefully.
+/// </summary>
     [Fact]
     public async Task DeleteBatchAsync_BatchNotFound_ReturnsFalse()
     {
@@ -453,6 +526,10 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Verify(repo => repo.DeleteAsync(It.IsAny<string>()), Times.Never);
     }
 
+/// <summary>
+/// Tests that deleting a batch that is currently processing throws InvalidOperationException.
+/// Verifies that batches in processing states cannot be deleted.
+/// </summary>
     [Fact]
     public async Task DeleteBatchAsync_ProcessingBatch_ThrowsInvalidOperationException()
     {

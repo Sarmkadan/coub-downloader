@@ -16,7 +16,11 @@ using System.Net;
 
 namespace CoubDownloader.Tests;
 
-
+/// <summary>
+/// Unit tests for the <see cref="CoubDownloadService"/> class.
+/// Tests various scenarios for downloading, processing, and verifying Coub videos including metadata fetching,
+/// video source extraction, file verification, and actual video file downloading.
+/// </summary>
 public class CoubDownloadServiceTests
 {
     private readonly Mock<HttpClient> _mockHttpClient;
@@ -24,6 +28,10 @@ public class CoubDownloadServiceTests
     private readonly Mock<ICoubApiClient> _mockCoubApiClient;
     private readonly CoubDownloadService _sut; // System Under Test
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CoubDownloadServiceTests"/> class with mock dependencies.
+    /// Sets up mock HttpClient, CoubVideoRepository, and CoubApiClient for testing CoubDownloadService functionality.
+    /// </summary>
     public CoubDownloadServiceTests()
     {
         _mockHttpClient = new Mock<HttpClient>();
@@ -42,6 +50,11 @@ public class CoubDownloadServiceTests
     }
 
     // Test cases for DownloadVideoAsync
+    /// <summary>
+    /// Tests that DownloadVideoAsync successfully downloads a valid Coub video and returns the expected CoubVideo object.
+    /// Verifies that the service fetches metadata twice (once for FetchMetadata and once for ExtractVideoSource),
+    /// creates the video record in the repository, and returns the complete video information.
+    /// </summary>
     [Fact]
     public async Task DownloadVideoAsync_ValidCoubUrl_ReturnsCoubVideo()
     {
@@ -84,6 +97,11 @@ public class CoubDownloadServiceTests
         _mockVideoRepository.Verify(repo => repo.CreateAsync(It.IsAny<CoubVideo>()), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that DownloadVideoAsync throws an ArgumentException when provided with invalid Coub URLs (null, empty, or whitespace).
+    /// Verifies that the service properly validates input parameters before attempting to download.
+    /// </summary>
+    /// <param name="invalidCoubUrl">The invalid Coub URL to test against.</param>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -94,6 +112,10 @@ public class CoubDownloadServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _sut.DownloadVideoAsync(invalidCoubUrl));
     }
 
+    /// <summary>
+    /// Tests that DownloadVideoAsync throws a MetadataExtractionException when the Coub API fails to return video metadata.
+    /// Verifies that the service properly handles API failures and doesn't create incomplete video records.
+    /// </summary>
     [Fact]
     public async Task DownloadVideoAsync_MetadataFetchingFails_ThrowsMetadataExtractionException()
     {
@@ -108,6 +130,10 @@ public class CoubDownloadServiceTests
         _mockVideoRepository.Verify(repo => repo.CreateAsync(It.IsAny<CoubVideo>()), Times.Never);
     }
 
+    /// <summary>
+    /// Tests that DownloadVideoAsync throws a MetadataExtractionException when the Coub API fails to return video source information.
+    /// Verifies that the service properly handles API failures during the second metadata fetch and doesn't create incomplete video records.
+    /// </summary>
     [Fact]
     public async Task DownloadVideoAsync_SourceExtractionFails_ThrowsMetadataExtractionException()
     {
@@ -125,6 +151,10 @@ public class CoubDownloadServiceTests
     }
 
     // Test cases for FetchMetadataAsync
+    /// <summary>
+    /// Tests that FetchMetadataAsync successfully retrieves and returns video metadata for a valid Coub URL.
+    /// Verifies that the service properly extracts and formats all video information including default dimensions.
+    /// </summary>
     [Fact]
     public async Task FetchMetadataAsync_ValidCoubUrl_ReturnsCoubVideoWithMetadata()
     {
@@ -159,6 +189,11 @@ public class CoubDownloadServiceTests
         _mockCoubApiClient.Verify(api => api.GetVideoInfoAsync(coubUrl, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that FetchMetadataAsync throws an ArgumentException when provided with invalid Coub URLs (null, empty, or whitespace).
+    /// Verifies that the service properly validates input parameters before attempting to fetch metadata.
+    /// </summary>
+    /// <param name="invalidCoubUrl">The invalid Coub URL to test against.</param>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -169,6 +204,10 @@ public class CoubDownloadServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _sut.FetchMetadataAsync(invalidCoubUrl));
     }
 
+    /// <summary>
+    /// Tests that FetchMetadataAsync throws a MetadataExtractionException when the Coub API returns null metadata.
+    /// Verifies that the service properly handles API failures and provides appropriate error messages.
+    /// </summary>
     [Fact]
     public async Task FetchMetadataAsync_ApiReturnsNull_ThrowsMetadataExtractionException()
     {
@@ -184,6 +223,10 @@ public class CoubDownloadServiceTests
     }
 
     // Test cases for ExtractVideoSourceAsync
+    /// <summary>
+    /// Tests that ExtractVideoSourceAsync successfully extracts and returns the video source URL for a valid Coub URL.
+    /// Verifies that the service properly constructs the media source URL from the video ID.
+    /// </summary>
     [Fact]
     public async Task ExtractVideoSourceAsync_ValidCoubUrl_ReturnsExpectedSourceUrl()
     {
@@ -203,6 +246,11 @@ public class CoubDownloadServiceTests
         _mockCoubApiClient.Verify(api => api.GetVideoInfoAsync(coubUrl, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that ExtractVideoSourceAsync throws an ArgumentException when provided with invalid Coub URLs (null, empty, or whitespace).
+    /// Verifies that the service properly validates input parameters before attempting to extract video source.
+    /// </summary>
+    /// <param name="invalidCoubUrl">The invalid Coub URL to test against.</param>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -213,6 +261,10 @@ public class CoubDownloadServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _sut.ExtractVideoSourceAsync(invalidCoubUrl));
     }
 
+    /// <summary>
+    /// Tests that ExtractVideoSourceAsync throws a MetadataExtractionException when the Coub API returns null metadata.
+    /// Verifies that the service properly handles API failures and provides appropriate error messages.
+    /// </summary>
     [Fact]
     public async Task ExtractVideoSourceAsync_ApiReturnsNull_ThrowsMetadataExtractionException()
     {
@@ -227,6 +279,10 @@ public class CoubDownloadServiceTests
             .WithMessage("Failed to get video ID for source extraction");
     }
 
+    /// <summary>
+    /// Tests that ExtractVideoSourceAsync throws a MetadataExtractionException when the Coub API returns video info with a null ID.
+    /// Verifies that the service properly validates video IDs and provides appropriate error messages.
+    /// </summary>
     [Fact]
     public async Task ExtractVideoSourceAsync_ApiReturnsVideoInfoWithNullId_ThrowsMetadataExtractionException()
     {
@@ -243,6 +299,10 @@ public class CoubDownloadServiceTests
     }
 
     // Test cases for VerifyDownloadAsync
+    /// <summary>
+    /// Tests that VerifyDownloadAsync returns true when the specified file exists and contains content.
+    /// Verifies that the service correctly identifies valid downloaded files.
+    /// </summary>
     [Fact]
     public async Task VerifyDownloadAsync_FileExistsAndIsNotEmpty_ReturnsTrue()
     {
@@ -260,6 +320,10 @@ public class CoubDownloadServiceTests
         File.Delete(filePath);
     }
 
+    /// <summary>
+    /// Tests that VerifyDownloadAsync returns false when the specified file does not exist.
+    /// Verifies that the service correctly identifies missing files.
+    /// </summary>
     [Fact]
     public async Task VerifyDownloadAsync_FileDoesNotExist_ReturnsFalse()
     {
@@ -273,6 +337,10 @@ public class CoubDownloadServiceTests
         result.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that VerifyDownloadAsync returns false when the specified file exists but is empty.
+    /// Verifies that the service correctly identifies empty files as invalid downloads.
+    /// </summary>
     [Fact]
     public async Task VerifyDownloadAsync_FileExistsButIsEmpty_ReturnsFalse()
     {
@@ -290,6 +358,11 @@ public class CoubDownloadServiceTests
         File.Delete(filePath);
     }
 
+    /// <summary>
+    /// Tests that VerifyDownloadAsync throws an ArgumentException when provided with invalid file paths (null, empty, or whitespace).
+    /// Verifies that the service properly validates input parameters before attempting to verify downloads.
+    /// </summary>
+    /// <param name="invalidFilePath">The invalid file path to test against.</param>
     [Theory]
     [InlineData(null)]
     [InlineData("")]
@@ -301,6 +374,10 @@ public class CoubDownloadServiceTests
     }
 
     // Test cases for DownloadVideoFileAsync (basic test due to complexity of mocking stream ops)
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync successfully downloads a video file from a valid source URL.
+    /// Verifies that the service creates the output file with the expected content.
+    /// </summary>
     [Fact]
     public async Task DownloadVideoFileAsync_ValidInputs_AttemptsFileDownload()
     {
@@ -340,6 +417,12 @@ public class CoubDownloadServiceTests
         File.Delete(outputPath);
     }
 
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync throws an ArgumentException when provided with invalid inputs (null or empty source URL or output path).
+    /// Verifies that the service properly validates input parameters before attempting to download files.
+    /// </summary>
+    /// <param name="sourceUrl">The source URL of the video to download.</param>
+    /// <param name="outputPath">The local path where the video should be saved.</param>
     [Theory]
     [InlineData(null, "path.webm")]
     [InlineData("url", null)]
@@ -351,6 +434,10 @@ public class CoubDownloadServiceTests
         await Assert.ThrowsAsync<ArgumentException>(() => _sut.DownloadVideoFileAsync(sourceUrl, outputPath));
     }
 
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync throws an HttpRequestException when the HTTP request to download the video fails.
+    /// Verifies that the service properly handles HTTP errors and doesn't leave partial files.
+    /// </summary>
     [Fact]
     public async Task DownloadVideoFileAsync_HttpRequestFails_ThrowsHttpRequestException()
     {

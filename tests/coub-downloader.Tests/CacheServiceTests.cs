@@ -19,10 +19,10 @@ public class MemoryCacheServiceTests
 {
     private readonly MemoryCacheService _cache = new(defaultTtlSeconds: 3600);
 
-	/// <summary>
-	/// Tests that a value can be stored and retrieved from the cache.
-	/// Verifies that <see cref="MemoryCacheService.Set"/> and <see cref="MemoryCacheService.Get"/> work correctly together.
-	/// </summary>
+    /// <summary>
+    /// Tests that a value can be stored and retrieved from the cache.
+    /// Verifies that <see cref="MemoryCacheService.Set"/> and <see cref="MemoryCacheService.Get"/> work correctly together.
+    /// </summary>
     [Fact]
     public void Set_ThenGet_ReturnsStoredValue()
     {
@@ -31,10 +31,10 @@ public class MemoryCacheServiceTests
         result.Should().Be("hello");
     }
 
-	/// <summary>
-	/// Tests that TryGet can retrieve an existing value from the cache.
-	/// Verifies that <see cref="MemoryCacheService.TryGet"/> returns true and the correct value when the key exists.
-	/// </summary>
+    /// <summary>
+    /// Tests that TryGet can retrieve an existing value from the cache.
+    /// Verifies that <see cref="MemoryCacheService.TryGet"/> returns true and the correct value when the key exists.
+    /// </summary>
     [Fact]
     public void TryGet_ExistingKey_ReturnsTrueAndValue()
     {
@@ -44,11 +44,11 @@ public class MemoryCacheServiceTests
         found.Should().BeTrue();
         value.Should().Be(42);
     }
-	/// <summary>
-	/// Tests that TryGet handles missing keys gracefully.
-	/// Verifies that <see cref="MemoryCacheService.TryGet"/> returns false and default value when the key does not exist.
-	/// </summary>
 
+    /// <summary>
+    /// Tests that TryGet handles missing keys gracefully.
+    /// Verifies that <see cref="MemoryCacheService.TryGet"/> returns false and default value when the key does not exist.
+    /// </summary>
     [Fact]
     public void TryGet_MissingKey_ReturnsFalseAndDefault()
     {
@@ -57,11 +57,11 @@ public class MemoryCacheServiceTests
         found.Should().BeFalse();
         value.Should().BeNull();
     }
-	/// <summary>
-	/// Tests that Remove deletes a key from the cache.
-	/// Verifies that <see cref="MemoryCacheService.Remove"/> prevents subsequent retrieval of the deleted key.
-	/// </summary>
 
+    /// <summary>
+    /// Tests that Remove deletes a key from the cache.
+    /// Verifies that <see cref="MemoryCacheService.Remove"/> prevents subsequent retrieval of the deleted key.
+    /// </summary>
     [Fact]
     public void Remove_ExistingKey_KeyNoLongerRetrievable()
     {
@@ -70,12 +70,12 @@ public class MemoryCacheServiceTests
 
         var found = _cache.TryGet<string>("temp", out _);
         found.Should().BeFalse();
-	/// <summary>
-	/// Tests that Clear removes all entries from the cache.
-	/// Verifies that <see cref="MemoryCacheService.Clear"/> empties the cache and all previously stored values become inaccessible.
-	/// </summary>
     }
 
+    /// <summary>
+    /// Tests that Clear removes all entries from the cache.
+    /// Verifies that <see cref="MemoryCacheService.Clear"/> empties the cache and all previously stored values become inaccessible.
+    /// </summary>
     [Fact]
     public void Clear_AfterMultipleSets_CacheIsEmpty()
     {
@@ -84,24 +84,18 @@ public class MemoryCacheServiceTests
         _cache.Set("c", 3);
 
         _cache.Clear();
-	/// <summary>
-	/// Tests that cache statistics track hits and misses accurately.
-	/// Verifies that <see cref="MemoryCacheService.GetStatistics"/> returns correct hit/miss counts and hit rate calculation.
-	/// </summary>
-
         _cache.TryGet<int>("a", out _).Should().BeFalse();
         _cache.TryGet<int>("b", out _).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that cache statistics track hits and misses accurately.
+    /// Verifies that <see cref="MemoryCacheService.GetStatistics"/> returns correct hit/miss counts and hit rate calculation.
+    /// </summary>
     [Fact]
     public void GetStatistics_AfterHitsAndMisses_TracksAccurately()
     {
         _cache.Set("present", true);
-	/// <summary>
-	/// Tests that hit rate is zero when cache is empty.
-	/// Verifies that <see cref="MemoryCacheService.GetStatistics"/> returns 0 for hit rate when no operations have been performed.
-	/// </summary>
-
         _cache.TryGet<bool>("present", out _);   // hit
         _cache.TryGet<bool>("present", out _);   // hit
         _cache.TryGet<bool>("absent", out _);    // miss
@@ -113,6 +107,10 @@ public class MemoryCacheServiceTests
         stats.HitRate.Should().BeApproximately(2.0 / 3.0, 0.001);
     }
 
+    /// <summary>
+    /// Tests that hit rate is zero when cache is empty.
+    /// Verifies that <see cref="MemoryCacheService.GetStatistics"/> returns 0 for hit rate when no operations have been performed.
+    /// </summary>
     [Fact]
     public void GetStatistics_EmptyCache_HitRateIsZero()
     {
@@ -120,6 +118,10 @@ public class MemoryCacheServiceTests
         stats.HitRate.Should().Be(0);
     }
 
+    /// <summary>
+    /// Tests that an entry with an expired TTL is not retrievable.
+    /// Verifies that <see cref="MemoryCacheService.Set"/> with a TTL correctly expires the entry.
+    /// </summary>
     [Fact]
     public void Set_ExpiredTtl_EntryNotRetrievable()
     {
@@ -130,6 +132,10 @@ public class MemoryCacheServiceTests
         found.Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that Set overwrites an existing key in the cache.
+    /// Verifies that <see cref="MemoryCacheService.Set"/> updates the value for an existing key.
+    /// </summary>
     [Fact]
     public void Set_OverwritesExistingKey()
     {
@@ -139,6 +145,10 @@ public class MemoryCacheServiceTests
         _cache.Get<string>("key").Should().Be("second");
     }
 
+    /// <summary>
+    /// Tests that TryGet can deserialize a complex type from the cache.
+    /// Verifies that <see cref="MemoryCacheService.TryGet"/> correctly retrieves and deserializes a complex object.
+    /// </summary>
     [Fact]
     public void TryGet_ComplexType_DeserializesCorrectly()
     {
@@ -153,13 +163,27 @@ public class MemoryCacheServiceTests
 
     private sealed class CachePayload
     {
+        /// <summary>
+        /// Gets or sets the name of the cache payload.
+        /// </summary>
         public string Name { get; set; } = "";
+        /// <summary>
+        /// Gets or sets the value of the cache payload.
+        /// </summary>
         public int Value { get; set; }
     }
 }
 
+/// <summary>
+/// Unit tests for <see cref="DistributedCacheAdapter"/> implementation.
+/// Tests basic cache operations including set, get, remove, clear, and statistics tracking in a distributed scenario.
+/// </summary>
 public class DistributedCacheAdapterTests
 {
+    /// <summary>
+    /// Tests that Set propagates the value to the remote cache.
+    /// Verifies that <see cref="DistributedCacheAdapter.Set"/> correctly updates the remote cache.
+    /// </summary>
     [Fact]
     public void Set_PropagatesValueToRemoteCache()
     {
@@ -173,6 +197,10 @@ public class DistributedCacheAdapterTests
         mockRemote.Verify(r => r.Set("video-url", "https://coub.com/view/xyz", null), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that TryGet hits the local cache and does not query the remote cache when the key is present locally.
+    /// Verifies that <see cref="DistributedCacheAdapter.TryGet"/> correctly retrieves the value from the local cache.
+    /// </summary>
     [Fact]
     public void TryGet_HitOnLocal_DoesNotQueryRemote()
     {
@@ -189,6 +217,10 @@ public class DistributedCacheAdapterTests
         mockRemote.Verify(r => r.TryGet<string>(It.IsAny<string>(), out It.Ref<string?>.IsAny), Times.Never);
     }
 
+    /// <summary>
+    /// Tests that TryGet caches the value locally and returns it when the key is not present locally but is present in the remote cache.
+    /// Verifies that <see cref="DistributedCacheAdapter.TryGet"/> correctly retrieves and caches the value from the remote cache.
+    /// </summary>
     [Fact]
     public void TryGet_LocalMissRemoteHit_CachesLocallyAndReturnsValue()
     {
@@ -209,6 +241,10 @@ public class DistributedCacheAdapterTests
         localValue.Should().Be("from-remote");
     }
 
+    /// <summary>
+    /// Tests that Remove propagates the deletion to the remote cache.
+    /// Verifies that <see cref="DistributedCacheAdapter.Remove"/> correctly removes the key from the remote cache.
+    /// </summary>
     [Fact]
     public void Remove_PropagatesDeletionToRemoteCache()
     {
@@ -225,6 +261,10 @@ public class DistributedCacheAdapterTests
         localCache.TryGet<string>("to-delete", out _).Should().BeFalse();
     }
 
+    /// <summary>
+    /// Tests that Clear propagates the clear operation to the remote cache.
+    /// Verifies that <see cref="DistributedCacheAdapter.Clear"/> correctly clears the remote cache.
+    /// </summary>
     [Fact]
     public void Clear_PropagatesClearToRemoteCache()
     {
@@ -239,6 +279,10 @@ public class DistributedCacheAdapterTests
         mockRemote.Verify(r => r.Clear(), Times.Once);
     }
 
+    /// <summary>
+    /// Tests that Set does not bubble an exception when the remote cache throws.
+    /// Verifies that <see cref="DistributedCacheAdapter.Set"/> handles exceptions from the remote cache correctly.
+    /// </summary>
     [Fact]
     public void Set_RemoteThrows_DoesNotBubbleException()
     {

@@ -98,4 +98,40 @@ Console.WriteLine($"Has error: {EventHandlingExampleExtensions.HasError(eventHan
 Console.WriteLine($"Formatted duration: {EventHandlingExampleExtensions.GetFormattedDuration(eventHandlingResult)}");
 Console.WriteLine($"Formatted file size: {EventHandlingExampleExtensions.GetFormattedFileSize(eventHandlingResult)}");
 Console.WriteLine($"Retry status: {EventHandlingExampleExtensions.GetRetryStatus(eventHandlingResult)}");
+```
+
+## ICredentialManager
+
+`ICredentialManager` provides a secure interface for storing, retrieving, validating, and deleting API keys and credentials for external services. It supports both in-memory storage for development and encrypted file-based storage for production environments, allowing safe credential management across different deployment scenarios.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Security;
+
+// Create a credential manager (in-memory for development)
+var credentialManager = new InMemoryCredentialManager();
+
+// Store an API key for a service
+credentialManager.StoreApiKey("coub-api", "your-api-key-here");
+
+// Retrieve an API key
+var apiKey = credentialManager.GetApiKey("coub-api");
+Console.WriteLine($"Retrieved API key: {apiKey}");
+
+// Validate an API key
+var isValid = credentialManager.ValidateApiKey("coub-api", "your-api-key-here");
+Console.WriteLine($"Key validation result: {isValid}");
+
+// Delete an API key
+credentialManager.DeleteApiKey("coub-api");
+
+// Create an encrypted credential manager for production
+var encryptedCredentialManager = new EncryptedCredentialManager(
+    storePath: "/var/lib/coub-downloader/credentials.enc",
+    encryptionKey: Environment.GetEnvironmentVariable("ENCRYPTION_KEY")
+);
+
+// Use the encrypted manager the same way
+encryptedCredentialManager.StoreApiKey("coub-api", "production-api-key-here");
 ``` 

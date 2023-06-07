@@ -100,6 +100,68 @@ Console.WriteLine($"Formatted file size: {EventHandlingExampleExtensions.GetForm
 Console.WriteLine($"Retry status: {EventHandlingExampleExtensions.GetRetryStatus(eventHandlingResult)}");
 ```
 
+## DomainEvent
+
+`DomainEvent` is the base class for all domain events in the Coub Downloader application. It provides a standardized way to represent domain-specific occurrences with unique identifiers and timestamps. All domain events inherit from this class and can include additional properties relevant to the specific event type.
+
+### Key Features
+- Automatic unique ID generation using GUID
+- Timestamp recording at event creation time (UTC)
+- Type-safe event handling through generic interfaces
+- Supports in-process event bus for decoupled communication
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Events;
+using CoubDownloader.Application.Services;
+
+// Define a custom event by inheriting from DomainEvent
+public class VideoProcessingCompletedEvent : DomainEvent
+{
+    public string VideoId { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public int QualityLevel { get; set; }
+}
+
+// Define an event handler
+public class VideoProcessingCompletedEventHandler : IEventHandler<VideoProcessingCompletedEvent>
+{
+    public async Task HandleAsync(VideoProcessingCompletedEvent @event)
+    {
+        Console.WriteLine($"Processing completed for video {@event.VideoId} at {@event.OccurredAt:O}");
+        Console.WriteLine($"Status: {@event.Status}, Quality: {@event.QualityLevel}");
+        
+        // Additional processing logic here
+        await Task.CompletedTask;
+    }
+}
+
+// Create and publish an event
+var eventBus = new InProcessEventBus();
+var handler = new VideoProcessingCompletedEventHandler();
+
+// Subscribe the handler to the event type
+eventBus.Subscribe(handler);
+
+// Create and publish a domain event
+var processingEvent = new VideoProcessingCompletedEvent
+{
+    VideoId = "abc123",
+    Status = "Completed",
+    QualityLevel = 1080
+};
+
+Console.WriteLine($"Event ID: {processingEvent.Id}");
+Console.WriteLine($"Occurred At: {processingEvent.OccurredAt:O}");
+
+// Publish the event asynchronously
+await eventBus.PublishAsync(processingEvent);
+
+// Unsubscribe when no longer needed
+eventBus.Unsubscribe<VideoProcessingCompletedEvent>(handler);
+```
+
 ## ICredentialManager
 
 `ICredentialManager` provides a secure interface for storing, retrieving, validating, and deleting API keys and credentials for external services. It supports both in-memory storage for development and encrypted file-based storage for production environments, allowing safe credential management across different deployment scenarios.

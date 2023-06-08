@@ -1,3 +1,137 @@
+## ErrorHandlingMiddleware
+
+`ErrorHandlingMiddleware` provides centralized error handling and recovery strategies for the application. It intercepts exceptions, maps them to structured error responses, and supports custom exception handlers for specific exception types. The middleware integrates with `ILoggingService` to log errors with proper categorization and severity levels.
+
+The class also includes a `RetryPolicy` helper for implementing exponential backoff retry logic in both synchronous and asynchronous operations.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Middleware;
+using CoubDownloader.Domain.Exceptions;
+
+// Example 1: Basic error handling with default handlers
+public class VideoDownloadService
+{
+    private readonly ErrorHandlingMiddleware _errorHandler;
+    private readonly ILoggingService _logger;
+
+    public VideoDownloadService(ErrorHandlingMiddleware errorHandler, ILoggingService logger)
+    {
+        _errorHandler = errorHandler;
+        _logger = logger;
+    }
+
+    public async Task DownloadCoubAsync(string coubUrl, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(coubUrl))
+                throw new ArgumentException("Coub URL cannot be empty", nameof(coubUrl));
+
+            // Download logic here
+            _logger.LogInfo($"Starting download for coub: {coubUrl}", "DownloadService");
+        }
+        catch (Exception ex)
+        {
+            var errorResponse = _errorHandler.HandleError(ex);
+            _logger.LogError(errorResponse.Message, ex, errorResponse.Category);
+            
+            // Re-throw or handle based on error type
+            if (errorResponse.StatusCode >= 500)
+                throw new CoubDownloaderException("Download failed", ex);
+            
+            throw;
+        }
+    }
+}
+
+// Example 2: Custom exception handler for specific exception types
+public class CoubDownloadService
+{
+    private readonly ErrorHandlingMiddleware _errorHandler;
+    private readonly ILoggingService _logger;
+
+    public CoubDownloadService(ErrorHandlingMiddleware errorHandler, ILoggingService logger)
+    {
+        _errorHandler = errorHandler;
+        _logger = logger;
+        
+        // Register custom handler for network-related exceptions
+        _errorHandler.RegisterHandler<HttpRequestException>(ex => new ErrorResponse
+        {
+            StatusCode = 503,
+            Message = "Failed to download coub due to network issues",
+            ErrorType = "NetworkException",
+            Category = "Network",
+            Timestamp = DateTime.UtcNow,
+            Details = ex.Message,
+            Metadata = new Dictionary<string, object>
+            {
+                ["Uri"] = ex.RequestUri?.ToString() ?? "unknown",
+                ["StatusCode"] = ex.StatusCode
+            }
+        });
+    }
+
+    public async Task DownloadVideoAsync(string url, CancellationToken cancellationToken)
+    {
+        // Use retry policy for transient operations
+        var retryPolicy = new RetryPolicy
+        {
+            MaxRetries = 5,
+            InitialDelayMs = 200,
+            BackoffMultiplier = 1.5
+        };
+        
+        try
+        {
+            var videoData = await retryPolicy.ExecuteAsync(async () => 
+                await DownloadWithRetryAsync(url, cancellationToken));
+            return videoData;
+        }
+        catch (Exception ex)
+        {
+            var errorResponse = _errorHandler.HandleError(ex);
+            throw new CoubDownloaderException(errorResponse.Message, ex);
+        }
+    }
+
+    private async Task<byte[]> DownloadWithRetryAsync(string url, CancellationToken cancellationToken)
+    {
+        // Actual download implementation
+        using var httpClient = new HttpClient();
+        return await httpClient.GetByteArrayAsync(url, cancellationToken);
+    }
+}
+
+// Example 3: Using error response properties for conditional logic
+public class ErrorResponseHandler
+{
+    private readonly ErrorHandlingMiddleware _errorHandler;
+
+    public void HandleDownloadError(Exception ex)
+    {
+        var errorResponse = _errorHandler.HandleError(ex);
+        
+        Console.WriteLine($"Error Type: {errorResponse.ErrorType}");
+        Console.WriteLine($"Status Code: {errorResponse.StatusCode}");
+        Console.WriteLine($"Category: {errorResponse.Category}");
+        Console.WriteLine($"Message: {errorResponse.Message}");
+        
+        // Apply different strategies based on error type
+        if (errorResponse.StatusCode == 404)
+        {
+            Console.WriteLine("Resource not found - implementing fallback strategy");
+        }
+        else if (errorResponse.StatusCode >= 500)
+        {
+            Console.WriteLine("Server error - waiting before retry");
+        }
+    }
+}
+```
+
 ## IPipelineStage
 
 `IPipelineStage` is an interface for defining a stage in the conversion pipeline. It provides a way to execute a specific task, such as downloading a video, validating its metadata, or converting it to a different format.

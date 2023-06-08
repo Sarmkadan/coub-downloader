@@ -144,3 +144,34 @@ foreach (var video in searchResults)
     Console.WriteLine($"Found: {video.Title} (Views: {video.ViewCount})");
 }
 ```
+
+## BackgroundWorker
+
+`BackgroundWorker` is an abstract base class for long-running background tasks that can be started and stopped gracefully. It provides periodic execution capabilities through derived classes like `CleanupWorker` (for file cleanup) and `MonitoringWorker` (for system health checks).
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.BackgroundJobs;
+using CoubDownloader.Infrastructure.Middleware;
+
+// Create and start a cleanup worker
+var cleanupWorker = new CleanupWorker(downloadDirectory: "/path/to/downloads", retentionDays: 7);
+cleanupWorker.Start();
+
+// Create and start a monitoring worker
+var monitoringWorker = new MonitoringWorker();
+monitoringWorker.HealthCheckCompleted += (sender, result) =>
+{
+    Console.WriteLine($"Health Check at {result.Timestamp}");
+    Console.WriteLine($"Memory: {result.AvailableMemory} bytes");
+    Console.WriteLine($"CPU: {result.ProcessorCount} cores");
+    Console.WriteLine($"Disk: {result.AvailableDiskSpace} bytes free");
+};
+monitoringWorker.Start();
+
+// Stop both workers after some time
+await Task.Delay(TimeSpan.FromMinutes(1));
+await cleanupWorker.StopAsync();
+await monitoringWorker.StopAsync();
+```

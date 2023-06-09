@@ -47,6 +47,81 @@ public class VideoDownloadService
 }
 ```
 
+## ExportService
+
+`ExportService` provides report generation and export capabilities for batch jobs and download results. It supports multiple export formats (JSON, CSV, XML, HTML) and includes a fluent API for building custom reports through the `ReportBuilder` class. The service integrates with `ILoggingService` to log export operations and errors.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Reporting;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class ReportGenerationService
+{
+    private readonly ExportService _exportService;
+    private readonly ILoggingService _logger;
+
+    public ReportGenerationService(ExportService exportService, ILoggingService logger)
+    {
+        _exportService = exportService;
+        _logger = logger;
+    }
+
+    public async Task GenerateBatchReportAsync(BatchJob batchJob)
+    {
+        // Export batch report as JSON
+        var jsonSuccess = await _exportService.ExportBatchReportAsync(
+            batchJob,
+            "/reports/batch_job.json",
+            ExportFormat.Json);
+        
+        if (jsonSuccess)
+        {
+            _logger.LogInfo("Batch report exported successfully", "ReportGenerationService");
+        }
+
+        // Export batch report as HTML for viewing
+        var htmlReport = _exportService.GenerateHtmlReport(batchJob);
+        await File.WriteAllTextAsync("/reports/batch_job.html", htmlReport);
+
+        // Export download results as CSV
+        var results = batchJob.Tasks
+            .Where(t => t.State == ProcessingState.Completed)
+            .Select(t => new DownloadResult
+            {
+                TaskId = t.Id,
+                Success = true,
+                OutputFilePath = $"/downloads/{t.Id}.mp4",
+                OutputFileSizeBytes = 1024 * 1024 * 50, // 50 MB
+                ProcessingTimeMs = 15000,
+                Format = t.Format,
+                Quality = t.Quality
+            })
+            .ToList();
+
+        var csvSuccess = await _exportService.ExportDownloadResultsAsync(
+            results,
+            "/reports/download_results.csv",
+            ExportFormat.Csv);
+
+        // Use ReportBuilder for custom reports
+        var customReport = new ReportBuilder()
+            .AddSection("Batch Summary", $"Total: {batchJob.Tasks.Count} tasks")
+            .AddTable("Configuration", new Dictionary<string, string>
+            {
+                {"Max Concurrent Downloads", "5"},
+                {"Timeout Seconds", "30"},
+                {"Output Directory", "/home/user/downloads"}
+            })
+            .Build();
+
+        Console.WriteLine(customReport);
+    }
+}
+```
+
 ## ApplicationConfiguration
 
 `ApplicationConfiguration` provides centralized configuration management for the Coub Downloader application. It consolidates all application settings including download parameters, conversion settings, caching configuration, logging preferences, and API credentials into a single strongly-typed configuration object. This approach ensures type safety, improves maintainability, and simplifies dependency injection throughout the application.

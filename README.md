@@ -47,6 +47,75 @@ public class VideoDownloadService
 }
 ```
 
+## PerformanceMonitor
+
+`PerformanceMonitor` tracks and analyzes the performance of application operations by measuring execution time, success/failure rates, and resource utilization. It provides detailed metrics for individual operations as well as aggregated statistics across all monitored operations. The monitor supports both manual and automatic timing through `OperationTimer`, and includes system-level metrics for memory usage, CPU utilization, and garbage collection statistics.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Statistics;
+using CoubDownloader.Domain.Models;
+
+public class CoubDownloadService
+{
+    private readonly PerformanceMonitor _performanceMonitor;
+    private readonly ILoggingService _logger;
+
+    public CoubDownloadService(PerformanceMonitor performanceMonitor, ILoggingService logger)
+    {
+        _performanceMonitor = performanceMonitor;
+        _logger = logger;
+    }
+
+    public async Task<DownloadResult> DownloadCoubAsync(string coubId, CancellationToken cancellationToken)
+    {
+        using var operationTimer = _performanceMonitor.StartOperation("DownloadCoub");
+        
+        try
+        {
+            // Simulate download operation
+            await Task.Delay(150, cancellationToken);
+            
+            operationTimer.MarkSuccess();
+            return new DownloadResult { Success = true, DurationMs = operationTimer.TotalTimeMs };
+        }
+        catch (Exception ex)
+        {
+            operationTimer.MarkFailed();
+            _logger.LogError($"Failed to download coub {coubId}", ex, "DownloadService");
+            return new DownloadResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+    
+    public void PrintPerformanceSummary()
+    {
+        var metrics = _performanceMonitor.GetMetrics("DownloadCoub");
+        if (metrics != null)
+        {
+            Console.WriteLine($"Operation: {metrics.Name}");
+            Console.WriteLine($"Total executions: {metrics.TotalCount}");
+            Console.WriteLine($"Success rate: {(double)metrics.SuccessCount / metrics.TotalCount:P0}");
+            Console.WriteLine($"Average time: {metrics.AverageTimeMs:F2} ms");
+            Console.WriteLine($"Min/Max time: {metrics.MinTimeMs}/{metrics.MaxTimeMs} ms");
+        }
+        
+        Console.WriteLine($"\nOverall performance:");
+        Console.WriteLine(_performanceMonitor.GetSummaryReport());
+    }
+    
+    public void LogSystemMetrics()
+    {
+        var memoryUsage = PerformanceMonitor.GetMemoryUsageMb();
+        var cpuUsage = PerformanceMonitor.GetCpuUsagePercent();
+        var gcStats = PerformanceMonitor.GetGcStatistics();
+        
+        _logger.LogInfo($"System metrics - Memory: {memoryUsage} MB, CPU: {cpuUsage:F1}%, " +
+                       $"GC Gen0: {gcStats.Gen0Collections}, Gen1: {gcStats.Gen1Collections}, Gen2: {gcStats.Gen2Collections}",
+                       "PerformanceMonitor");
+    }
+}
+
 ## RateLimitingService
 
 `RateLimitingService` prevents API abuse by enforcing a fixed number of requests per time window. It tracks request counts per identifier and blocks excess requests until the window resets. This is useful for controlling access to external APIs or internal services.
@@ -89,6 +158,75 @@ public class UserService
     }
 }
 ```
+
+## PerformanceMonitor
+
+`PerformanceMonitor` tracks and analyzes the performance of application operations by measuring execution time, success/failure rates, and resource utilization. It provides detailed metrics for individual operations as well as aggregated statistics across all monitored operations. The monitor supports both manual and automatic timing through `OperationTimer`, and includes system-level metrics for memory usage, CPU utilization, and garbage collection statistics.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Statistics;
+using CoubDownloader.Domain.Models;
+
+public class CoubDownloadService
+{
+    private readonly PerformanceMonitor _performanceMonitor;
+    private readonly ILoggingService _logger;
+
+    public CoubDownloadService(PerformanceMonitor performanceMonitor, ILoggingService logger)
+    {
+        _performanceMonitor = performanceMonitor;
+        _logger = logger;
+    }
+
+    public async Task<DownloadResult> DownloadCoubAsync(string coubId, CancellationToken cancellationToken)
+    {
+        using var operationTimer = _performanceMonitor.StartOperation("DownloadCoub");
+        
+        try
+        {
+            // Simulate download operation
+            await Task.Delay(150, cancellationToken);
+            
+            operationTimer.MarkSuccess();
+            return new DownloadResult { Success = true, DurationMs = operationTimer.TotalTimeMs };
+        }
+        catch (Exception ex)
+        {
+            operationTimer.MarkFailed();
+            _logger.LogError($"Failed to download coub {coubId}", ex, "DownloadService");
+            return new DownloadResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+    
+    public void PrintPerformanceSummary()
+    {
+        var metrics = _performanceMonitor.GetMetrics("DownloadCoub");
+        if (metrics != null)
+        {
+            Console.WriteLine($"Operation: {metrics.Name}");
+            Console.WriteLine($"Total executions: {metrics.TotalCount}");
+            Console.WriteLine($"Success rate: {(double)metrics.SuccessCount / metrics.TotalCount:P0}");
+            Console.WriteLine($"Average time: {metrics.AverageTimeMs:F2} ms");
+            Console.WriteLine($"Min/Max time: {metrics.MinTimeMs}/{metrics.MaxTimeMs} ms");
+        }
+        
+        Console.WriteLine($"\nOverall performance:");
+        Console.WriteLine(_performanceMonitor.GetSummaryReport());
+    }
+    
+    public void LogSystemMetrics()
+    {
+        var memoryUsage = PerformanceMonitor.GetMemoryUsageMb();
+        var cpuUsage = PerformanceMonitor.GetCpuUsagePercent();
+        var gcStats = PerformanceMonitor.GetGcStatistics();
+        
+        _logger.LogInfo($"System metrics - Memory: {memoryUsage} MB, CPU: {cpuUsage:F1}%, " +
+                       $"GC Gen0: {gcStats.Gen0Collections}, Gen1: {gcStats.Gen1Collections}, Gen2: {gcStats.Gen2Collections}",
+                       "PerformanceMonitor");
+    }
+}
 
 ## IPipelineStage
 
@@ -134,3 +272,72 @@ public class VideoDownloadService
     }
 }
 ```
+
+## PerformanceMonitor
+
+`PerformanceMonitor` tracks and analyzes the performance of application operations by measuring execution time, success/failure rates, and resource utilization. It provides detailed metrics for individual operations as well as aggregated statistics across all monitored operations. The monitor supports both manual and automatic timing through `OperationTimer`, and includes system-level metrics for memory usage, CPU utilization, and garbage collection statistics.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Statistics;
+using CoubDownloader.Domain.Models;
+
+public class CoubDownloadService
+{
+    private readonly PerformanceMonitor _performanceMonitor;
+    private readonly ILoggingService _logger;
+
+    public CoubDownloadService(PerformanceMonitor performanceMonitor, ILoggingService logger)
+    {
+        _performanceMonitor = performanceMonitor;
+        _logger = logger;
+    }
+
+    public async Task<DownloadResult> DownloadCoubAsync(string coubId, CancellationToken cancellationToken)
+    {
+        using var operationTimer = _performanceMonitor.StartOperation("DownloadCoub");
+        
+        try
+        {
+            // Simulate download operation
+            await Task.Delay(150, cancellationToken);
+            
+            operationTimer.MarkSuccess();
+            return new DownloadResult { Success = true, DurationMs = operationTimer.TotalTimeMs };
+        }
+        catch (Exception ex)
+        {
+            operationTimer.MarkFailed();
+            _logger.LogError($"Failed to download coub {coubId}", ex, "DownloadService");
+            return new DownloadResult { Success = false, ErrorMessage = ex.Message };
+        }
+    }
+    
+    public void PrintPerformanceSummary()
+    {
+        var metrics = _performanceMonitor.GetMetrics("DownloadCoub");
+        if (metrics != null)
+        {
+            Console.WriteLine($"Operation: {metrics.Name}");
+            Console.WriteLine($"Total executions: {metrics.TotalCount}");
+            Console.WriteLine($"Success rate: {(double)metrics.SuccessCount / metrics.TotalCount:P0}");
+            Console.WriteLine($"Average time: {metrics.AverageTimeMs:F2} ms");
+            Console.WriteLine($"Min/Max time: {metrics.MinTimeMs}/{metrics.MaxTimeMs} ms");
+        }
+        
+        Console.WriteLine($"\nOverall performance:");
+        Console.WriteLine(_performanceMonitor.GetSummaryReport());
+    }
+    
+    public void LogSystemMetrics()
+    {
+        var memoryUsage = PerformanceMonitor.GetMemoryUsageMb();
+        var cpuUsage = PerformanceMonitor.GetCpuUsagePercent();
+        var gcStats = PerformanceMonitor.GetGcStatistics();
+        
+        _logger.LogInfo($"System metrics - Memory: {memoryUsage} MB, CPU: {cpuUsage:F1}%, " +
+                       $"GC Gen0: {gcStats.Gen0Collections}, Gen1: {gcStats.Gen1Collections}, Gen2: {gcStats.Gen2Collections}",
+                       "PerformanceMonitor");
+    }
+}

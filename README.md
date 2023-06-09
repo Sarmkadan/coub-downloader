@@ -47,6 +47,99 @@ public class VideoDownloadService
 }
 ```
 
+## ApplicationConfiguration
+
+`ApplicationConfiguration` provides centralized configuration management for the Coub Downloader application. It consolidates all application settings including download parameters, conversion settings, caching configuration, logging preferences, and API credentials into a single strongly-typed configuration object. This approach ensures type safety, improves maintainability, and simplifies dependency injection throughout the application.
+
+The configuration is typically loaded from JSON files or environment variables and validated during application startup, with sensible defaults provided for optional settings.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Configure services with ApplicationConfiguration
+var services = new ServiceCollection();
+
+services.AddSingleton<IConfigurationManager>(provider => new ConfigurationManager
+{
+    // Download settings
+    Download = new DownloadSettings
+    {
+        Enabled = true,
+        MaxConcurrentDownloads = 5,
+        TimeoutSeconds = 30,
+        MaxRetries = 3,
+        VerifyFileIntegrity = true,
+        MaxFileSizeBytes = 500 * 1024 * 1024 // 500 MB
+    },
+    
+    // Conversion settings
+    Conversion = new ConversionSettings
+    {
+        Enabled = true,
+        MaxConcurrentConversions = 3,
+        TimeoutSeconds = 60,
+        VideoCodec = "libx264",
+        AudioCodec = "aac",
+        DefaultQuality = 720
+    },
+    
+    // Cache settings
+    Cache = new CacheSettings
+    {
+        Enabled = true,
+        DefaultTtlSeconds = 86400 // 24 hours
+    },
+    
+    // Logging settings
+    Logging = new LoggingSettings
+    {
+        LogLevel = "Information",
+        LogToFile = true,
+        LogDirectory = "/var/log/coub-downloader"
+    },
+    
+    // API settings
+    Api = new ApiSettings
+    {
+        CoubApiBaseUrl = "https://coub.com/api/v2",
+        TimeoutSeconds = 15
+    },
+    
+    // Application settings
+    OutputDirectory = "/home/user/coub-downloads",
+    FfmpegPath = "/usr/bin/ffmpeg",
+    EnableHardwareAcceleration = true
+});
+
+// Usage in a service
+public class DownloadService
+{
+    private readonly ApplicationConfiguration _config;
+    private readonly ILoggingService _logger;
+    
+    public DownloadService(ApplicationConfiguration config, ILoggingService logger)
+    {
+        _config = config;
+        _logger = logger;
+    }
+    
+    public void ConfigureDownloadSettings()
+    {
+        _logger.LogInfo($"Max concurrent downloads: {_config.Download.MaxConcurrentDownloads}");
+        _logger.LogInfo($"Output directory: {_config.OutputDirectory}");
+        _logger.LogInfo($"FFmpeg path: {_config.FfmpegPath}");
+        
+        if (_config.EnableHardwareAcceleration)
+        {
+            _logger.LogInfo("Hardware acceleration is enabled");
+        }
+    }
+}
+```
+
 ## PerformanceMonitor
 
 `PerformanceMonitor` tracks and analyzes the performance of application operations by measuring execution time, success/failure rates, and resource utilization. It provides detailed metrics for individual operations as well as aggregated statistics across all monitored operations. The monitor supports both manual and automatic timing through `OperationTimer`, and includes system-level metrics for memory usage, CPU utilization, and garbage collection statistics.
@@ -155,6 +248,99 @@ public class UserService
     {
         // Implementation of external API call
         return Task.FromResult(new ApiResponse());
+    }
+}
+```
+
+## ApplicationConfiguration
+
+`ApplicationConfiguration` provides centralized configuration management for the Coub Downloader application. It consolidates all application settings including download parameters, conversion settings, caching configuration, logging preferences, and API credentials into a single strongly-typed configuration object. This approach ensures type safety, improves maintainability, and simplifies dependency injection throughout the application.
+
+The configuration is typically loaded from JSON files or environment variables and validated during application startup, with sensible defaults provided for optional settings.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Configure services with ApplicationConfiguration
+var services = new ServiceCollection();
+
+services.AddSingleton<IConfigurationManager>(provider => new ConfigurationManager
+{
+    // Download settings
+    Download = new DownloadSettings
+    {
+        Enabled = true,
+        MaxConcurrentDownloads = 5,
+        TimeoutSeconds = 30,
+        MaxRetries = 3,
+        VerifyFileIntegrity = true,
+        MaxFileSizeBytes = 500 * 1024 * 1024 // 500 MB
+    },
+    
+    // Conversion settings
+    Conversion = new ConversionSettings
+    {
+        Enabled = true,
+        MaxConcurrentConversions = 3,
+        TimeoutSeconds = 60,
+        VideoCodec = "libx264",
+        AudioCodec = "aac",
+        DefaultQuality = 720
+    },
+    
+    // Cache settings
+    Cache = new CacheSettings
+    {
+        Enabled = true,
+        DefaultTtlSeconds = 86400 // 24 hours
+    },
+    
+    // Logging settings
+    Logging = new LoggingSettings
+    {
+        LogLevel = "Information",
+        LogToFile = true,
+        LogDirectory = "/var/log/coub-downloader"
+    },
+    
+    // API settings
+    Api = new ApiSettings
+    {
+        CoubApiBaseUrl = "https://coub.com/api/v2",
+        TimeoutSeconds = 15
+    },
+    
+    // Application settings
+    OutputDirectory = "/home/user/coub-downloads",
+    FfmpegPath = "/usr/bin/ffmpeg",
+    EnableHardwareAcceleration = true
+});
+
+// Usage in a service
+public class DownloadService
+{
+    private readonly ApplicationConfiguration _config;
+    private readonly ILoggingService _logger;
+    
+    public DownloadService(ApplicationConfiguration config, ILoggingService logger)
+    {
+        _config = config;
+        _logger = logger;
+    }
+    
+    public void ConfigureDownloadSettings()
+    {
+        _logger.LogInfo($"Max concurrent downloads: {_config.Download.MaxConcurrentDownloads}");
+        _logger.LogInfo($"Output directory: {_config.OutputDirectory}");
+        _logger.LogInfo($"FFmpeg path: {_config.FfmpegPath}");
+        
+        if (_config.EnableHardwareAcceleration)
+        {
+            _logger.LogInfo("Hardware acceleration is enabled");
+        }
     }
 }
 ```
@@ -268,6 +454,99 @@ public class VideoDownloadService
         {
             _logger.LogError("Failed to download coub", ex, "DownloadService");
             throw;
+        }
+    }
+}
+```
+
+## ApplicationConfiguration
+
+`ApplicationConfiguration` provides centralized configuration management for the Coub Downloader application. It consolidates all application settings including download parameters, conversion settings, caching configuration, logging preferences, and API credentials into a single strongly-typed configuration object. This approach ensures type safety, improves maintainability, and simplifies dependency injection throughout the application.
+
+The configuration is typically loaded from JSON files or environment variables and validated during application startup, with sensible defaults provided for optional settings.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+// Configure services with ApplicationConfiguration
+var services = new ServiceCollection();
+
+services.AddSingleton<IConfigurationManager>(provider => new ConfigurationManager
+{
+    // Download settings
+    Download = new DownloadSettings
+    {
+        Enabled = true,
+        MaxConcurrentDownloads = 5,
+        TimeoutSeconds = 30,
+        MaxRetries = 3,
+        VerifyFileIntegrity = true,
+        MaxFileSizeBytes = 500 * 1024 * 1024 // 500 MB
+    },
+    
+    // Conversion settings
+    Conversion = new ConversionSettings
+    {
+        Enabled = true,
+        MaxConcurrentConversions = 3,
+        TimeoutSeconds = 60,
+        VideoCodec = "libx264",
+        AudioCodec = "aac",
+        DefaultQuality = 720
+    },
+    
+    // Cache settings
+    Cache = new CacheSettings
+    {
+        Enabled = true,
+        DefaultTtlSeconds = 86400 // 24 hours
+    },
+    
+    // Logging settings
+    Logging = new LoggingSettings
+    {
+        LogLevel = "Information",
+        LogToFile = true,
+        LogDirectory = "/var/log/coub-downloader"
+    },
+    
+    // API settings
+    Api = new ApiSettings
+    {
+        CoubApiBaseUrl = "https://coub.com/api/v2",
+        TimeoutSeconds = 15
+    },
+    
+    // Application settings
+    OutputDirectory = "/home/user/coub-downloads",
+    FfmpegPath = "/usr/bin/ffmpeg",
+    EnableHardwareAcceleration = true
+});
+
+// Usage in a service
+public class DownloadService
+{
+    private readonly ApplicationConfiguration _config;
+    private readonly ILoggingService _logger;
+    
+    public DownloadService(ApplicationConfiguration config, ILoggingService logger)
+    {
+        _config = config;
+        _logger = logger;
+    }
+    
+    public void ConfigureDownloadSettings()
+    {
+        _logger.LogInfo($"Max concurrent downloads: {_config.Download.MaxConcurrentDownloads}");
+        _logger.LogInfo($"Output directory: {_config.OutputDirectory}");
+        _logger.LogInfo($"FFmpeg path: {_config.FfmpegPath}");
+        
+        if (_config.EnableHardwareAcceleration)
+        {
+            _logger.LogInfo("Hardware acceleration is enabled");
         }
     }
 }

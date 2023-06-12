@@ -1,4 +1,3 @@
-
 ## InMemoryCoubVideoRepository
 
 `InMemoryCoubVideoRepository` provides an in-memory implementation of `ICoubVideoRepository` for managing Coub video entities. It stores videos in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for finding videos by URL, creator name, title search, and view count ranges. This implementation is ideal for testing, development, or scenarios where persistence is not required.
@@ -112,4 +111,58 @@ var byViews = await repository.GetByViewCountRangeAsync(500, 2000);
 created1.Title = "Updated Test Video 1";
 var updated = await repository.UpdateAsync(created1);
 var deleted = await repository.DeleteAsync(updated.Id);
+```
+
+## InMemoryDownloadTaskRepository
+
+`InMemoryDownloadTaskRepository` provides an in‑memory implementation of `IDownloadTaskRepository` for development and testing. It stores `DownloadTask` entities in a thread‑safe dictionary and offers full CRUD operations together with queries for video ID, processing state, batch job ID, and for retrieving pending or retryable tasks.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class DownloadTaskDemo
+{
+    private readonly InMemoryDownloadTaskRepository _repo = new();
+
+    public async Task RunAsync()
+    {
+        // Create a new task
+        var task = new DownloadTask
+        {
+            VideoId = "vid123",
+            BatchJobId = "batch01",
+            State = ProcessingState.Pending,
+            ProgressPercent = 0
+        };
+
+        var created = await _repo.CreateAsync(task);
+        Console.WriteLine($"Created task Id: {created.Id}");
+
+        // Update state and progress
+        await _repo.UpdateStateAsync(created.Id, ProcessingState.Downloading);
+        await _repo.UpdateProgressAsync(created.Id, 45);
+
+        // Query by state
+        var pending = await _repo.GetPendingTasksAsync();
+        Console.WriteLine($"Pending tasks count: {pending.Count()}");
+
+        // Check existence
+        bool exists = await _repo.ExistsAsync(created.Id);
+        Console.WriteLine($"Task exists: {exists}");
+
+        // Delete the task
+        bool deleted = await _repo.DeleteAsync(created.Id);
+        Console.WriteLine($"Task deleted: {deleted}");
+    }
+}
+
+// In a real program you would call:
+// await new DownloadTaskDemo().RunAsync();
 ```

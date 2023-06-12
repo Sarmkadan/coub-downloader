@@ -215,6 +215,93 @@ public class DownloadService
 }
 ```
 
+## InMemoryBatchJobRepository
+
+`InMemoryBatchJobRepository` provides an in-memory implementation of `IBatchJobRepository` for managing batch jobs. It stores batch jobs in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for filtering by state, searching by name, and retrieving recent jobs. This implementation is ideal for testing, development, or scenarios where persistence is not required.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using Microsoft.Extensions.DependencyInjection;
+
+// Example 1: Basic usage with dependency injection
+public class BatchJobService
+{
+    private readonly InMemoryBatchJobRepository _repository;
+
+    public BatchJobService(InMemoryBatchJobRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task ManageBatchJobsAsync()
+    {
+        // Create a new batch job
+        var batchJob = new BatchJob
+        {
+            Name = "Download Coubs",
+            Description = "Download popular coubs for offline viewing",
+            State = ProcessingState.Queued,
+            Tasks = new List<BatchTask>(),
+            MaxConcurrentTasks = 5
+        };
+
+        var createdJob = await _repository.CreateAsync(batchJob);
+        Console.WriteLine($"Created batch job with ID: {createdJob.Id}");
+
+        // Get all batch jobs
+        var allJobs = await _repository.GetAllAsync();
+        Console.WriteLine($"Total batch jobs: {allJobs.Count()}");
+
+        // Search by name
+        var matchingJobs = await _repository.SearchByNameAsync("Download");
+        Console.WriteLine($"Jobs matching 'Download': {matchingJobs.Count()}");
+
+        // Get jobs by state
+        var queuedJobs = await _repository.GetByStateAsync(ProcessingState.Queued);
+        Console.WriteLine($"Queued jobs: {queuedJobs.Count()}");
+
+        // Update progress
+        await _repository.UpdateProgressAsync(createdJob.Id, completed: 10, failed: 0);
+
+        // Check if batch exists
+        var exists = await _repository.ExistsAsync(createdJob.Id);
+        Console.WriteLine($"Batch exists: {exists}");
+
+        // Get recent jobs
+        var recentJobs = await _repository.GetRecentAsync(5);
+        Console.WriteLine($"Recent jobs: {recentJobs.Count()}");
+    }
+}
+
+// Example 2: Manual instantiation for testing
+var repository = new InMemoryBatchJobRepository();
+
+// Create a test batch job
+var testJob = new BatchJob
+{
+    Name = "Test Download",
+    Description = "Test batch job",
+    State = ProcessingState.InProgress,
+    MaxConcurrentTasks = 3
+};
+
+var created = await repository.CreateAsync(testJob);
+
+// Update the job
+created.Description = "Updated test batch job";
+var updated = await repository.UpdateAsync(created);
+
+// Get by ID
+var fetched = await repository.GetByIdAsync(updated.Id);
+
+// Delete
+var deleted = await repository.DeleteAsync(updated.Id);
+```
+
 ## PerformanceMonitor
 
 `PerformanceMonitor` tracks and analyzes the performance of application operations by measuring execution time, success/failure rates, and resource utilization. It provides detailed metrics for individual operations as well as aggregated statistics across all monitored operations. The monitor supports both manual and automatic timing through `OperationTimer`, and includes system-level metrics for memory usage, CPU utilization, and garbage collection statistics.
@@ -418,6 +505,93 @@ public class DownloadService
         }
     }
 }
+```
+
+## InMemoryBatchJobRepository
+
+`InMemoryBatchJobRepository` provides an in-memory implementation of `IBatchJobRepository` for managing batch jobs. It stores batch jobs in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for filtering by state, searching by name, and retrieving recent jobs. This implementation is ideal for testing, development, or scenarios where persistence is not required.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using Microsoft.Extensions.DependencyInjection;
+
+// Example 1: Basic usage with dependency injection
+public class BatchJobService
+{
+    private readonly InMemoryBatchJobRepository _repository;
+
+    public BatchJobService(InMemoryBatchJobRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task ManageBatchJobsAsync()
+    {
+        // Create a new batch job
+        var batchJob = new BatchJob
+        {
+            Name = "Download Coubs",
+            Description = "Download popular coubs for offline viewing",
+            State = ProcessingState.Queued,
+            Tasks = new List<BatchTask>(),
+            MaxConcurrentTasks = 5
+        };
+
+        var createdJob = await _repository.CreateAsync(batchJob);
+        Console.WriteLine($"Created batch job with ID: {createdJob.Id}");
+
+        // Get all batch jobs
+        var allJobs = await _repository.GetAllAsync();
+        Console.WriteLine($"Total batch jobs: {allJobs.Count()}");
+
+        // Search by name
+        var matchingJobs = await _repository.SearchByNameAsync("Download");
+        Console.WriteLine($"Jobs matching 'Download': {matchingJobs.Count()}");
+
+        // Get jobs by state
+        var queuedJobs = await _repository.GetByStateAsync(ProcessingState.Queued);
+        Console.WriteLine($"Queued jobs: {queuedJobs.Count()}");
+
+        // Update progress
+        await _repository.UpdateProgressAsync(createdJob.Id, completed: 10, failed: 0);
+
+        // Check if batch exists
+        var exists = await _repository.ExistsAsync(createdJob.Id);
+        Console.WriteLine($"Batch exists: {exists}");
+
+        // Get recent jobs
+        var recentJobs = await _repository.GetRecentAsync(5);
+        Console.WriteLine($"Recent jobs: {recentJobs.Count()}");
+    }
+}
+
+// Example 2: Manual instantiation for testing
+var repository = new InMemoryBatchJobRepository();
+
+// Create a test batch job
+var testJob = new BatchJob
+{
+    Name = "Test Download",
+    Description = "Test batch job",
+    State = ProcessingState.InProgress,
+    MaxConcurrentTasks = 3
+};
+
+var created = await repository.CreateAsync(testJob);
+
+// Update the job
+created.Description = "Updated test batch job";
+var updated = await repository.UpdateAsync(created);
+
+// Get by ID
+var fetched = await repository.GetByIdAsync(updated.Id);
+
+// Delete
+var deleted = await repository.DeleteAsync(updated.Id);
 ```
 
 ## PerformanceMonitor
@@ -625,6 +799,93 @@ public class DownloadService
         }
     }
 }
+```
+
+## InMemoryBatchJobRepository
+
+`InMemoryBatchJobRepository` provides an in-memory implementation of `IBatchJobRepository` for managing batch jobs. It stores batch jobs in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for filtering by state, searching by name, and retrieving recent jobs. This implementation is ideal for testing, development, or scenarios where persistence is not required.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using Microsoft.Extensions.DependencyInjection;
+
+// Example 1: Basic usage with dependency injection
+public class BatchJobService
+{
+    private readonly InMemoryBatchJobRepository _repository;
+
+    public BatchJobService(InMemoryBatchJobRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task ManageBatchJobsAsync()
+    {
+        // Create a new batch job
+        var batchJob = new BatchJob
+        {
+            Name = "Download Coubs",
+            Description = "Download popular coubs for offline viewing",
+            State = ProcessingState.Queued,
+            Tasks = new List<BatchTask>(),
+            MaxConcurrentTasks = 5
+        };
+
+        var createdJob = await _repository.CreateAsync(batchJob);
+        Console.WriteLine($"Created batch job with ID: {createdJob.Id}");
+
+        // Get all batch jobs
+        var allJobs = await _repository.GetAllAsync();
+        Console.WriteLine($"Total batch jobs: {allJobs.Count()}");
+
+        // Search by name
+        var matchingJobs = await _repository.SearchByNameAsync("Download");
+        Console.WriteLine($"Jobs matching 'Download': {matchingJobs.Count()}");
+
+        // Get jobs by state
+        var queuedJobs = await _repository.GetByStateAsync(ProcessingState.Queued);
+        Console.WriteLine($"Queued jobs: {queuedJobs.Count()}");
+
+        // Update progress
+        await _repository.UpdateProgressAsync(createdJob.Id, completed: 10, failed: 0);
+
+        // Check if batch exists
+        var exists = await _repository.ExistsAsync(createdJob.Id);
+        Console.WriteLine($"Batch exists: {exists}");
+
+        // Get recent jobs
+        var recentJobs = await _repository.GetRecentAsync(5);
+        Console.WriteLine($"Recent jobs: {recentJobs.Count()}");
+    }
+}
+
+// Example 2: Manual instantiation for testing
+var repository = new InMemoryBatchJobRepository();
+
+// Create a test batch job
+var testJob = new BatchJob
+{
+    Name = "Test Download",
+    Description = "Test batch job",
+    State = ProcessingState.InProgress,
+    MaxConcurrentTasks = 3
+};
+
+var created = await repository.CreateAsync(testJob);
+
+// Update the job
+created.Description = "Updated test batch job";
+var updated = await repository.UpdateAsync(created);
+
+// Get by ID
+var fetched = await repository.GetByIdAsync(updated.Id);
+
+// Delete
+var deleted = await repository.DeleteAsync(updated.Id);
 ```
 
 ## PerformanceMonitor

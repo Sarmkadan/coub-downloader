@@ -113,396 +113,70 @@ var updated = await repository.UpdateAsync(created1);
 var deleted = await repository.DeleteAsync(updated.Id);
 ```
 
+## StringExtensions
 
+`StringExtensions` provides a set of utility extension methods for common string operations including validation, transformation, and analysis. These methods help standardize and sanitize strings for URLs, file paths, display purposes, and text processing scenarios throughout the application.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Utilities;
+
+// Example 1: URL validation and domain extraction
+var url = "https://www.example.com/path/to/resource";
+if (url.IsValidUrl())
+{
+    var domain = url.GetUrlDomain();
+    Console.WriteLine($"Domain: {domain}"); // Output: Domain: www.example.com
+}
+
+// Example 2: Text formatting for display
+var title = "  This is a  Sample  Title  ";
+var slug = title.Trim().RemoveDuplicateWhitespace().ToSlug();
+Console.WriteLine($"Slug: {slug}"); // Output: Slug: this-is-a-sample-title
+
+var displayTitle = title.Trim().RemoveDuplicateWhitespace().Capitalize();
+Console.WriteLine($"Title: {displayTitle}"); // Output: Title: This is a Sample Title
+
+var titleCase = "the quick brown fox".ToTitleCase();
+Console.WriteLine($"Title case: {titleCase}"); // Output: Title case: The Quick Brown Fox
+
+// Example 3: String manipulation and analysis
+var text = "Hello World Hello";
+var count = text.CountOccurrences("Hello");
+Console.WriteLine($"Occurrences: {count}"); // Output: Occurrences: 2
+
+var containsAny = text.ContainsAny("World", "Universe");
+Console.WriteLine($"Contains any: {containsAny}"); // Output: Contains any: True
+
+var startsWithAny = text.StartsWithAny("Hello", "Hi");
+Console.WriteLine($"Starts with any: {startsWithAny}"); // Output: Starts with any: True
+
+// Example 4: String extraction and truncation
+var content = "[start]This is the extracted content[end]";
+var extracted = content.SubstringBetween("[start]", "[end]");
+Console.WriteLine($"Extracted: {extracted}"); // Output: Extracted: This is the extracted content
+
+var longText = "This is a very long text that needs to be shortened for display purposes";
+var truncated = longText.Truncate(30);
+Console.WriteLine($"Truncated: {truncated}"); // Output: Truncated: This is a very long text...
+
+// Example 5: Case-insensitive replacement
+var mixedCase = "Hello hello HELLO";
+var replaced = mixedCase.ReplaceIgnoreCase("hello", "Hi");
+Console.WriteLine($"Replaced: {replaced}"); // Output: Replaced: Hi Hi Hi
+
+// Example 6: Splitting by multiple separators
+var tags = "tag1, tag2; tag3 | tag4";
+var tagArray = tags.SplitByMultiple(",", ";", "|");
+Console.WriteLine($"Tags: {string.Join(", ", tagArray)}"); // Output: Tags: tag1, tag2, tag3, tag4
+
+// Example 7: Numeric validation
+var numberString = "12345";
+var isNumeric = numberString.IsNumeric();
+Console.WriteLine($"Is numeric: {isNumeric}"); // Output: Is numeric: True
+```
 
 ## ICacheService
 
 `ICacheService` defines a contract for caching services with time-to-live (TTL) support. It provides methods for storing, retrieving, and managing cached values with automatic expiration. The interface supports both in-memory and distributed caching scenarios through its implementations: `MemoryCacheService` for local caching and `DistributedCacheAdapter` for multi-instance environments.
-
-
-
-
-
-### Usage Example
-
-
-```csharp
-using CoubDownloader.Infrastructure.Caching;
-using System;
-
-// Example 1: Using MemoryCacheService with dependency injection
-public class VideoMetadataService
-{
-    private readonly ICacheService _cache;
-
-    public VideoMetadataService(ICacheService cache)
-    {
-        _cache = cache;
-    }
-
-    public async Task<VideoMetadata?> GetVideoMetadataAsync(string videoId)
-    {
-        // Try to get from cache first
-        var cachedMetadata = _cache.Get<VideoMetadata>($"video:{videoId}");
-        if (cachedMetadata != null)
-        {
-            Console.WriteLine("Retrieved metadata from cache");
-            return cachedMetadata;
-        }
-
-        // Simulate fetching from external source
-        var metadata = await FetchVideoMetadataFromApiAsync(videoId);
-
-        // Cache for 1 hour
-        _cache.Set($"video:{videoId}", metadata, TimeSpan.FromHours(1));
-
-        return metadata;
-    }
-
-    private async Task<VideoMetadata> FetchVideoMetadataFromApiAsync(string videoId)
-    {
-        // Implementation would call external API
-        await Task.Delay(100); // Simulate network delay
-        return new VideoMetadata { Title = "Sample Video", Duration = 45 };
-    }
-}
-
-// Example 2: Manual usage with MemoryCacheService
-var cache = new MemoryCacheService(defaultTtlSeconds: 300); // 5 minute default TTL
-
-// Store data with custom TTL
-cache.Set("user:123:preferences", new UserPreferences { Theme = "dark", Language = "en" }, TimeSpan.FromHours(2));
-
-// Store data with default TTL
-cache.Set("app:config:settings", new AppSettings { MaxRetries = 3, Timeout = 30 });
-
-// Retrieve data
-if (cache.TryGet<UserPreferences>("user:123:preferences", out var preferences))
-{
-    Console.WriteLine($"Loaded preferences: Theme={preferences.Theme}");
-}
-
-// Get data (returns null if not found)
-var settings = cache.Get<AppSettings>("app:config:settings");
-
-// Remove specific item
-cache.Remove("user:123:preferences");
-
-// Clear entire cache
-cache.Clear();
-
-// Get cache statistics
-var stats = cache.GetStatistics();
-Console.WriteLine($"Cache: {stats.TotalEntries} entries, {stats.Hits} hits, {stats.Misses} misses, {stats.HitRate:P0} hit rate, {stats.Size} bytes");
-
-// Example 3: Using DistributedCacheAdapter
-var localCache = new MemoryCacheService();
-var distributedCache = new DistributedCacheAdapter(localCache);
-
-// Add remote cache instances
-var remoteCache1 = new MemoryCacheService();
-distributedCache.AddRemoteCache(remoteCache1);
-
-// Set value (writes to both local and remote caches)
-distributedCache.Set("shared:data", new SharedData { Value = 42 }, TimeSpan.FromMinutes(10));
-
-// TryGet checks local cache first, then remote caches if not found
-if (distributedCache.TryGet<SharedData>("shared:data", out var sharedData))
-{
-    Console.WriteLine($"Retrieved shared data: {sharedData.Value}");
-}
-```
-
-## InMemoryDownloadTaskRepository
-
-`InMemoryDownloadTaskRepository` provides an in‑memory implementation of `IDownloadTaskRepository` for development and testing. It stores `DownloadTask` entities in a thread‑safe dictionary and offers full CRUD operations together with queries for video ID, processing state, batch job ID, and for retrieving pending or retryable tasks.
-
-### Usage Example
-
-```csharp
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using CoubDownloader.Infrastructure.Repositories;
-using CoubDownloader.Domain.Models;
-using CoubDownloader.Domain.Enums;
-
-public class DownloadTaskDemo
-{
-    private readonly InMemoryDownloadTaskRepository _repo = new();
-
-    public async Task RunAsync()
-    {
-        // Create a new task
-        var task = new DownloadTask
-        {
-            VideoId = "vid123",
-            BatchJobId = "batch01",
-            State = ProcessingState.Pending,
-            ProgressPercent = 0
-        };
-
-        var created = await _repo.CreateAsync(task);
-        Console.WriteLine($"Created task Id: {created.Id}");
-
-        // Update state and progress
-        await _repo.UpdateStateAsync(created.Id, ProcessingState.Downloading);
-        await _repo.UpdateProgressAsync(created.Id, 45);
-
-        // Query by state
-        var pending = await _repo.GetPendingTasksAsync();
-        Console.WriteLine($"Pending tasks count: {pending.Count()}");
-
-        // Check existence
-        bool exists = await _repo.ExistsAsync(created.Id);
-        Console.WriteLine($"Task exists: {exists}");
-
-        // Delete the task
-        bool deleted = await _repo.DeleteAsync(created.Id);
-        Console.WriteLine($"Task deleted: {deleted}");
-    }
-}
-
-// In a real program you would call:
-// await new DownloadTaskDemo().RunAsync();
-```
-
-## InMemoryDownloadResultRepository
-
-`InMemoryDownloadResultRepository` provides an in-memory implementation of `IDownloadResultRepository` for managing download result entities. It stores results in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for retrieving results by task ID, filtering by success/failure status, and searching within processing time ranges. This implementation is ideal for testing, development, or scenarios where persistence is not required.
-
-
-### Usage Example
-
-```csharp
-using System;
-using System.Linq;
-using System.Threading.Tasks;
-using CoubDownloader.Infrastructure.Repositories;
-using CoubDownloader.Domain.Models;
-using CoubDownloader.Domain.Enums;
-
-public class DownloadResultService
-{
-    private readonly InMemoryDownloadResultRepository _repository;
-
-    public DownloadResultService(InMemoryDownloadResultRepository repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task ManageDownloadResultsAsync()
-    {
-        // Create a successful download result
-        var successResult = new DownloadResult
-        {
-            TaskId = "task-001",
-            Success = true,
-            OutputFilePath = "/data/videos/output.mp4",
-            OutputFileSizeBytes = 15728640, // 15 MB
-            ProcessingTimeMs = 2500,
-            Format = VideoFormat.Mp4,
-            Quality = VideoQuality.High,
-            VideoMetadata = "{\"duration\": 45, \"fps\": 30}",
-            CompletedAt = DateTime.UtcNow
-        };
-
-        var createdResult = await _repository.CreateAsync(successResult);
-        Console.WriteLine($"Created result with ID: {createdResult.Id}");
-
-        // Create a failed download result
-        var failedResult = new DownloadResult
-        {
-            TaskId = "task-002",
-            Success = false,
-            ErrorMessage = "Network timeout",
-            ErrorType = "NetworkError",
-            ErrorStackTrace = "at System.Net.Http.HttpClient.SendAsync...",
-            ProcessingTimeMs = 1200,
-            CompletedAt = DateTime.UtcNow
-        };
-
-        await _repository.CreateAsync(failedResult);
-
-        // Get result by ID
-        var fetchedResult = await _repository.GetByIdAsync(createdResult.Id);
-        if (fetchedResult != null)
-        {
-            Console.WriteLine($"Fetched result: Status={fetchedResult.GetStatusMessage()}");
-        }
-
-        // Get all results
-        var allResults = await _repository.GetAllAsync();
-        Console.WriteLine($"Total results: {allResults.Count()}");
-
-        // Get result by task ID
-        var byTaskId = await _repository.GetByTaskIdAsync("task-001");
-        Console.WriteLine($"Result for task-001: {byTaskId?.GetStatusMessage()}");
-
-        // Get successful results
-        var successfulResults = await _repository.GetSuccessfulResultsAsync();
-        Console.WriteLine($"Successful results: {successfulResults.Count()}");
-
-        // Get failed results
-        var failedResults = await _repository.GetFailedResultsAsync();
-        Console.WriteLine($"Failed results: {failedResults.Count()}");
-
-        // Get results by processing time range (1000ms to 3000ms)
-        var timeRangeResults = await _repository.GetByProcessingTimeRangeAsync(1000, 3000);
-        Console.WriteLine($"Results in time range: {timeRangeResults.Count()}");
-
-        // Check if result exists
-        var exists = await _repository.ExistsAsync(createdResult.Id);
-        Console.WriteLine($"Result exists: {exists}");
-
-        // Update result
-        fetchedResult.OutputFileSizeBytes = 16256896; // Updated size
-        var updatedResult = await _repository.UpdateAsync(fetchedResult);
-        Console.WriteLine($"Updated result size: {updatedResult.OutputFileSizeBytes} bytes");
-
-        // Delete result
-        var deleted = await _repository.DeleteAsync(updatedResult.Id);
-        Console.WriteLine($"Result deleted: {deleted}");
-    }
-}
-
-// Example 2: Manual instantiation for testing
-var repository = new InMemoryDownloadResultRepository();
-
-// Create test results
-var result1 = new DownloadResult
-{
-    TaskId = "test-task-1",
-    Success = true,
-    OutputFilePath = "/tmp/video1.mp4",
-    OutputFileSizeBytes = 10485760,
-    ProcessingTimeMs = 1500,
-    Format = VideoFormat.Mp4,
-    Quality = VideoQuality.Medium
-};
-
-var result2 = new DownloadResult
-{
-    TaskId = "test-task-2",
-    Success = false,
-    ErrorMessage = "Invalid URL format",
-    ErrorType = "ValidationError",
-    ProcessingTimeMs = 800
-};
-
-// Add results
-var created1 = await repository.CreateAsync(result1);
-var created2 = await repository.CreateAsync(result2);
-
-// Get all and filter
-var all = await repository.GetAllAsync();
-var successful = await repository.GetSuccessfulResultsAsync();
-var failed = await repository.GetFailedResultsAsync();
-var byTask = await repository.GetByTaskIdAsync("test-task-1");
-var byTimeRange = await repository.GetByProcessingTimeRangeAsync(500, 2000);
-
-// Update and delete
-created1.OutputFileSizeBytes = 11010048;
-var updated = await repository.UpdateAsync(created1);
-var deleted = await repository.DeleteAsync(updated.Id);
-```
-
-
-
-## ICacheService
-
-`ICacheService` defines a contract for caching services with time-to-live (TTL) support. It provides methods for storing, retrieving, and managing cached values with automatic expiration. The interface supports both in-memory and distributed caching scenarios through its implementations: `MemoryCacheService` for local caching and `DistributedCacheAdapter` for multi-instance environments.
-
-
-
-
-
-### Usage Example
-
-
-```csharp
-using CoubDownloader.Infrastructure.Caching;
-using System;
-
-// Example 1: Using MemoryCacheService with dependency injection
-public class VideoMetadataService
-{
-    private readonly ICacheService _cache;
-
-    public VideoMetadataService(ICacheService cache)
-    {
-        _cache = cache;
-    }
-
-    public async Task<VideoMetadata?> GetVideoMetadataAsync(string videoId)
-    {
-        // Try to get from cache first
-        var cachedMetadata = _cache.Get<VideoMetadata>($"video:{videoId}");
-        if (cachedMetadata != null)
-        {
-            Console.WriteLine("Retrieved metadata from cache");
-            return cachedMetadata;
-        }
-
-        // Simulate fetching from external source
-        var metadata = await FetchVideoMetadataFromApiAsync(videoId);
-
-        // Cache for 1 hour
-        _cache.Set($"video:{videoId}", metadata, TimeSpan.FromHours(1));
-
-        return metadata;
-    }
-
-    private async Task<VideoMetadata> FetchVideoMetadataFromApiAsync(string videoId)
-    {
-        // Implementation would call external API
-        await Task.Delay(100); // Simulate network delay
-        return new VideoMetadata { Title = "Sample Video", Duration = 45 };
-    }
-}
-
-// Example 2: Manual usage with MemoryCacheService
-var cache = new MemoryCacheService(defaultTtlSeconds: 300); // 5 minute default TTL
-
-// Store data with custom TTL
-cache.Set("user:123:preferences", new UserPreferences { Theme = "dark", Language = "en" }, TimeSpan.FromHours(2));
-
-// Store data with default TTL
-cache.Set("app:config:settings", new AppSettings { MaxRetries = 3, Timeout = 30 });
-
-// Retrieve data
-if (cache.TryGet<UserPreferences>("user:123:preferences", out var preferences))
-{
-    Console.WriteLine($"Loaded preferences: Theme={preferences.Theme}");
-}
-
-// Get data (returns null if not found)
-var settings = cache.Get<AppSettings>("app:config:settings");
-
-// Remove specific item
-cache.Remove("user:123:preferences");
-
-// Clear entire cache
-cache.Clear();
-
-// Get cache statistics
-var stats = cache.GetStatistics();
-Console.WriteLine($"Cache: {stats.TotalEntries} entries, {stats.Hits} hits, {stats.Misses} misses, {stats.HitRate:P0} hit rate, {stats.Size} bytes");
-
-// Example 3: Using DistributedCacheAdapter
-var localCache = new MemoryCacheService();
-var distributedCache = new DistributedCacheAdapter(localCache);
-
-// Add remote cache instances
-var remoteCache1 = new MemoryCacheService();
-distributedCache.AddRemoteCache(remoteCache1);
-
-// Set value (writes to both local and remote caches)
-distributedCache.Set("shared:data", new SharedData { Value = 42 }, TimeSpan.FromMinutes(10));
-
-// TryGet checks local cache first, then remote caches if not found
-if (distributedCache.TryGet<SharedData>("shared:data", out var sharedData))
-{
-    Console.WriteLine($"Retrieved shared data: {sharedData.Value}");
-}
-```

@@ -166,3 +166,143 @@ public class DownloadTaskDemo
 // In a real program you would call:
 // await new DownloadTaskDemo().RunAsync();
 ```
+
+## InMemoryDownloadResultRepository
+
+`InMemoryDownloadResultRepository` provides an in-memory implementation of `IDownloadResultRepository` for managing download result entities. It stores results in a thread-safe dictionary and supports all standard CRUD operations along with specialized queries for retrieving results by task ID, filtering by success/failure status, and searching within processing time ranges. This implementation is ideal for testing, development, or scenarios where persistence is not required.
+
+
+### Usage Example
+
+```csharp
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class DownloadResultService
+{
+    private readonly InMemoryDownloadResultRepository _repository;
+
+    public DownloadResultService(InMemoryDownloadResultRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task ManageDownloadResultsAsync()
+    {
+        // Create a successful download result
+        var successResult = new DownloadResult
+        {
+            TaskId = "task-001",
+            Success = true,
+            OutputFilePath = "/data/videos/output.mp4",
+            OutputFileSizeBytes = 15728640, // 15 MB
+            ProcessingTimeMs = 2500,
+            Format = VideoFormat.Mp4,
+            Quality = VideoQuality.High,
+            VideoMetadata = "{\"duration\": 45, \"fps\": 30}",
+            CompletedAt = DateTime.UtcNow
+        };
+
+        var createdResult = await _repository.CreateAsync(successResult);
+        Console.WriteLine($"Created result with ID: {createdResult.Id}");
+
+        // Create a failed download result
+        var failedResult = new DownloadResult
+        {
+            TaskId = "task-002",
+            Success = false,
+            ErrorMessage = "Network timeout",
+            ErrorType = "NetworkError",
+            ErrorStackTrace = "at System.Net.Http.HttpClient.SendAsync...",
+            ProcessingTimeMs = 1200,
+            CompletedAt = DateTime.UtcNow
+        };
+
+        await _repository.CreateAsync(failedResult);
+
+        // Get result by ID
+        var fetchedResult = await _repository.GetByIdAsync(createdResult.Id);
+        if (fetchedResult != null)
+        {
+            Console.WriteLine($"Fetched result: Status={fetchedResult.GetStatusMessage()}");
+        }
+
+        // Get all results
+        var allResults = await _repository.GetAllAsync();
+        Console.WriteLine($"Total results: {allResults.Count()}");
+
+        // Get result by task ID
+        var byTaskId = await _repository.GetByTaskIdAsync("task-001");
+        Console.WriteLine($"Result for task-001: {byTaskId?.GetStatusMessage()}");
+
+        // Get successful results
+        var successfulResults = await _repository.GetSuccessfulResultsAsync();
+        Console.WriteLine($"Successful results: {successfulResults.Count()}");
+
+        // Get failed results
+        var failedResults = await _repository.GetFailedResultsAsync();
+        Console.WriteLine($"Failed results: {failedResults.Count()}");
+
+        // Get results by processing time range (1000ms to 3000ms)
+        var timeRangeResults = await _repository.GetByProcessingTimeRangeAsync(1000, 3000);
+        Console.WriteLine($"Results in time range: {timeRangeResults.Count()}");
+
+        // Check if result exists
+        var exists = await _repository.ExistsAsync(createdResult.Id);
+        Console.WriteLine($"Result exists: {exists}");
+
+        // Update result
+        fetchedResult.OutputFileSizeBytes = 16256896; // Updated size
+        var updatedResult = await _repository.UpdateAsync(fetchedResult);
+        Console.WriteLine($"Updated result size: {updatedResult.OutputFileSizeBytes} bytes");
+
+        // Delete result
+        var deleted = await _repository.DeleteAsync(updatedResult.Id);
+        Console.WriteLine($"Result deleted: {deleted}");
+    }
+}
+
+// Example 2: Manual instantiation for testing
+var repository = new InMemoryDownloadResultRepository();
+
+// Create test results
+var result1 = new DownloadResult
+{
+    TaskId = "test-task-1",
+    Success = true,
+    OutputFilePath = "/tmp/video1.mp4",
+    OutputFileSizeBytes = 10485760,
+    ProcessingTimeMs = 1500,
+    Format = VideoFormat.Mp4,
+    Quality = VideoQuality.Medium
+};
+
+var result2 = new DownloadResult
+{
+    TaskId = "test-task-2",
+    Success = false,
+    ErrorMessage = "Invalid URL format",
+    ErrorType = "ValidationError",
+    ProcessingTimeMs = 800
+};
+
+// Add results
+var created1 = await repository.CreateAsync(result1);
+var created2 = await repository.CreateAsync(result2);
+
+// Get all and filter
+var all = await repository.GetAllAsync();
+var successful = await repository.GetSuccessfulResultsAsync();
+var failed = await repository.GetFailedResultsAsync();
+var byTask = await repository.GetByTaskIdAsync("test-task-1");
+var byTimeRange = await repository.GetByProcessingTimeRangeAsync(500, 2000);
+
+// Update and delete
+created1.OutputFileSizeBytes = 11010048;
+var updated = await repository.UpdateAsync(created1);
+var deleted = await repository.DeleteAsync(updated.Id);
+```

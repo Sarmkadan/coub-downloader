@@ -113,6 +113,106 @@ var updated = await repository.UpdateAsync(created1);
 var deleted = await repository.DeleteAsync(updated.Id);
 ```
 
+
+
+## ICacheService
+
+`ICacheService` defines a contract for caching services with time-to-live (TTL) support. It provides methods for storing, retrieving, and managing cached values with automatic expiration. The interface supports both in-memory and distributed caching scenarios through its implementations: `MemoryCacheService` for local caching and `DistributedCacheAdapter` for multi-instance environments.
+
+
+
+
+
+### Usage Example
+
+
+```csharp
+using CoubDownloader.Infrastructure.Caching;
+using System;
+
+// Example 1: Using MemoryCacheService with dependency injection
+public class VideoMetadataService
+{
+    private readonly ICacheService _cache;
+
+    public VideoMetadataService(ICacheService cache)
+    {
+        _cache = cache;
+    }
+
+    public async Task<VideoMetadata?> GetVideoMetadataAsync(string videoId)
+    {
+        // Try to get from cache first
+        var cachedMetadata = _cache.Get<VideoMetadata>($"video:{videoId}");
+        if (cachedMetadata != null)
+        {
+            Console.WriteLine("Retrieved metadata from cache");
+            return cachedMetadata;
+        }
+
+        // Simulate fetching from external source
+        var metadata = await FetchVideoMetadataFromApiAsync(videoId);
+
+        // Cache for 1 hour
+        _cache.Set($"video:{videoId}", metadata, TimeSpan.FromHours(1));
+
+        return metadata;
+    }
+
+    private async Task<VideoMetadata> FetchVideoMetadataFromApiAsync(string videoId)
+    {
+        // Implementation would call external API
+        await Task.Delay(100); // Simulate network delay
+        return new VideoMetadata { Title = "Sample Video", Duration = 45 };
+    }
+}
+
+// Example 2: Manual usage with MemoryCacheService
+var cache = new MemoryCacheService(defaultTtlSeconds: 300); // 5 minute default TTL
+
+// Store data with custom TTL
+cache.Set("user:123:preferences", new UserPreferences { Theme = "dark", Language = "en" }, TimeSpan.FromHours(2));
+
+// Store data with default TTL
+cache.Set("app:config:settings", new AppSettings { MaxRetries = 3, Timeout = 30 });
+
+// Retrieve data
+if (cache.TryGet<UserPreferences>("user:123:preferences", out var preferences))
+{
+    Console.WriteLine($"Loaded preferences: Theme={preferences.Theme}");
+}
+
+// Get data (returns null if not found)
+var settings = cache.Get<AppSettings>("app:config:settings");
+
+// Remove specific item
+cache.Remove("user:123:preferences");
+
+// Clear entire cache
+cache.Clear();
+
+// Get cache statistics
+var stats = cache.GetStatistics();
+Console.WriteLine($"Cache: {stats.TotalEntries} entries, {stats.Hits} hits, {stats.Misses} misses, {stats.HitRate:P0} hit rate, {stats.Size} bytes");
+
+// Example 3: Using DistributedCacheAdapter
+var localCache = new MemoryCacheService();
+var distributedCache = new DistributedCacheAdapter(localCache);
+
+// Add remote cache instances
+var remoteCache1 = new MemoryCacheService();
+distributedCache.AddRemoteCache(remoteCache1);
+
+// Set value (writes to both local and remote caches)
+distributedCache.Set("shared:data", new SharedData { Value = 42 }, TimeSpan.FromMinutes(10));
+
+// TryGet checks local cache first, then remote caches if not found
+if (distributedCache.TryGet<SharedData>("shared:data", out var sharedData))
+{
+    Console.WriteLine($"Retrieved shared data: {sharedData.Value}");
+}
+```
+
 ## InMemoryDownloadTaskRepository
 
 `InMemoryDownloadTaskRepository` provides an in‑memory implementation of `IDownloadTaskRepository` for development and testing. It stores `DownloadTask` entities in a thread‑safe dictionary and offers full CRUD operations together with queries for video ID, processing state, batch job ID, and for retrieving pending or retryable tasks.
@@ -305,4 +405,104 @@ var byTimeRange = await repository.GetByProcessingTimeRangeAsync(500, 2000);
 created1.OutputFileSizeBytes = 11010048;
 var updated = await repository.UpdateAsync(created1);
 var deleted = await repository.DeleteAsync(updated.Id);
+```
+
+
+
+## ICacheService
+
+`ICacheService` defines a contract for caching services with time-to-live (TTL) support. It provides methods for storing, retrieving, and managing cached values with automatic expiration. The interface supports both in-memory and distributed caching scenarios through its implementations: `MemoryCacheService` for local caching and `DistributedCacheAdapter` for multi-instance environments.
+
+
+
+
+
+### Usage Example
+
+
+```csharp
+using CoubDownloader.Infrastructure.Caching;
+using System;
+
+// Example 1: Using MemoryCacheService with dependency injection
+public class VideoMetadataService
+{
+    private readonly ICacheService _cache;
+
+    public VideoMetadataService(ICacheService cache)
+    {
+        _cache = cache;
+    }
+
+    public async Task<VideoMetadata?> GetVideoMetadataAsync(string videoId)
+    {
+        // Try to get from cache first
+        var cachedMetadata = _cache.Get<VideoMetadata>($"video:{videoId}");
+        if (cachedMetadata != null)
+        {
+            Console.WriteLine("Retrieved metadata from cache");
+            return cachedMetadata;
+        }
+
+        // Simulate fetching from external source
+        var metadata = await FetchVideoMetadataFromApiAsync(videoId);
+
+        // Cache for 1 hour
+        _cache.Set($"video:{videoId}", metadata, TimeSpan.FromHours(1));
+
+        return metadata;
+    }
+
+    private async Task<VideoMetadata> FetchVideoMetadataFromApiAsync(string videoId)
+    {
+        // Implementation would call external API
+        await Task.Delay(100); // Simulate network delay
+        return new VideoMetadata { Title = "Sample Video", Duration = 45 };
+    }
+}
+
+// Example 2: Manual usage with MemoryCacheService
+var cache = new MemoryCacheService(defaultTtlSeconds: 300); // 5 minute default TTL
+
+// Store data with custom TTL
+cache.Set("user:123:preferences", new UserPreferences { Theme = "dark", Language = "en" }, TimeSpan.FromHours(2));
+
+// Store data with default TTL
+cache.Set("app:config:settings", new AppSettings { MaxRetries = 3, Timeout = 30 });
+
+// Retrieve data
+if (cache.TryGet<UserPreferences>("user:123:preferences", out var preferences))
+{
+    Console.WriteLine($"Loaded preferences: Theme={preferences.Theme}");
+}
+
+// Get data (returns null if not found)
+var settings = cache.Get<AppSettings>("app:config:settings");
+
+// Remove specific item
+cache.Remove("user:123:preferences");
+
+// Clear entire cache
+cache.Clear();
+
+// Get cache statistics
+var stats = cache.GetStatistics();
+Console.WriteLine($"Cache: {stats.TotalEntries} entries, {stats.Hits} hits, {stats.Misses} misses, {stats.HitRate:P0} hit rate, {stats.Size} bytes");
+
+// Example 3: Using DistributedCacheAdapter
+var localCache = new MemoryCacheService();
+var distributedCache = new DistributedCacheAdapter(localCache);
+
+// Add remote cache instances
+var remoteCache1 = new MemoryCacheService();
+distributedCache.AddRemoteCache(remoteCache1);
+
+// Set value (writes to both local and remote caches)
+distributedCache.Set("shared:data", new SharedData { Value = 42 }, TimeSpan.FromMinutes(10));
+
+// TryGet checks local cache first, then remote caches if not found
+if (distributedCache.TryGet<SharedData>("shared:data", out var sharedData))
+{
+    Console.WriteLine($"Retrieved shared data: {sharedData.Value}");
+}
 ```

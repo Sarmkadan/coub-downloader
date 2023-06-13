@@ -180,3 +180,58 @@ Console.WriteLine($"Is numeric: {isNumeric}"); // Output: Is numeric: True
 ## ICacheService
 
 `ICacheService` defines a contract for caching services with time-to-live (TTL) support. It provides methods for storing, retrieving, and managing cached values with automatic expiration. The interface supports both in-memory and distributed caching scenarios through its implementations: `MemoryCacheService` for local caching and `DistributedCacheAdapter` for multi-instance environments.
+
+## DateTimeExtensions
+
+`DateTimeExtensions` provides a comprehensive set of extension methods for `DateTime` and `TimeSpan` types, offering utilities for date manipulation, time formatting, and temporal comparisons. These methods simplify common date operations like calculating start/end of time periods, converting between Unix timestamps and `DateTime`, and generating human-readable relative time strings.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Utilities;
+
+// Example 1: Get human-readable relative time
+var pastDate = DateTime.UtcNow.AddHours(-2);
+var relativeTime = pastDate.GetRelativeTime();
+Console.WriteLine($"Relative time: {relativeTime}"); // Output: Relative time: 2h ago
+
+var futureDate = DateTime.UtcNow.AddDays(1);
+var futureRelativeTime = futureDate.GetRelativeTime();
+Console.WriteLine($"Future time: {futureRelativeTime}"); // Output: Future time: Jul 16, 2026
+
+// Example 2: Date range checking
+var now = DateTime.UtcNow;
+var startDate = now.AddDays(-7);
+var endDate = now.AddDays(7);
+var isWithinRange = now.IsWithinRange(startDate, endDate);
+Console.WriteLine($"Is within range: {isWithinRange}"); // Output: Is within range: True
+
+// Example 3: Date period calculations
+var today = DateTime.Today;
+var startOfDay = today.StartOfDay();
+var endOfDay = today.EndOfDay();
+Console.WriteLine($"Start of day: {startOfDay:yyyy-MM-dd HH:mm:ss}");
+Console.WriteLine($"End of day: {endOfDay:yyyy-MM-dd HH:mm:ss}");
+
+var startOfWeek = today.StartOfWeek();
+var startOfMonth = today.StartOfMonth();
+var endOfMonth = today.EndOfMonth();
+Console.WriteLine($"Start of week: {startOfWeek:yyyy-MM-dd}");
+Console.WriteLine($"Start of month: {startOfMonth:yyyy-MM-dd}");
+Console.WriteLine($"End of month: {endOfMonth:yyyy-MM-dd}");
+
+// Example 4: Unix timestamp conversion
+var timestamp = now.ToUnixTimestamp();
+Console.WriteLine($"Unix timestamp: {timestamp}");
+var convertedDate = timestamp.FromUnixTimestamp();
+Console.WriteLine($"Converted back: {convertedDate:yyyy-MM-dd HH:mm:ss}");
+
+// Example 5: Today/Yesterday checks
+var yesterday = DateTime.Today.AddDays(-1);
+Console.WriteLine($"Is today: {today.IsToday()}"); // Output: Is today: True
+Console.WriteLine($"Is yesterday: {yesterday.IsYesterday()}"); // Output: Is yesterday: True
+
+// Example 6: TimeSpan formatting
+var duration = TimeSpan.FromMinutes(90);
+Console.WriteLine($"Duration formatted: {duration.FormatDuration()}"); // Output: Duration formatted: 01:30:00
+```

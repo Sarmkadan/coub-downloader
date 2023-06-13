@@ -235,3 +235,83 @@ Console.WriteLine($"Is yesterday: {yesterday.IsYesterday()}"); // Output: Is yes
 var duration = TimeSpan.FromMinutes(90);
 Console.WriteLine($"Duration formatted: {duration.FormatDuration()}"); // Output: Duration formatted: 01:30:00
 ```
+
+## ObjectPool
+
+`ObjectPool<T>` provides a generic object pooling mechanism for reusing expensive resources efficiently. It maintains a pool of reusable objects, reducing the overhead of frequent object creation and garbage collection. The pool supports both synchronous and asynchronous resource management patterns through the `ObjectPool<T>` and `ConnectionPool` classes, with optional reset functionality for pooled objects.
+
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Utilities;
+
+// Example 1: Basic object pool for database connections
+var connectionFactory = () => new DatabaseConnection();
+var pool = new ObjectPool<DatabaseConnection>(connectionFactory, maxPoolSize: 5);
+
+// Rent a connection from the pool
+using var pooledObject = new PooledObject<DatabaseConnection>(pool);
+var connection = pooledObject.Object;
+
+// Use the connection
+connection.Execute("SELECT * FROM users");
+
+// Connection is automatically returned to the pool when PooledObject.Dispose() is called
+
+// Example 2: Connection pool with async operations
+var connectionPool = new ConnectionPool(async () => 
+{
+    var conn = new DatabaseConnection();
+    await conn.OpenAsync();
+    return new ConnectionHandle { IsOpen = true };
+}, maxConnections: 10);
+
+// Acquire a connection asynchronously
+var connectionHandle = await connectionPool.AcquireAsync();
+try
+{
+    // Use the connection
+    await connectionHandle.ExecuteAsync("SELECT * FROM videos");
+}
+finally
+{
+    // Release the connection back to the pool
+    connectionPool.Release(connectionHandle);
+}
+
+// Example 3: Pool with reset functionality
+var expensiveObjectFactory = () => new ExpensiveResource();
+var resetAction = (ExpensiveResource obj) => obj.Reset();
+var resetPool = new ObjectPool<ExpensiveResource>(expensiveObjectFactory, resetAction, maxPoolSize: 3);
+
+// Rent and use objects
+var obj1 = resetPool.Rent();
+try
+{
+    obj1.DoWork();
+}
+finally
+{
+    resetPool.Return(obj1);
+}
+
+// Example 4: Managing pool lifecycle
+var lifecyclePool = new ObjectPool<Resource>(() => new Resource(), maxPoolSize: 8);
+
+// Get pool statistics
+var available = lifecyclePool.AvailableCount;
+var inUse = lifecyclePool.InUseCount;
+
+// Clear the pool when shutting down
+lifecyclePool.Clear();
+
+// Example 5: Connection handle properties
+var handle = new ConnectionHandle();
+Console.WriteLine($"Connection ID: {handle.Id}");
+Console.WriteLine($"Created at: {handle.CreatedAt}");
+Console.WriteLine($"Is open: {handle.IsOpen}");
+
+// Close all connections in the pool
+connectionPool.Close();
+```

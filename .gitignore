@@ -1,0 +1,62 @@
+# Build results
+bin/
+obj/
+*.csproj.user
+*.user
+*.suo
+*.sln.DotSettings.user
+
+# IDE
+.vs/
+.vscode/
+*.swp
+*.swo
+*~
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Temp files
+temp/
+tmp/
+*.tmp
+*.bak
+
+# Downloaded videos and artifacts
+CoubDownloads/
+downloads/
+*.mp4
+*.webm
+*.wav
+*.aac
+
+# Environment
+.env
+.env.local
+appsettings.local.json
+appsettings.Development.json
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache
+.cache/
+.nuget/
+
+# Output
+output/
+artifacts/
+
+# Package
+*.nupkg
+*.snupkg
+packages/

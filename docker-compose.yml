@@ -1,0 +1,86 @@
+# =============================================================================
+# Docker Compose configuration for Coub Downloader
+# Author: Vladyslav Zaiets | https://sarmkadan.com
+# =============================================================================
+
+version: '3.8'
+
+services:
+  coub-downloader:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: coub-downloader
+    image: vladyslav-zaiets/coub-downloader:latest
+
+    # Volume mounts
+    volumes:
+      - ./downloads:/downloads
+      - ./config:/app/config
+      - ./logs:/app/logs
+
+    # Environment variables
+    environment:
+      # Application settings
+      COUB_OUTPUT_PATH: /downloads
+      COUB_CACHE_PATH: /app/cache
+      COUB_LOG_LEVEL: Information
+
+      # Conversion settings
+      COUB_DEFAULT_QUALITY: High
+      COUB_DEFAULT_FORMAT: MP4
+      COUB_ENABLE_GPU_ACCELERATION: "false"
+
+      # API settings
+      COUB_MAX_RETRIES: "3"
+      COUB_TIMEOUT_SECONDS: "300"
+      COUB_ENABLE_CACHING: "true"
+
+      # Performance settings
+      COUB_PARALLEL_DOWNLOADS: "4"
+      COUB_MAX_CACHE_SIZE_GB: "1.0"
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+    # Network settings
+    ports:
+      - "5000:5000"
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# Named volumes for persistence
+volumes:
+  cache:
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

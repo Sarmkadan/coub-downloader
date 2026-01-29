@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -49,7 +50,7 @@ public static class VersionHelper
         var assembly = Assembly.GetExecutingAssembly();
         var attribute = assembly.GetCustomAttribute<BuildDateAttribute>();
 
-        if (attribute != null)
+        if (attribute is not null)
             return attribute.BuildDate;
 
         // Fallback: use file write time

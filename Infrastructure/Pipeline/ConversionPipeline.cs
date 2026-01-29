@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -116,7 +117,7 @@ public class ValidationStage : IPipelineStage<DownloadTask, DownloadTask>
         if (string.IsNullOrEmpty(task.Url))
             throw new InvalidOperationException("URL is required");
 
-        if (task.OutputPath != null && Path.GetInvalidPathChars().Any(c => task.OutputPath.Contains(c)))
+        if (task.OutputPath is not null && Path.GetInvalidPathChars().Any(c => task.OutputPath.Contains(c)))
             throw new InvalidOperationException("Invalid output path");
 
         return Task.FromResult(task);

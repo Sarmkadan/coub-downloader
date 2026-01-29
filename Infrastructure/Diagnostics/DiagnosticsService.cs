@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -136,7 +137,7 @@ public class DiagnosticsService
             };
 
             using var process = System.Diagnostics.Process.Start(psi);
-            if (process == null) return false;
+            if (process is null) return false;
 
             var completed = process.WaitForExit(5000);
             return completed && process.ExitCode == 0;

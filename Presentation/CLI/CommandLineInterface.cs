@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -76,7 +77,7 @@ public class CommandLineInterface
 
         var video = await _downloadService.DownloadVideoAsync(options.Url);
 
-        if (video != null)
+        if (video is not null)
         {
             Console.WriteLine($"✓ Download completed: {video.Title}");
             Console.WriteLine($"  Duration: {video.Duration}s");

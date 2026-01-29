@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -49,7 +50,7 @@ public class WebhookManager
         lock (_lockObj)
         {
             var subscription = _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
-            if (subscription == null) return false;
+            if (subscription is null) return false;
 
             _subscriptions.Remove(subscription);
             _logger.LogInfo($"Webhook subscription removed: {subscriptionId}", "Webhooks");
@@ -79,7 +80,7 @@ public class WebhookManager
         lock (_lockObj)
         {
             var subscription = _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
-            if (subscription != null)
+            if (subscription is not null)
                 subscription.IsActive = false;
         }
     }
@@ -90,7 +91,7 @@ public class WebhookManager
         lock (_lockObj)
         {
             return _subscriptions
-                .Where(s => s.IsActive && (eventType == null || s.EventType == eventType))
+                .Where(s => s.IsActive && (eventType is null || s.EventType == eventType))
                 .ToList();
         }
     }

@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -72,7 +73,7 @@ public class FFmpegWrapper
 
             using var process = Process.Start(psi);
 
-            if (process == null)
+            if (process is null)
                 return new FFmpegResult { Success = false, Error = "Failed to start FFmpeg process" };
 
             var output = await process.StandardOutput.ReadToEndAsync();

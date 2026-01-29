@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -136,7 +137,7 @@ public class MemoryCacheService : ICacheService
 
     private long EstimateSize(object? obj)
     {
-        if (obj == null) return 0;
+        if (obj is null) return 0;
         if (obj is string str) return str.Length * 2;
         return 1024; // Rough estimate
     }

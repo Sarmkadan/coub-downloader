@@ -5,19 +5,23 @@
 // =============================================================================
 
 using System.Diagnostics;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using CoubDownloader.Infrastructure.Middleware;
 
 namespace CoubDownloader.Infrastructure.Integration;
 
 /// <summary>Wrapper for FFmpeg command-line tool</summary>
-public class FFmpegWrapper
+public class FFmpegWrapper : IFFmpegWrapper
 {
     private readonly string _ffmpegPath;
+    private readonly string _ffprobePath;
     private readonly ILoggingService _logger;
 
-    public FFmpegWrapper(string ffmpegPath = "ffmpeg", ILoggingService? logger = null)
+    public FFmpegWrapper(string ffmpegPath = "ffmpeg", string ffprobePath = "ffprobe", ILoggingService? logger = null)
     {
         _ffmpegPath = ffmpegPath;
+        _ffprobePath = ffprobePath;
         _logger = logger ?? new MemoryLoggingService();
     }
 
@@ -204,6 +208,47 @@ public class FFmpegWrapper
 
         return await ExecuteAsync(args);
     }
+
+    /// <summary>Get media information using ffprobe</summary>
+    public async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffprobePath,
+                Arguments = $"-v error -show_entries format=duration,size,bit_rate -of json \"{filePath}\"",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi);
+            if (process is null) return null;
+
+            var jsonOutput = await process.StandardOutput.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (process.ExitCode != 0)
+            {
+                _logger.LogWarning($"ffprobe exited with code {process.ExitCode} for {filePath}", "FFprobe");
+                return null;
+            }
+
+            var mediaInfo = JsonSerializer.Deserialize<MediaInfoWrapper>(jsonOutput);
+            return mediaInfo?.Format;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError($"Failed to get media info for {filePath}: {ex.Message}", ex, "FFprobe");
+            return null;
+        }
+    }
+
+    private class MediaInfoWrapper
+    {
+        public MediaInfo? Format { get; set; }
+    }
 }
 
 /// <summary>Parameters for video conversion</summary>
@@ -226,4 +271,17 @@ public class FFmpegResult
     public string Output { get; set; } = "";
     public string Error { get; set; } = "";
     public int ExitCode { get; set; }
+}
+
+/// <summary>Media information obtained from ffprobe</summary>
+public record MediaInfo
+{
+    [JsonPropertyName("duration")]
+    public double? DurationInSeconds { get; init; }
+
+    [JsonPropertyName("size")]
+    public long? Size { get; init; }
+
+    [JsonPropertyName("bit_rate")]
+    public long? BitRate { get; init; }
 }

@@ -5,6 +5,7 @@
 // =============================================================================
 
 using CoubDownloader.Application.Services;
+using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -24,6 +25,9 @@ public static class DependencyInjection
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
             });
+
+        // Register FFmpegWrapper
+        services.AddSingleton<IFFmpegWrapper, FFmpegWrapper>();
 
         // Register services
         services.AddScoped<IVideoConversionService, VideoConversionService>();

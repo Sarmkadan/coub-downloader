@@ -183,14 +183,13 @@ public class BatchProcessingService : IBatchProcessingService
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             await _taskRepository.UpdateStateAsync(task.Id, ProcessingState.Downloading);
 
-            // In a real implementation, would perform actual download/conversion
-            // For now, simulate with delays
-            await Task.Delay(100, cancellationToken);
+            var video = await _downloadService.DownloadVideoAsync(task.Url, cancellationToken);
 
             task.State = ProcessingState.Completed;
-            task.FileSizeBytes = 5_000_000; // Simulated file size
             task.ProgressPercent = 100;
             task.CompletedAt = DateTime.UtcNow;
 
@@ -200,6 +199,13 @@ public class BatchProcessingService : IBatchProcessingService
             var failed = batch.Tasks.Count(t => t.State == ProcessingState.Failed);
 
             await _batchRepository.UpdateProgressAsync(batch.Id, completed, failed);
+        }
+        catch (OperationCanceledException)
+        {
+            task.State = ProcessingState.Cancelled;
+            task.CompletedAt = DateTime.UtcNow;
+            await _taskRepository.UpdateAsync(task);
+            throw;
         }
         catch (Exception ex)
         {

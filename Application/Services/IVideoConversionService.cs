@@ -30,6 +30,13 @@ public interface IVideoConversionService
 
     /// <summary>Rescale video to target dimensions</summary>
     Task<string> RescaleVideoAsync(string inputPath, string outputPath, int width, int height, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Convert video to YouTube Shorts / TikTok 9:16 vertical format (1080x1920).
+    /// The source video is scaled to fit within the frame and centred over a blurred
+    /// full-frame background so letterboxed content looks polished.
+    /// </summary>
+    Task<string> ConvertToShortsAsync(string inputPath, string outputPath, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

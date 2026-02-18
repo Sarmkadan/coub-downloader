@@ -292,6 +292,46 @@ public class VideoConversionService : IVideoConversionService
         return (process.ExitCode, stdOutput.ToString(), stdError.ToString());
     }
 
+    /// <summary>Convert video to YouTube Shorts / TikTok 9:16 vertical format (1080x1920)</summary>
+    public async Task<string> ConvertToShortsAsync(
+        string inputPath,
+        string outputPath,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        if (!File.Exists(inputPath))
+            throw new FileNotFoundException($"Input video file not found: {inputPath}");
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+
+        // Scale source to fill 1080x1920 and blur it for the background, then overlay
+        // the source scaled to fit (letterbox) centred on top.
+        const string shortsFilter =
+            "[0:v]split[a][b];" +
+            "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[blurred];" +
+            "[b]scale=1080:1920:force_original_aspect_ratio=decrease[fg];" +
+            "[blurred][fg]overlay=(W-w)/2:(H-h)/2";
+
+        var args =
+            $"-i \"{inputPath}\" " +
+            $"-vf \"{shortsFilter}\" " +
+            $"-c:v h264 -crf {VideoProcessingConstants.FFmpegCRF} -preset {VideoProcessingConstants.FFmpegPreset} " +
+            $"-c:a aac -b:a {VideoProcessingConstants.DefaultAudioBitrate}k " +
+            $"\"{outputPath}\" -y";
+
+        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
+        if (exitCode != 0)
+            throw new VideoConversionException(
+                $"Failed to convert video to Shorts format. Error: {standardError}",
+                inputPath, outputPath);
+
+        return outputPath;
+    }
+
     /// <summary>Resolve executable path from PATH environment variable</summary>
     private static string ResolveExecutable(string executableName)
     {

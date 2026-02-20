@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -123,7 +124,7 @@ public class ConfigurationManager
             try
             {
                 var directory = Path.GetDirectoryName(_configPath);
-                if (directory != null && !Directory.Exists(directory))
+                if (directory is not null && !Directory.Exists(directory))
                     Directory.CreateDirectory(directory);
 
                 var options = new JsonSerializerOptions { WriteIndented = true };
@@ -142,7 +143,7 @@ public class ConfigurationManager
     /// <summary>Save default configuration</summary>
     private void SaveDefault()
     {
-        if (_configuration != null)
+        if (_configuration is not null)
             Save(_configuration);
     }
 
@@ -169,7 +170,7 @@ public class ConfigurationManager
 
         foreach (var part in parts)
         {
-            if (current == null) return null;
+            if (current is null) return null;
 
             var property = current.GetType().GetProperty(part);
             current = property?.GetValue(current);
@@ -193,10 +194,10 @@ public class ConfigurationManager
             current = property?.GetValue(current);
         }
 
-        if (current != null)
+        if (current is not null)
         {
             var property = current.GetType().GetProperty(lastPart);
-            if (property != null && property.CanWrite)
+            if (property is not null && property.CanWrite)
             {
                 try
                 {

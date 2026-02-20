@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -107,7 +108,7 @@ public class MemoryLoggingService : ILoggingService
 
     public void LogError(string message, Exception? ex = null, string? category = null)
     {
-        var msg = ex == null ? message : $"{message}: {ex.Message}";
+        var msg = ex is null ? message : $"{message}: {ex.Message}";
         AddLog("ERROR", msg, category);
     }
 

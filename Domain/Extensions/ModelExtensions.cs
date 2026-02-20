@@ -1,3 +1,4 @@
+#nullable enable
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
@@ -38,7 +39,7 @@ public static class CoubVideoExtensions
     /// <summary>Calculate required audio duration to match video</summary>
     public static double CalculateRequiredAudioDuration(this CoubVideo video)
     {
-        if (video.AudioTrack == null) return 0;
+        if (video.AudioTrack is null) return 0;
 
         var requiredLoops = Math.Ceiling(video.Duration / video.AudioTrack.Duration);
         return video.AudioTrack.Duration * requiredLoops;

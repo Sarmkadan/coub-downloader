@@ -21,9 +21,13 @@ public interface IPlaylistProcessingService
     /// Absolute URL of a Coub channel (e.g., <c>https://coub.com/funny</c>) or tag page
     /// (e.g., <c>https://coub.com/tags/cats</c>).
     /// </param>
+    /// <param name="maxPages">
+    /// Maximum number of API pages to fetch. Pass <c>null</c> to fetch all available pages
+    /// up to the internal <c>MaxFetchableVideos</c> cap.
+    /// </param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>Populated <see cref="CoubPlaylist"/> containing the discovered video URLs.</returns>
-    Task<CoubPlaylist> FetchPlaylistAsync(string playlistUrl, CancellationToken cancellationToken = default);
+    Task<CoubPlaylist> FetchPlaylistAsync(string playlistUrl, int? maxPages = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Fetch a playlist from its URL and enqueue all videos as a single <see cref="BatchJob"/>.
@@ -33,12 +37,14 @@ public interface IPlaylistProcessingService
     /// <param name="playlistUrl">Absolute URL of a Coub channel or tag page.</param>
     /// <param name="outputDirectory">Directory where converted video files will be written.</param>
     /// <param name="settings">Optional shared conversion settings applied to every task in the batch.</param>
+    /// <param name="maxPages">Maximum number of API pages to paginate through. <c>null</c> means unlimited.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>Created <see cref="BatchJob"/> in Pending state.</returns>
     Task<BatchJob> QueuePlaylistAsync(
         string playlistUrl,
         string outputDirectory,
         ConversionSettings? settings = null,
+        int? maxPages = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>

@@ -28,6 +28,7 @@ Coub is a popular platform for short-form video content, but downloading and con
 
 - [Features](#features)
 - [System Requirements](#system-requirements)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Architecture](#architecture)
@@ -102,7 +103,99 @@ Coub is a popular platform for short-form video content, but downloading and con
 - macOS (12+)
 - Docker (any platform with Docker support)
 
-## Installation
+## Prerequisites
+
+### Installing FFmpeg
+
+FFmpeg must be installed and available before using Coub Downloader. The tool calls `ffmpeg` and `ffprobe` from your system PATH by default.
+
+#### Windows
+
+```powershell
+# Using winget (Windows 10 1709+ / Windows 11)
+winget install --id Gyan.FFmpeg
+
+# Using Chocolatey
+choco install ffmpeg
+
+# Manual install
+# 1. Download a build from https://www.gyan.dev/ffmpeg/builds/ or https://ffmpeg.org/download.html
+# 2. Extract the archive (e.g., C:\tools\ffmpeg)
+# 3. Add C:\tools\ffmpeg\bin to your system PATH
+```
+
+Verify the installation:
+
+```powershell
+ffmpeg -version
+```
+
+#### macOS
+
+```bash
+# Using Homebrew (recommended)
+brew install ffmpeg
+
+# Using MacPorts
+sudo port install ffmpeg
+```
+
+#### Linux
+
+```bash
+# Debian / Ubuntu
+sudo apt-get update && sudo apt-get install -y ffmpeg
+
+# Fedora / RHEL / CentOS
+sudo dnf install ffmpeg
+
+# Alpine
+apk add ffmpeg
+
+# Arch Linux
+sudo pacman -S ffmpeg
+```
+
+#### Docker
+
+The official Docker image ships with FFmpeg pre-installed — no extra steps needed.
+
+### Custom FFmpeg Path
+
+If FFmpeg is not on your system PATH (e.g., when running as a Windows Service or using a portable build), point Coub Downloader at the binary explicitly.
+
+**Via `appsettings.json`:**
+
+```json
+{
+  "Conversion": {
+    "FfmpegPath": "C:\\tools\\ffmpeg\\bin\\ffmpeg.exe"
+  }
+}
+```
+
+**Via environment variable:**
+
+```bash
+COUB_FFMPEG_PATH=/opt/ffmpeg/bin/ffmpeg
+```
+
+**Via .NET hosted service / Windows Service:**
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddCoubDownloaderServices();
+
+// Override the FFmpeg path used by VideoConversionService
+builder.Services.Configure<ConversionSettings>(settings =>
+{
+    settings.FfmpegPath = @"C:\tools\ffmpeg\bin\ffmpeg.exe";
+});
+```
+
+> **Tip for Windows Services:** The service account (e.g., `LocalSystem` or a custom account) may have a different PATH than interactive users. Always set `FfmpegPath` explicitly in `appsettings.json` or via environment variables scoped to the service to avoid `FFmpeg executable not found` errors.
+
+
 
 ### Method 1: Using Docker (Recommended)
 

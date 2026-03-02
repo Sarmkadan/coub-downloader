@@ -8,6 +8,7 @@ using System.Net.Http.Json;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
+using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Repositories;
 
 namespace CoubDownloader.Application.Services;
@@ -99,5 +100,42 @@ public class CoubDownloadService : ICoubDownloadService
 
         // In a real implementation, would verify file integrity with hash or format validation
         return await Task.FromResult(true);
+    }
+
+    public async Task<string> DownloadVideoFileAsync(
+        string sourceUrl,
+        string outputPath,
+        IProgress<int>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sourceUrl);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrEmpty(directory))
+            Directory.CreateDirectory(directory);
+
+        using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+        var bytesDownloaded = 0L;
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
+
+        var buffer = new byte[ApplicationConstants.DownloadChunkSize];
+        int bytesRead;
+
+        while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+        {
+            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+            bytesDownloaded += bytesRead;
+
+            if (progress is not null && totalBytes > 0)
+                progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+        }
+
+        return outputPath;
     }
     }

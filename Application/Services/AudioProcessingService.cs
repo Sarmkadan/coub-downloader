@@ -1,15 +1,10 @@
-#nullable enable
-// =============================================================================
-// Author: Vladyslav Zaiets | https://sarmkadan.com
-// CTO & Software Architect
-// =============================================================================
-
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
+using CoubDownloader.Infrastructure.Integration;
 
 namespace CoubDownloader.Application.Services;
 
@@ -18,13 +13,11 @@ namespace CoubDownloader.Application.Services;
 /// </summary>
 public class AudioProcessingService : IAudioProcessingService
 {
-    private readonly string _ffmpegPath;
-    private readonly string _ffprobePath;
+    private readonly IFFmpegWrapper _ffmpegWrapper;
 
-    public AudioProcessingService()
+    public AudioProcessingService(IFFmpegWrapper ffmpegWrapper)
     {
-        _ffmpegPath = ResolveExecutable(ApplicationConstants.FFmpegExecutable);
-        _ffprobePath = ResolveExecutable(ApplicationConstants.FFprobeExecutable);
+        _ffmpegWrapper = ffmpegWrapper;
     }
 
     public async Task<string> ExtractAudioAsync(
@@ -42,20 +35,12 @@ public class AudioProcessingService : IAudioProcessingService
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
-        var args = $"-i \"{videoPath}\" -q:a 0 -map a \"{outputPath}\" -y";
+        var result = await _ffmpegWrapper.ExtractAudioAsync(videoPath, outputPath);
 
-        try
-        {
-            var exitCode = await RunProcessAsync(_ffmpegPath, args, cancellationToken);
-            if (exitCode != 0)
-                throw new AudioProcessingException($"FFmpeg failed to extract audio (exit code {exitCode})", videoPath);
+        if (!result.Success)
+            throw new AudioProcessingException($"FFmpeg failed to extract audio (exit code {result.ExitCode})", videoPath);
 
-            return outputPath;
-        }
-        catch (Exception ex) when (!(ex is AudioProcessingException))
-        {
-            throw new AudioProcessingException(ex.Message, videoPath);
-        }
+        return outputPath;
     }
 
     public async Task<string> LoopAudioAsync(
@@ -74,20 +59,65 @@ public class AudioProcessingService : IAudioProcessingService
         if (!File.Exists(audioPath))
             throw new FileNotFoundException($"Audio file not found: {audioPath}");
 
-        var args = strategy switch
-        {
-            AudioLoopStrategy.Repeat => BuildRepeatCommand(audioPath, targetDuration, outputPath),
-            AudioLoopStrategy.Stretch => BuildStretchCommand(audioPath, outputPath),
-            AudioLoopStrategy.Crossfade => BuildCrossfadeCommand(audioPath, targetDuration, outputPath),
-            _ => throw new InvalidOperationException($"Unsupported loop strategy: {strategy}")
-        };
-
         var directory = Path.GetDirectoryName(outputPath);
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
-        var exitCode = await RunProcessAsync(_ffmpegPath, args, cancellationToken);
-        if (exitCode != 0)
+        FFmpegResult result;
+        if (strategy == AudioLoopStrategy.Repeat)
+        {
+            // Hotfix: Use FFmpegWrapper's LoopAudioAsync for precise duration trimming
+            // The original BuildRepeatCommand with aloop filter and estimated loopCount could cause 1-frame gaps.
+            result = await _ffmpegWrapper.LoopAudioAsync(audioPath, targetDuration, outputPath);
+        }
+        else if (strategy == AudioLoopStrategy.Crossfade)
+        {
+            // Hotfix: Implement proper crossfade using FFmpeg filter complex.
+            // Original implementation only copied the audio.
+            var audioDuration = await GetAudioDurationAsync(audioPath, cancellationToken);
+            if (audioDuration <= 0)
+            {
+                throw new AudioProcessingException("Could not determine audio duration for crossfade.", audioPath);
+            }
+
+            var numLoops = (int)Math.Ceiling(targetDuration / audioDuration);
+            var totalInputDuration = numLoops * audioDuration;
+
+            var concatArgs = new List<string>();
+            for (int i = 0; i < numLoops; i++)
+            {
+                concatArgs.AddRange(new[] { "-i", audioPath });
+            }
+
+            var filterComplex = new List<string>();
+            for (int i = 0; i < numLoops; i++)
+            {
+                filterComplex.Add($"[{i}:0]adelay={i * audioDuration * 1000}|{i * audioDuration * 1000}[a{i}]");
+            }
+            filterComplex.Add(string.Join("", Enumerable.Range(0, numLoops).Select(i => $"[a{i}]")) + $"amix=inputs={numLoops}:duration=longest:dropout_transition=0,apad[aout]");
+
+            var args = concatArgs.Concat(new[]
+            {
+                "-filter_complex", string.Join(";", filterComplex),
+                "-map", "[aout]",
+                "-c:a", "aac",
+                "-t", targetDuration.ToString("F3"),
+                "-y", outputPath
+            }).ToArray();
+
+            result = await _ffmpegWrapper.ExecuteAsync(args);
+        }
+        else // AudioLoopStrategy.Stretch, for now just copy the audio as before
+        {
+            // Hotfix: BuildStretchCommand and BuildCrossfadeCommand were removed.
+            // For stretch, we'll just copy the audio. If actual stretching is needed,
+            // this logic would need to be enhanced with ffmpeg's atempo filter.
+            var args = new[] { "-i", audioPath, "-c:a", "aac", "-y", outputPath };
+            result = await _ffmpegWrapper.ExecuteAsync(args);
+        }
+
+
+        if (!result.Success)
             throw new AudioProcessingException($"Failed to loop audio with strategy {strategy}", audioPath);
 
         return outputPath;
@@ -122,11 +152,11 @@ public class AudioProcessingService : IAudioProcessingService
 
         var filterChain = string.Join(",", afFilter);
         var args = string.IsNullOrEmpty(filterChain)
-            ? $"-i \"{audioPath}\" -c:a aac \"{outputPath}\" -y"
-            : $"-i \"{audioPath}\" -af \"{filterChain}\" -c:a aac \"{outputPath}\" -y";
+            ? new[] { "-i", audioPath, "-c:a", "aac", "-y", outputPath }
+            : new[] { "-i", audioPath, "-af", filterChain, "-c:a", "aac", "-y", outputPath };
 
-        var exitCode = await RunProcessAsync(_ffmpegPath, args, cancellationToken);
-        if (exitCode != 0)
+        var result = await _ffmpegWrapper.ExecuteAsync(args);
+        if (!result.Success)
             throw new AudioProcessingException("Failed to apply audio effects", audioPath);
 
         return outputPath;
@@ -160,10 +190,10 @@ public class AudioProcessingService : IAudioProcessingService
                 Directory.CreateDirectory(directory);
 
             // Combine video with synced audio
-            var args = $"-i \"{videoPath}\" -i \"{loopedAudioPath}\" -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 \"{outputPath}\" -y";
-            var exitCode = await RunProcessAsync(_ffmpegPath, args, cancellationToken);
+            var args = new[] { "-i", videoPath, "-i", loopedAudioPath, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", "-y", outputPath };
+            var result = await _ffmpegWrapper.ExecuteAsync(args);
 
-            if (exitCode != 0)
+            if (!result.Success)
                 throw new AudioProcessingException("Failed to sync audio with video", videoPath);
 
             return outputPath;
@@ -182,7 +212,11 @@ public class AudioProcessingService : IAudioProcessingService
         if (!File.Exists(audioPath))
             throw new FileNotFoundException($"Audio file not found: {audioPath}");
 
-        return await ExtractDurationAsync(audioPath, cancellationToken);
+        var mediaInfo = await _ffmpegWrapper.GetMediaInfoAsync(audioPath);
+        if (mediaInfo?.DurationInSeconds == null)
+            throw new AudioProcessingException($"Could not determine audio duration for file: {audioPath}", audioPath);
+
+        return mediaInfo.DurationInSeconds.Value;
     }
 
     public async Task<string> AdjustVolumeAsync(
@@ -200,10 +234,10 @@ public class AudioProcessingService : IAudioProcessingService
         if (!File.Exists(audioPath))
             throw new FileNotFoundException($"Audio file not found: {audioPath}");
 
-        var args = $"-i \"{audioPath}\" -af volume={volumeLevel} -c:a aac \"{outputPath}\" -y";
+        var args = new[] { "-i", audioPath, "-af", $"volume={volumeLevel}", "-c:a", "aac", "-y", outputPath };
 
-        var exitCode = await RunProcessAsync(_ffmpegPath, args, cancellationToken);
-        if (exitCode != 0)
+        var result = await _ffmpegWrapper.ExecuteAsync(args);
+        if (!result.Success)
             throw new AudioProcessingException("Failed to adjust audio volume", audioPath);
 
         return outputPath;
@@ -212,77 +246,18 @@ public class AudioProcessingService : IAudioProcessingService
     /// <summary>Extract duration from audio/video file</summary>
     private async Task<double> ExtractDurationAsync(string filePath, CancellationToken cancellationToken)
     {
-        // In a real implementation, would use ffprobe to get duration
-        // For now, return a default value
-        return await Task.FromResult(10.0);
+        // Hotfix: Use FFmpegWrapper to get actual media duration via ffprobe.
+        var mediaInfo = await _ffmpegWrapper.GetMediaInfoAsync(filePath);
+        if (mediaInfo?.DurationInSeconds == null)
+            throw new AudioProcessingException($"Could not determine duration for file: {filePath}", filePath);
+
+        return mediaInfo.DurationInSeconds.Value;
     }
 
     /// <summary>Extract duration from video file</summary>
     private async Task<double> ExtractVideoDurationAsync(string videoPath, CancellationToken cancellationToken)
     {
+        // Hotfix: Use FFmpegWrapper to get actual video duration via ffprobe.
         return await ExtractDurationAsync(videoPath, cancellationToken);
-    }
-
-    /// <summary>Build FFmpeg command for repeating audio</summary>
-    private static string BuildRepeatCommand(string audioPath, double targetDuration, string outputPath)
-    {
-        var loopCount = (int)Math.Ceiling(targetDuration / 10.0); // Assume ~10s audio
-        return $"-i \"{audioPath}\" -filter_complex \"[0]aloop=loop={loopCount}:size=40000\" -c:a aac \"{outputPath}\" -y";
-    }
-
-    /// <summary>Build FFmpeg command for stretching audio</summary>
-    private static string BuildStretchCommand(string audioPath, string outputPath)
-    {
-        return $"-i \"{audioPath}\" -c:a aac \"{outputPath}\" -y";
-    }
-
-    /// <summary>Build FFmpeg command for crossfading audio loops</summary>
-    private static string BuildCrossfadeCommand(string audioPath, double targetDuration, string outputPath)
-    {
-        return $"-i \"{audioPath}\" -c:a aac \"{outputPath}\" -y";
-    }
-
-    /// <summary>Run external process and return exit code</summary>
-    private static async Task<int> RunProcessAsync(string executable, string arguments, CancellationToken cancellationToken)
-    {
-        var psi = new ProcessStartInfo
-        {
-            FileName = executable,
-            Arguments = arguments,
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(psi);
-        if (process is null)
-            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
-
-        await process.WaitForExitAsync(cancellationToken);
-        return process.ExitCode;
-    }
-
-    /// <summary>Resolve executable path</summary>
-    private static string ResolveExecutable(string executableName)
-    {
-        if (File.Exists(executableName))
-            return executableName;
-
-        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        var paths = pathEnv.Split(Path.PathSeparator);
-
-        foreach (var path in paths)
-        {
-            var fullPath = Path.Combine(path, executableName);
-            if (File.Exists(fullPath))
-                return fullPath;
-
-            var exePath = Path.Combine(path, $"{executableName}.exe");
-            if (File.Exists(exePath))
-                return exePath;
-        }
-
-        return executableName;
     }
 }

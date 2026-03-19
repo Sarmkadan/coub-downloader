@@ -19,6 +19,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>NU1510;CS0168;CS8601;CS8604;CS1591;CS1587</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

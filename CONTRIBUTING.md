@@ -1,32 +1,84 @@
 # Contributing
 
-We'd love for you to contribute to our source code and to make it even better than it is today!
+Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and more.
 
-## Development Requirements
+## Requirements
 
-- **.NET SDK**: 10.0
-- **Git**: For version control
+- [.NET SDK 10.0](https://dotnet.microsoft.com/download)
+- [FFmpeg](https://ffmpeg.org/download.html) (required at runtime, not for build/test)
+- Git
+
+## Building locally
+
+```bash
+# Clone the repository
+git clone https://github.com/sarmkadan/coub-downloader.git
+cd coub-downloader
+
+# Restore dependencies
+dotnet restore
+
+# Build in Debug mode
+dotnet build
+
+# Build in Release mode
+dotnet build --configuration Release
+```
+
+## Running tests
+
+```bash
+# Run all tests
+dotnet test
+
+# Run with detailed output and generate a TRX report
+dotnet test --verbosity normal --logger "trx" --results-directory TestResults
+
+# Run a specific test project
+dotnet test tests/coub-downloader.Tests/coub-downloader.Tests.csproj
+```
 
 ## Workflow
 
-1. **Fork the repository** on GitHub.
-2. **Clone your fork** locally.
-3. **Create a branch** for your feature or bugfix.
-4. **Make changes** and ensure they adhere to the code style.
-5. **Run tests** using `dotnet test`.
-6. **Submit a Pull Request (PR)** against the main branch of the upstream repository.
+1. **Fork** the repository and create a branch from `main`.
+2. **Name your branch** descriptively: `feature/your-feature` or `fix/issue-description`.
+3. **Make your changes** and keep each commit focused on one logical change.
+4. **Run tests** and ensure they all pass before opening a PR.
+5. **Open a Pull Request** against the `main` branch with a clear description of what changed and why.
 
-## Code Style
+## Pull request guidelines
 
-- Follow the existing coding conventions found in the project.
-- Write XML documentation comments (`///`) for public APIs and classes.
-- **Keep ALL author headers**: DO NOT remove any existing author headers from files.
+- Keep PRs small and focused — one feature or fix per PR.
+- Link related GitHub issues in the PR description using `Closes #<issue>`.
+- Ensure `dotnet build` and `dotnet test` both pass locally.
+- Do not lower test coverage — add tests for new behaviour.
+- Update documentation (README, docs/) if your change affects public behaviour or configuration.
 
-## Issues
+## Code style
 
-If you find a bug or have a feature request, please use **GitHub Issues**. 
-Ensure you provide detailed reproduction steps for any bugs you report.
+The project uses `.editorconfig` for consistent formatting. Before submitting, verify formatting:
+
+```bash
+dotnet format --verify-no-changes
+```
+
+Additional conventions:
+
+- Follow the existing coding patterns in each layer (Domain, Application, Infrastructure, Presentation).
+- Write XML documentation comments (`///`) for all public types and members.
+- Use `_camelCase` for private fields and `PascalCase` for everything else.
+- Prefer dependency injection over static access.
+- **Keep ALL existing author headers** — do not remove them from files.
+
+## Reporting issues
+
+Use [GitHub Issues](https://github.com/sarmkadan/coub-downloader/issues) to report bugs or request features. For bugs, include:
+
+- Steps to reproduce
+- Expected vs actual behaviour
+- .NET SDK version (`dotnet --version`)
+- Operating system and FFmpeg version
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the project's [MIT License](LICENSE).
+By contributing you agree that your contributions will be licensed under the [MIT License](LICENSE).

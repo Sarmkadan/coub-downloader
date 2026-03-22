@@ -18,6 +18,7 @@ obj/
 # OS
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Logs
 logs/
@@ -60,3 +61,10 @@ artifacts/
 *.nupkg
 *.snupkg
 packages/
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/

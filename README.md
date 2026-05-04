@@ -236,6 +236,45 @@ var duration = TimeSpan.FromMinutes(90);
 Console.WriteLine($"Duration formatted: {duration.FormatDuration()}"); // Output: Duration formatted: 01:30:00
 ```
 
+## VersionHelper
+
+`VersionHelper` provides utilities for retrieving application version information, runtime details, and performing version comparisons. It helps ensure compatibility checks and provides build metadata throughout the application lifecycle.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Utilities;
+
+// Example 1: Get basic version information
+var appVersion = VersionHelper.GetApplicationVersion();
+var runtimeVersion = VersionHelper.GetRuntimeVersion();
+var osInfo = VersionHelper.GetOperatingSystem();
+var buildDate = VersionHelper.GetBuildDate();
+
+Console.WriteLine($"Application Version: {appVersion}");
+Console.WriteLine($"Runtime Version: {runtimeVersion}");
+Console.WriteLine($"OS: {osInfo}");
+Console.WriteLine($"Build Date: {buildDate:yyyy-MM-dd HH:mm:ss}");
+
+// Example 2: Get full application information
+var appInfo = VersionHelper.GetApplicationInfo();
+Console.WriteLine(appInfo.ToString());
+
+// Example 3: Version comparison
+var currentVersion = "1.2.3";
+var requiredVersion = "1.2.0";
+
+var isGreater = VersionHelper.IsGreaterThan(currentVersion, requiredVersion);
+Console.WriteLine($"Is current version greater than required: {isGreater}");
+
+var isUpdateAvailable = VersionHelper.IsUpdateAvailable(currentVersion, "1.3.0");
+Console.WriteLine($"Update available: {isUpdateAvailable}");
+
+// Example 4: Compare versions directly
+var comparisonResult = VersionHelper.CompareVersions("2.0.0", "1.9.9");
+Console.WriteLine($"Version comparison result: {comparisonResult}"); // Positive if 2.0.0 > 1.9.9
+```
+
 ## ObjectPool
 
 `ObjectPool<T>` provides a generic object pooling mechanism for reusing expensive resources efficiently. It maintains a pool of reusable objects, reducing the overhead of frequent object creation and garbage collection. The pool supports both synchronous and asynchronous resource management patterns through the `ObjectPool<T>` and `ConnectionPool` classes, with optional reset functionality for pooled objects.

@@ -11,9 +11,10 @@
     <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
     <Description>Download and convert Coub videos to MP4/Shorts format with FFmpeg integration, audio loop sync, and batch processing</Description>
-    <PackageProjectUrl>https://github.com/vladyslav-zaiets/coub-downloader</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/vladyslav-zaiets/coub-downloader</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/sarmkadan/coub-downloader</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sarmkadan/coub-downloader</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>

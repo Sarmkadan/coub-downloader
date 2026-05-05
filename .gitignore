@@ -2,6 +2,8 @@
 bin/
 obj/
 *.csproj.user
+*.user
+*.suo
 *.sln.DotSettings.user
 
 # IDE
@@ -39,6 +41,7 @@ downloads/
 .env
 .env.local
 appsettings.local.json
+appsettings.Development.json
 
 # Database
 *.db
@@ -56,3 +59,4 @@ artifacts/
 # Package
 *.nupkg
 *.snupkg
+packages/

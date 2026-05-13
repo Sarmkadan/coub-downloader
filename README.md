@@ -40,7 +40,7 @@ Coub is a popular platform for short-form video content, but downloading and con
 - [Advanced Usage](#advanced-usage)
 - [Troubleshooting](#troubleshooting)
 - [Performance Tuning](#performance-tuning)
-- [Ecosystem](#ecosystem)
+- [Related Projects](#related-projects)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -102,7 +102,7 @@ Coub is a popular platform for short-form video content, but downloading and con
 - macOS (12+)
 - Docker (any platform with Docker support)
 
-## 📦 Installation
+## Installation
 
 ### Method 1: Using Docker (Recommended)
 
@@ -118,7 +118,7 @@ docker run -it \
 ### Method 2: Using Docker Compose
 
 ```bash
-git clone https://github.com/vladyslav-zaiets/coub-downloader.git
+git clone https://github.com/sarmkadan/coub-downloader.git
 cd coub-downloader
 docker-compose up
 ```
@@ -127,7 +127,7 @@ docker-compose up
 
 ```bash
 # Clone repository
-git clone https://github.com/vladyslav-zaiets/coub-downloader.git
+git clone https://github.com/sarmkadan/coub-downloader.git
 cd coub-downloader
 
 # Restore dependencies
@@ -142,7 +142,7 @@ dotnet run --project CoubDownloader.csproj
 
 ### Method 4: Standalone Binary
 
-Download pre-built binaries from [Releases](https://github.com/vladyslav-zaiets/coub-downloader/releases):
+Download pre-built binaries from [Releases](https://github.com/sarmkadan/coub-downloader/releases):
 
 ```bash
 # Linux/macOS
@@ -153,21 +153,6 @@ chmod +x coub-downloader
 coub-downloader.exe --help
 ```
 
-### Method 5: Package Manager
-
-```bash
-# Homebrew (macOS)
-brew install coub-downloader
-
-# APT (Ubuntu/Debian)
-sudo apt-add-repository ppa:vladyslav-zaiets/coub-downloader
-sudo apt update
-sudo apt install coub-downloader
-
-# Chocolatey (Windows)
-choco install coub-downloader
-```
-
 ### Verify Installation
 
 ```bash
@@ -175,7 +160,7 @@ coub-downloader --version
 coub-downloader --check-ffmpeg
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Basic Download
 
@@ -211,7 +196,7 @@ coub-downloader batch \
 coub-downloader diagnostic --check-ffmpeg
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -257,7 +242,7 @@ coub-downloader diagnostic --check-ffmpeg
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-## 📚 Usage Examples
+## Usage Examples
 
 ### Example 1: Simple Single Video Download
 
@@ -433,7 +418,7 @@ export COUB_DOWNLOADER_QUALITY=high
 coub-downloader download --url https://coub.com/view/2a3b4c5d
 ```
 
-## 📖 API Reference
+## API Reference
 
 ### ICoubDownloadService
 
@@ -509,7 +494,7 @@ Task<BatchJob> GetBatchStatusAsync(string batchId);
 Task StartBatchAsync(string batchId);
 ```
 
-## 🎛️ CLI Reference
+## CLI Reference
 
 ### Global Options
 
@@ -581,7 +566,7 @@ Options:
   --report <path>              Generate detailed report
 ```
 
-## ⚙️ Configuration
+## Configuration
 
 ### Configuration File (appsettings.json)
 
@@ -634,7 +619,7 @@ COUB_ENABLE_GPU_ACCELERATION=true
 COUB_GPU_CODEC=h264_nvenc
 ```
 
-## 🧪 Testing
+## Testing
 
 ### Running Tests
 
@@ -681,7 +666,7 @@ public async Task DownloadAsync_ValidUrl_ReturnsOutputPath()
 }
 ```
 
-## 📈 Benchmarks
+## Benchmarks
 
 Measured on an 8-core / 16 GB RAM Linux host with FFmpeg 6.1, .NET 10, and a 100 Mbit/s connection. GPU benchmarks used NVIDIA RTX 3060 with `h264_nvenc`.
 
@@ -707,7 +692,7 @@ Measured on an 8-core / 16 GB RAM Linux host with FFmpeg 6.1, .NET 10, and a 100
 - Enabling `COUB_ENABLE_GPU_ACCELERATION=true` reduces per-video encoding time by ~3–4× on compatible hardware.
 - Cache hit rate reaches >90 % after the first run over a playlist, cutting subsequent re-runs to network-bound latency only.
 
-## 🔧 Advanced Usage
+## Advanced Usage
 
 ### Custom Output Naming
 
@@ -765,7 +750,7 @@ coub-downloader batch --input urls.txt --parallel 8
 # Use object pooling for memory efficiency
 ```
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### FFmpeg Not Found
 
@@ -830,7 +815,7 @@ coub-downloader download --url <url> --audio-loop fade
 ffmpeg -i video.mp4 -itsoffset 0.5 -i audio.mp3 -c:v copy -c:a aac output.mp4
 ```
 
-## 📊 Performance Tuning
+## Performance Tuning
 
 ### Memory Optimization
 
@@ -860,7 +845,7 @@ var options = new ObjectPoolOptions
 - Use parallel downloads with appropriate concurrency
 - Implement connection pooling
 
-## 🌐 Ecosystem
+## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).
 
@@ -905,7 +890,7 @@ public class NightlySyncWorker(IBatchProcessingService batchService) : Backgroun
 }
 ```
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please follow these guidelines:
 
@@ -919,7 +904,7 @@ We welcome contributions! Please follow these guidelines:
 
 ```bash
 # Clone and setup
-git clone https://github.com/vladyslav-zaiets/coub-downloader.git
+git clone https://github.com/sarmkadan/coub-downloader.git
 cd coub-downloader
 
 # Install dependencies
@@ -946,20 +931,19 @@ dotnet analyzers
 - Use async/await for I/O operations
 - Follow SOLID principles
 
-## 📄 License
+## License
 
-MIT License - Copyright © 2026 Vladyslav Zaiets
+MIT License - Copyright © 2025 Vladyslav Zaiets
 
 See [LICENSE](LICENSE) file for details.
 
-## 📞 Support
+## Support
 
-- **Issues**: [GitHub Issues](https://github.com/vladyslav-zaiets/coub-downloader/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/vladyslav-zaiets/coub-downloader/discussions)
-- **Email**: vladyslav.zaiets@amdaris.com
+- **Issues**: [GitHub Issues](https://github.com/sarmkadan/coub-downloader/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/sarmkadan/coub-downloader/discussions)
 
 ---
 
-**Built by [Vladyslav Zaiets](https://sarmkadan.com) - CTO & Software Architect**
+**Built by [Vladyslav Zaiets](https://sarmkadan.com)**
 
 [Portfolio](https://sarmkadan.com) | [GitHub](https://github.com/Sarmkadan) | [Telegram](https://t.me/sarmkadan)

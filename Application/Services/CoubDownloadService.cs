@@ -130,6 +130,13 @@ public class CoubDownloadService : ICoubDownloadService
         }
     }
 
+    /// <summary>
+    /// Verifies that a downloaded file exists and meets minimum size requirements.
+    /// A valid Coub video file should be at least 1 KB - anything smaller is likely
+    /// a truncated download or an error page served as the response body.
+    /// </summary>
+    /// <param name="filePath">Path to the downloaded file.</param>
+    /// <returns>True if the file exists and passes basic integrity checks.</returns>
     public async Task<bool> VerifyDownloadAsync(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
@@ -138,10 +145,16 @@ public class CoubDownloadService : ICoubDownloadService
             return false;
 
         var fileInfo = new FileInfo(filePath);
+
+        // Empty files are clearly invalid
         if (fileInfo.Length == 0)
             return false;
 
-        // In a real implementation, would verify file integrity with hash or format validation
+        // Files under 1 KB are almost certainly truncated or error responses
+        const long minimumValidSize = 1024;
+        if (fileInfo.Length < minimumValidSize)
+            return false;
+
         return await Task.FromResult(true);
     }
 

@@ -8,11 +8,11 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>CoubDownloader</RootNamespace>
     <AssemblyName>CoubDownloader</AssemblyName>
-    <PackageId>Zaiets.coub.downloader</PackageId>
-    <Version>2.0.2</Version>
+    <PackageId>CoubDownloader</PackageId>
+    <Version>1.0.0</Version>
     <Authors>Vladyslav Zaiets</Authors>
-    <Description>Download and convert Coub videos to MP4/Shorts format in .NET - FFmpeg integration, audio loop sync, batch processing</Description>
-    <PackageTags>coub downloader ffmpeg mp4 shorts video audio-sync batch-processing</PackageTags>
+    <Description>A C# library for downloading and processing coubs.</Description>
+    <PackageTags>coub downloader video audio ffmpeg .net</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/sarmkadan/coub-downloader</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/coub-downloader</RepositoryUrl>

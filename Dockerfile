@@ -1,6 +1,5 @@
 # =============================================================================
 # Dockerfile for Coub Downloader
-# Author: Vladyslav Zaiets | https://sarmkadan.com
 # Multi-stage build optimized for production
 # =============================================================================
 
@@ -46,16 +45,11 @@ RUN mkdir -p /downloads && chown -R app:app /downloads
 # Switch to app user
 USER app
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/health || exit 1
-
 # Default command
 ENTRYPOINT ["dotnet", "CoubDownloader.dll"]
 CMD ["--help"]
 
 # Labels
-LABEL maintainer="Vladyslav Zaiets <vladyslav.zaiets@amdaris.com>"
 LABEL description="Download and convert Coub videos to MP4/Shorts format"
 LABEL version="1.0.0"
-LABEL org.opencontainers.image.source="https://github.com/vladyslav-zaiets/coub-downloader"
+LABEL org.opencontainers.image.source="https://github.com/sarmkadan/coub-downloader"

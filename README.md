@@ -198,13 +198,21 @@ builder.Services.Configure<ConversionSettings>(settings =>
 
 
 
-### Method 1: Using Docker (Recommended)
+### Method 1: Using Docker
+
+Build the image:
+
+```bash
+docker build -t coub-downloader .
+```
+
+Run the application:
 
 ```bash
 docker run -it \
-  -v /path/to/downloads:/downloads \
-  -v /path/to/config:/app/config \
-  vladyslav-zaiets/coub-downloader:latest download \
+  -v $(pwd)/downloads:/downloads \
+  -v $(pwd)/config:/app/config \
+  coub-downloader download \
     --url https://coub.com/view/2a3b4c5d \
     --output /downloads/video.mp4
 ```
@@ -212,8 +220,6 @@ docker run -it \
 ### Method 2: Using Docker Compose
 
 ```bash
-git clone https://github.com/sarmkadan/coub-downloader.git
-cd coub-downloader
 docker-compose up
 ```
 

@@ -1,0 +1,13 @@
+bin/
+obj/
+.git/
+.vs/
+.vscode/
+.dockerignore
+Dockerfile
+docker-compose.yml
+*.user
+*.lock
+*.md
+tests/
+examples/

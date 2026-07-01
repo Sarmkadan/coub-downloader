@@ -603,17 +603,23 @@ public async Task DownloadAsync_ValidUrl_ReturnsOutputPath()
 
 ## Benchmarks
 
-Measured on an 8-core / 16 GB RAM Linux host with FFmpeg 6.1, .NET 10, and a 100 Mbit/s connection. GPU benchmarks used NVIDIA RTX 3060 with `h264_nvenc`.
+Measured on an 8-core / 16 GB RAM Linux host with .NET 10.
 
-| Scenario | Throughput | Latency (p50) | Latency (p99) |
-|---|---|---|---|
-| Single video download (720p) | — | ~2.1 s | ~4.8 s |
-| Single video conversion — CPU (h264) | — | ~3.4 s | ~7.2 s |
-| Single video conversion — GPU (nvenc) | — | ~0.9 s | ~2.1 s |
-| Batch download (4 parallel workers) | ~18 videos/min | — | — |
-| Batch download (8 parallel workers) | ~31 videos/min | — | — |
-| Cache hit (metadata lookup) | ~95 000 ops/s | <1 ms | <3 ms |
-| Audio loop sync (15 s target) | ~200 tracks/s | ~5 ms | ~14 ms |
+### How to run
+
+```bash
+dotnet run -c Release --project benchmarks/coub-downloader.Benchmarks/coub-downloader.Benchmarks.csproj
+```
+
+### Results
+
+| Method                | Mean        | Error     | StdDev    | Median      | Gen0   | Allocated |
+|---------------------- |------------:|----------:|----------:|------------:|-------:|----------:|
+| GetFormattedViewCount |  33.2163 ns | 0.7020 ns | 0.8621 ns |  33.3863 ns | 0.0038 |      32 B |
+| GetFormattedFileSize  | 107.3630 ns | 1.9146 ns | 1.7909 ns | 107.2712 ns | 0.0048 |      40 B |
+| EstimateOutputSize    |   0.6638 ns | 0.0494 ns | 0.0754 ns |   0.6531 ns |      - |         - |
+| GetProgressPercent    |   0.0200 ns | 0.0276 ns | 0.0307 ns |   0.0000 ns |      - |         - |
+
 
 **Memory footprint**
 

@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Net;
 using System.Net.Http.Json;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Exceptions;
@@ -35,71 +36,136 @@ public class CoubDownloadService : ICoubDownloadService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        // Fetch metadata from Coub API
-        var video = await FetchMetadataAsync(coubUrl, cancellationToken);
+        try
+        {
+            // Fetch metadata from Coub API
+            var video = await FetchMetadataAsync(coubUrl, cancellationToken);
 
-        // Extract video source URL
-        video.SourceUrl = await ExtractVideoSourceAsync(coubUrl, cancellationToken);
+            // Extract video source URL
+            video.SourceUrl = await ExtractVideoSourceAsync(coubUrl, cancellationToken);
 
-        // Save video metadata to repository
-        var savedVideo = await _videoRepository.CreateAsync(video);
-        return savedVideo;
+            // Save video metadata to repository
+            var savedVideo = await _videoRepository.CreateAsync(video);
+            return savedVideo;
+        }
+        catch (CoubDownloaderException)
+        {
+            // Re-throw our custom exceptions
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
+        }
+        catch (Exception ex)
+        {
+            throw new VideoDownloadException("Failed to download video", coubUrl, ex);
+        }
     }
 
     public async Task<CoubVideo> FetchMetadataAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
-
-        if (videoInfo == null)
-            throw new MetadataExtractionException("Failed to fetch video metadata", coubUrl);
-
-        var video = new CoubVideo
+        try
         {
-            Id = videoInfo.Id,
-            Url = coubUrl,
-            Title = videoInfo.Title,
-            Duration = videoInfo.Duration,
-            // Assuming default width/height if not provided by API
-            Width = 1920, 
-            Height = 1080,
-            CreatorName = videoInfo.ChannelUrl ?? "Unknown", // Using ChannelUrl as creator name for now
-            ViewCount = videoInfo.ViewCount,
-            HasAudio = videoInfo.HasAudio,
-            UploadedDate = DateTime.UtcNow // API doesn't provide this, using current time
-        };
+            var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
 
-        return video;
+            if (videoInfo == null)
+                throw new MetadataExtractionException("Failed to fetch video metadata", coubUrl);
+
+            var video = new CoubVideo
+            {
+                Id = videoInfo.Id,
+                Url = coubUrl,
+                Title = videoInfo.Title ?? throw new MetadataExtractionException("Video title is null", coubUrl),
+                Duration = videoInfo.Duration,
+                // Assuming default width/height if not provided by API
+                Width = 1920,
+                Height = 1080,
+                CreatorName = videoInfo.ChannelUrl ?? "Unknown", // Using ChannelUrl as creator name for now
+                ViewCount = videoInfo.ViewCount,
+                HasAudio = videoInfo.HasAudio,
+                UploadedDate = DateTime.UtcNow // API doesn't provide this, using current time
+            };
+
+            return video;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
+        }
+        catch (Exception ex)
+        {
+            throw new MetadataExtractionException("Failed to extract video metadata", coubUrl, ex);
+        }
     }
 
     public async Task<string> ExtractVideoSourceAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
+        try
+        {
+            var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
 
-        if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
-            throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);
+            if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
+                throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);
 
-        // Assuming this is the pattern for direct video download based on the previous implementation
-        // This can be further refined if the Coub API provides a direct download link in the future.
-        return await Task.FromResult($"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm");
+            // Assuming this is the pattern for direct video download based on the previous implementation
+            // This can be further refined if the Coub API provides a direct download link in the future.
+            return await Task.FromResult($"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm");
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
+        }
+        catch (Exception ex)
+        {
+            throw new MetadataExtractionException("Failed to extract video source URL", coubUrl, ex);
+        }
     }
 
     public async Task<bool> VerifyDownloadAsync(string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-        if (!File.Exists(filePath))
-            return false;
+        try
+        {
+            if (!File.Exists(filePath))
+                return false;
 
-        var fileInfo = new FileInfo(filePath);
-        if (fileInfo.Length == 0)
-            return false;
+            var fileInfo = new FileInfo(filePath);
+            if (fileInfo.Length == 0)
+                return false;
 
-        // In a real implementation, would verify file integrity with hash or format validation
-        return await Task.FromResult(true);
+            // In a real implementation, would verify file integrity with hash or format validation
+            return await Task.FromResult(true);
+        }
+        catch (Exception ex)
+        {
+            throw new FileOperationException("Failed to verify downloaded file", filePath, FileOperationType.ExistsCheck, ex);
+        }
     }
 
     public async Task<string> DownloadVideoFileAsync(
@@ -111,31 +177,68 @@ public class CoubDownloadService : ICoubDownloadService
         ArgumentException.ThrowIfNullOrWhiteSpace(sourceUrl);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
 
-        var directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory))
-            Directory.CreateDirectory(directory);
-
-        using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-        response.EnsureSuccessStatusCode();
-
-        var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-        var bytesDownloaded = 0L;
-
-        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
-
-        var buffer = new byte[ApplicationConstants.DownloadChunkSize];
-        int bytesRead;
-
-        while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+        try
         {
-            await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-            bytesDownloaded += bytesRead;
+            var directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
 
-            if (progress is not null && totalBytes > 0)
-                progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+            using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                throw new VideoDownloadException("Video not found on server", sourceUrl, (int)HttpStatusCode.NotFound);
+
+            if (response.StatusCode == HttpStatusCode.Forbidden)
+                throw new VideoDownloadException("Access forbidden to video", sourceUrl, (int)HttpStatusCode.Forbidden);
+
+            if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                throw new VideoDownloadException("Rate limit exceeded", sourceUrl, (int)HttpStatusCode.TooManyRequests);
+
+            response.EnsureSuccessStatusCode();
+
+            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+            var bytesDownloaded = 0L;
+
+            await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+            await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
+
+            var buffer = new byte[ApplicationConstants.DownloadChunkSize];
+            int bytesRead;
+
+            while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+            {
+                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                bytesDownloaded += bytesRead;
+
+                if (progress is not null && totalBytes > 0)
+                    progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+            }
+
+            return outputPath;
         }
-
-        return outputPath;
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new NetworkException("HTTP request to video source failed", sourceUrl, ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            throw new NetworkException("Video download timed out", sourceUrl, ex) { IsTimeout = true };
+        }
+        catch (IOException ex)
+        {
+            throw new FileOperationException("Failed to write video file", outputPath, FileOperationType.Write, ex);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new FileOperationException("Access denied when writing video file", outputPath, FileOperationType.Write, ex);
+        }
+        catch (Exception ex)
+        {
+            throw new VideoDownloadException("Failed to download video file", sourceUrl, ex);
+        }
     }
-    }
+}

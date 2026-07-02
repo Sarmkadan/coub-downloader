@@ -37,27 +37,38 @@ public class VideoConversionService : IVideoConversionService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
-
-        if (!File.Exists(inputPath))
-            throw new FileNotFoundException($"Input video file not found: {inputPath}");
-
-        var directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory))
-            Directory.CreateDirectory(directory);
-
-        var ffmpegArgs = BuildConversionCommand(inputPath, outputPath, settings);
+        ArgumentNullException.ThrowIfNull(settings);
 
         try
         {
+            if (!File.Exists(inputPath))
+                throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
+
+            var directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
+
+            var ffmpegArgs = BuildConversionCommand(inputPath, outputPath, settings);
+
             var (exitCode, _, standardError) = await RunFfmpegAsync(ffmpegArgs, progress, cancellationToken);
+
             if (exitCode != 0)
-                throw new VideoConversionException($"FFmpeg exited with code {exitCode}. Error: {standardError}", inputPath, outputPath);
+                throw new ProcessExecutionException(
+                    $"FFmpeg exited with code {exitCode}",
+                    ApplicationConstants.FFmpegExecutable,
+                    ffmpegArgs,
+                    exitCode,
+                    standardError);
 
             return outputPath;
         }
-        catch (Exception ex) when (!(ex is VideoConversionException))
+        catch (CoubDownloaderException)
         {
-            throw new VideoConversionException(ex.Message, inputPath, outputPath);
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException)
+        {
+            throw new VideoConversionException(ex.Message, inputPath, outputPath, ex);
         }
     }
 
@@ -65,72 +76,93 @@ public class VideoConversionService : IVideoConversionService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
 
-        if (!File.Exists(filePath))
-            throw new FileNotFoundException($"Video file not found: {filePath}");
-
-        var ffprobeArgs = $"-v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
-
-        var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
-
-        if (exitCode != 0)
-            throw new VideoConversionException($"FFprobe exited with code {exitCode}. Error: {standardError}", filePath, "metadata_extraction");
-
-        var metadata = new VideoMetadata();
-
         try
         {
-            using (JsonDocument doc = JsonDocument.Parse(standardOutput))
+            if (!File.Exists(filePath))
+                throw new FileOperationException("Video file not found", filePath, FileOperationType.Read);
+
+            var ffprobeArgs = $"-v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
+
+            var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
+
+            if (exitCode != 0)
+                throw new ProcessExecutionException(
+                    $"FFprobe exited with code {exitCode}",
+                    ApplicationConstants.FFprobeExecutable,
+                    ffprobeArgs,
+                    exitCode,
+                    standardError);
+
+            var metadata = new VideoMetadata();
+
+            try
             {
-                var root = doc.RootElement;
-
-                // Format information
-                if (root.TryGetProperty("format", out JsonElement formatElement))
+                using (JsonDocument doc = JsonDocument.Parse(standardOutput))
                 {
-                    metadata.Format = formatElement.TryGetProperty("format_name", out var formatName) ? formatName.GetString() : null;
-                    metadata.FileSizeBytes = formatElement.TryGetProperty("size", out var size) && long.TryParse(size.GetString(), out var fileSize) ? fileSize : 0;
-                    metadata.Duration = formatElement.TryGetProperty("duration", out var duration) && double.TryParse(duration.GetString(), out var dur) ? dur : 0;
-                    metadata.VideoBitrate = formatElement.TryGetProperty("bit_rate", out var formatBitRate) && int.TryParse(formatBitRate.GetString(), out var fb) ? fb : 0;
-                }
+                    var root = doc.RootElement;
 
-                // Stream information
-                if (root.TryGetProperty("streams", out JsonElement streamsElement) && streamsElement.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var stream in streamsElement.EnumerateArray())
+                    // Format information
+                    if (root.TryGetProperty("format", out JsonElement formatElement))
                     {
-                        var codecType = stream.TryGetProperty("codec_type", out var ct) ? ct.GetString() : null;
+                        metadata.Format = formatElement.TryGetProperty("format_name", out var formatName) ? formatName.GetString() : null;
+                        metadata.FileSizeBytes = formatElement.TryGetProperty("size", out var size) && long.TryParse(size.GetString(), out var fileSize) ? fileSize : 0;
+                        metadata.Duration = formatElement.TryGetProperty("duration", out var duration) && double.TryParse(duration.GetString(), out var dur) ? dur : 0;
+                        metadata.VideoBitrate = formatElement.TryGetProperty("bit_rate", out var formatBitRate) && int.TryParse(formatBitRate.GetString(), out var fb) ? fb : 0;
+                    }
 
-                        if (codecType == "video")
+                    // Stream information
+                    if (root.TryGetProperty("streams", out JsonElement streamsElement) && streamsElement.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var stream in streamsElement.EnumerateArray())
                         {
-                            metadata.Width = stream.TryGetProperty("width", out var width) ? width.GetInt32() : 0;
-                            metadata.Height = stream.TryGetProperty("height", out var height) ? height.GetInt32() : 0;
-                            metadata.VideoCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
-                            if (stream.TryGetProperty("r_frame_rate", out var frameRateString))
+                            var codecType = stream.TryGetProperty("codec_type", out var ct) ? ct.GetString() : null;
+
+                            if (codecType == "video")
                             {
-                                var parts = frameRateString.GetString()?.Split('/');
-                                if (parts?.Length == 2 && int.TryParse(parts[0], out var num) && int.TryParse(parts[1], out var den) && den != 0)
+                                metadata.Width = stream.TryGetProperty("width", out var width) ? width.GetInt32() : 0;
+                                metadata.Height = stream.TryGetProperty("height", out var height) ? height.GetInt32() : 0;
+                                metadata.VideoCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
+                                if (stream.TryGetProperty("r_frame_rate", out var frameRateString))
                                 {
-                                    metadata.FrameRate = num / den;
+                                    var parts = frameRateString.GetString()?.Split('/');
+                                    if (parts?.Length == 2 && int.TryParse(parts[0], out var num) && int.TryParse(parts[1], out var den) && den != 0)
+                                    {
+                                        metadata.FrameRate = num / den;
+                                    }
                                 }
+                                // If stream has its own bitrate, use it. Otherwise, rely on format bitrate.
+                                metadata.VideoBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : metadata.VideoBitrate;
                             }
-                            // If stream has its own bitrate, use it. Otherwise, rely on format bitrate.
-                            metadata.VideoBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : metadata.VideoBitrate;
-                        }
-                        else if (codecType == "audio")
-                        {
-                            metadata.AudioCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
-                            metadata.AudioBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : 0;
-                            metadata.HasAudio = true;
+                            else if (codecType == "audio")
+                            {
+                                metadata.AudioCodec = stream.TryGetProperty("codec_name", out var codecName) ? codecName.GetString() : null;
+                                metadata.AudioBitrate = stream.TryGetProperty("bit_rate", out var streamBitRate) && int.TryParse(streamBitRate.GetString(), out var sb) ? sb : 0;
+                                metadata.HasAudio = true;
+                            }
                         }
                     }
                 }
             }
-        }
-        catch (JsonException ex)
-        {
-            throw new VideoConversionException($"Failed to parse ffprobe JSON output: {ex.Message}", filePath, "metadata_extraction");
-        }
+            catch (JsonException ex)
+            {
+                throw new ProcessExecutionException(
+                    $"Failed to parse ffprobe JSON output: {ex.Message}",
+                    ApplicationConstants.FFprobeExecutable,
+                    ffprobeArgs,
+                    0,
+                    ex.Message);
+            }
 
-        return metadata;
+            return metadata;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException)
+        {
+            throw new VideoConversionException("Failed to get video metadata", filePath, "metadata_extraction", ex);
+        }
     }
 
     public async Task<string> ApplyAudioTrackAsync(
@@ -143,20 +175,38 @@ public class VideoConversionService : IVideoConversionService
         ArgumentException.ThrowIfNullOrWhiteSpace(videoPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(audioPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(settings);
 
-        if (!File.Exists(videoPath))
-            throw new FileNotFoundException($"Video file not found: {videoPath}");
-        if (!File.Exists(audioPath))
-            throw new FileNotFoundException($"Audio file not found: {audioPath}");
+        try
+        {
+            if (!File.Exists(videoPath))
+                throw new FileOperationException("Video file not found", videoPath, FileOperationType.Read);
+            if (!File.Exists(audioPath))
+                throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
 
-        var args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a {settings.AudioCodec} " +
-                   $"-b:a {settings.AudioBitrate}k -shortest \"{outputPath}\" -y";
+            var args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a {settings.AudioCodec} " +
+                      $"-b:a {settings.AudioBitrate}k -shortest \"{outputPath}\" -y";
 
-        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
-        if (exitCode != 0)
-            throw new VideoConversionException($"Failed to apply audio track. Error: {standardError}", videoPath, outputPath);
+            var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
-        return outputPath;
+            if (exitCode != 0)
+                throw new ProcessExecutionException(
+                    "Failed to apply audio track",
+                    ApplicationConstants.FFmpegExecutable,
+                    args,
+                    exitCode,
+                    standardError);
+
+            return outputPath;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException)
+        {
+            throw new VideoConversionException(ex.Message, videoPath, outputPath, ex);
+        }
     }
 
     public async Task<bool> IsFfmpegAvailableAsync()
@@ -173,36 +223,58 @@ public class VideoConversionService : IVideoConversionService
             };
 
             using var process = Process.Start(psi);
-            if (process is null) return false;
+            if (process is null)
+                return false;
 
             await process.WaitForExitAsync();
             return process.ExitCode == 0;
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable)
+            {
+                ToolName = ApplicationConstants.FFmpegExecutable,
+                Source = ex
+            };
         }
     }
 
     public async Task<string> GetFfmpegVersionAsync()
     {
-        var psi = new ProcessStartInfo
+        ArgumentException.ThrowIfNullOrWhiteSpace(_ffmpegPath);
+
+        try
         {
-            FileName = _ffmpegPath,
-            Arguments = "-version",
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                Arguments = "-version",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        using var process = Process.Start(psi);
-        if (process is null)
-            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
+            using var process = Process.Start(psi);
+            if (process is null)
+                throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
 
-        var output = await process.StandardOutput.ReadLineAsync();
-        await process.WaitForExitAsync();
+            var output = await process.StandardOutput.ReadLineAsync();
+            await process.WaitForExitAsync();
 
-        return output ?? "Unknown version";
+            return output ?? "Unknown version";
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable)
+            {
+                ToolName = ApplicationConstants.FFmpegExecutable,
+                Source = ex
+            };
+        }
     }
 
     public async Task<string> RescaleVideoAsync(
@@ -215,40 +287,71 @@ public class VideoConversionService : IVideoConversionService
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
 
-        if (width <= 0 || height <= 0)
-            throw new ArgumentException("Width and height must be greater than 0");
+        try
+        {
+            if (width <= 0 || height <= 0)
+                throw new ValidationException("Width and height must be greater than 0", nameof(width), width);
 
-        var args = $"-i \"{inputPath}\" -vf scale={width}:{height} -c:v h264 -crf 23 " +
-                   $"-c:a aac -b:a 128k \"{outputPath}\" -y";
+            if (!File.Exists(inputPath))
+                throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
 
-        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
-        if (exitCode != 0)
-            throw new VideoConversionException($"Failed to rescale video to {width}x{height}. Error: {standardError}", inputPath, outputPath);
+            var args = $"-i \"{inputPath}\" -vf scale={width}:{height} -c:v h264 -crf 23 " +
+                      $"-c:a aac -b:a 128k \"{outputPath}\" -y";
 
-        return outputPath;
+            var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
+
+            if (exitCode != 0)
+                throw new ProcessExecutionException(
+                    $"Failed to rescale video to {width}x{height}",
+                    ApplicationConstants.FFmpegExecutable,
+                    args,
+                    exitCode,
+                    standardError);
+
+            return outputPath;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException and not ValidationException)
+        {
+            throw new VideoConversionException(ex.Message, inputPath, outputPath, ex);
+        }
     }
 
     /// <summary>Build FFmpeg command line arguments for conversion</summary>
     private static string BuildConversionCommand(string inputPath, string outputPath, ConversionSettings settings)
     {
-        var codecParams = settings.GetFFmpegCodecParams();
-        var scaleFilter = settings.PreserveAspectRatio
-            ? $"scale={settings.Width}:{settings.Height}:force_original_aspect_ratio=decrease"
-            : $"scale={settings.Width}:{settings.Height}";
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(settings);
 
-        var fades = string.Empty;
-        if (settings.ApplyFades)
+        try
         {
-            var fadeIn = settings.FadeInMs / 1000.0;
-            var fadeOut = settings.FadeOutMs / 1000.0;
-            fades = $",fade=t=in:st=0:d={fadeIn},fade=t=out:st=10:d={fadeOut}";
+            var codecParams = settings.GetFFmpegCodecParams();
+            var scaleFilter = settings.PreserveAspectRatio
+                ? $"scale={settings.Width}:{settings.Height}:force_original_aspect_ratio=decrease"
+                : $"scale={settings.Width}:{settings.Height}";
+
+            var fades = string.Empty;
+            if (settings.ApplyFades)
+            {
+                var fadeIn = settings.FadeInMs / 1000.0;
+                var fadeOut = settings.FadeOutMs / 1000.0;
+                fades = $",fade=t=in:st=0:d={fadeIn},fade=t=out:st=10:d={fadeOut}";
+            }
+
+            var args = $"-i \"{inputPath}\" -vf \"{scaleFilter}{fades}\" -r {settings.FrameRate} " +
+                      $"{codecParams} -preset {VideoProcessingConstants.FFmpegPreset} " +
+                      $"\"{outputPath}\" -y";
+
+            return args;
         }
-
-        var args = $"-i \"{inputPath}\" -vf \"{scaleFilter}{fades}\" -r {settings.FrameRate} " +
-                   $"{codecParams} -preset {VideoProcessingConstants.FFmpegPreset} " +
-                   $"\"{outputPath}\" -y";
-
-        return args;
+        catch (Exception ex)
+        {
+            throw new ValidationException("Failed to build FFmpeg conversion command", nameof(settings), settings, ex);
+        }
     }
 
     /// <summary>Run FFmpeg process with arguments</summary>
@@ -257,39 +360,57 @@ public class VideoConversionService : IVideoConversionService
         IProgress<int>? progress,
         CancellationToken cancellationToken)
     {
-        var psi = new ProcessStartInfo
+        ArgumentException.ThrowIfNullOrWhiteSpace(arguments);
+
+        try
         {
-            FileName = _ffmpegPath,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            var psi = new ProcessStartInfo
+            {
+                FileName = _ffmpegPath,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
 
-        using var process = Process.Start(psi);
-        if (process is null)
-            throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
+            using var process = Process.Start(psi);
+            if (process is null)
+                throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
 
-        var stdOutput = new StringWriter();
-        var stdError = new StringWriter();
+            var stdOutput = new StringWriter();
+            var stdError = new StringWriter();
 
-        process.OutputDataReceived += (sender, e) =>
+            process.OutputDataReceived += (sender, e) =>
+            {
+                if (e.Data != null) stdOutput.WriteLine(e.Data);
+            };
+            process.ErrorDataReceived += (sender, e) =>
+            {
+                if (e.Data != null) stdError.WriteLine(e.Data);
+                // Optionally, parse FFmpeg progress here and report to 'progress'
+            };
+
+            process.BeginOutputReadLine();
+            process.BeginErrorReadLine();
+
+            await process.WaitForExitAsync(cancellationToken);
+
+            return (process.ExitCode, stdOutput.ToString(), stdError.ToString());
+        }
+        catch (OperationCanceledException)
         {
-            if (e.Data != null) stdOutput.WriteLine(e.Data);
-        };
-        process.ErrorDataReceived += (sender, e) =>
+            throw;
+        }
+        catch (Exception ex) when (ex is not ToolNotFoundException)
         {
-            if (e.Data != null) stdError.WriteLine(e.Data);
-            // Optionally, parse FFmpeg progress here and report to 'progress'
-        };
-
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-
-        await process.WaitForExitAsync(cancellationToken);
-        
-        return (process.ExitCode, stdOutput.ToString(), stdError.ToString());
+            throw new ProcessExecutionException(
+                $"Failed to execute FFmpeg process",
+                ApplicationConstants.FFmpegExecutable,
+                arguments,
+                0,
+                ex.Message);
+        }
     }
 
     /// <summary>Convert video to YouTube Shorts / TikTok 9:16 vertical format (1080x1920)</summary>
@@ -301,57 +422,85 @@ public class VideoConversionService : IVideoConversionService
         ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
 
-        if (!File.Exists(inputPath))
-            throw new FileNotFoundException($"Input video file not found: {inputPath}");
+        try
+        {
+            if (!File.Exists(inputPath))
+                throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
 
-        var directory = Path.GetDirectoryName(outputPath);
-        if (!string.IsNullOrEmpty(directory))
-            Directory.CreateDirectory(directory);
+            var directory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(directory))
+                Directory.CreateDirectory(directory);
 
-        // Scale source to fill 1080x1920 and blur it for the background, then overlay
-        // the source scaled to fit (letterbox) centred on top.
-        const string shortsFilter =
-            "[0:v]split[a][b];" +
-            "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[blurred];" +
-            "[b]scale=1080:1920:force_original_aspect_ratio=decrease[fg];" +
-            "[blurred][fg]overlay=(W-w)/2:(H-h)/2";
+            // Scale source to fill 1080x1920 and blur it for the background, then overlay
+            // the source scaled to fit (letterbox) centred on top.
+            const string shortsFilter =
+                "[0:v]split[a][b];" +
+                "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[blurred];" +
+                "[b]scale=1080:1920:force_original_aspect_ratio=decrease[fg];" +
+                "[blurred][fg]overlay=(W-w)/2:(H-h)/2";
 
-        var args =
-            $"-i \"{inputPath}\" " +
-            $"-vf \"{shortsFilter}\" " +
-            $"-c:v h264 -crf {VideoProcessingConstants.FFmpegCRF} -preset {VideoProcessingConstants.FFmpegPreset} " +
-            $"-c:a aac -b:a {VideoProcessingConstants.DefaultAudioBitrate}k " +
-            $"\"{outputPath}\" -y";
+            var args =
+                $"-i \"{inputPath}\" " +
+                $"-vf \"{shortsFilter}\" " +
+                $"-c:v h264 -crf {VideoProcessingConstants.FFmpegCRF} -preset {VideoProcessingConstants.FFmpegPreset} " +
+                $"-c:a aac -b:a {VideoProcessingConstants.DefaultAudioBitrate}k " +
+                $"\"{outputPath}\" -y";
 
-        var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
-        if (exitCode != 0)
-            throw new VideoConversionException(
-                $"Failed to convert video to Shorts format. Error: {standardError}",
-                inputPath, outputPath);
+            var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
-        return outputPath;
+            if (exitCode != 0)
+                throw new ProcessExecutionException(
+                    "Failed to convert video to Shorts format",
+                    ApplicationConstants.FFmpegExecutable,
+                    args,
+                    exitCode,
+                    standardError);
+
+            return outputPath;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException)
+        {
+            throw new VideoConversionException(ex.Message, inputPath, outputPath, ex);
+        }
     }
 
     /// <summary>Resolve executable path from PATH environment variable</summary>
     private static string ResolveExecutable(string executableName)
     {
-        if (File.Exists(executableName))
-            return executableName;
+        ArgumentException.ThrowIfNullOrWhiteSpace(executableName);
 
-        var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-        var paths = pathEnv.Split(Path.PathSeparator);
-
-        foreach (var path in paths)
+        try
         {
-            var fullPath = Path.Combine(path, executableName);
-            if (File.Exists(fullPath))
-                return fullPath;
+            if (File.Exists(executableName))
+                return executableName;
 
-            var exePath = Path.Combine(path, $"{executableName}.exe");
-            if (File.Exists(exePath))
-                return exePath;
+            var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            var paths = pathEnv.Split(Path.PathSeparator);
+
+            foreach (var path in paths)
+            {
+                var fullPath = Path.Combine(path, executableName);
+                if (File.Exists(fullPath))
+                    return fullPath;
+
+                var exePath = Path.Combine(path, $"{executableName}.exe");
+                if (File.Exists(exePath))
+                    return exePath;
+            }
+
+            return executableName;
         }
-
-        return executableName;
+        catch (Exception ex)
+        {
+            throw new ToolNotFoundException(executableName)
+            {
+                ToolName = executableName,
+                Source = ex
+            };
+        }
     }
 }

@@ -126,7 +126,7 @@ public class VideoConversionServiceTests
         mockService.Protected().Verify(
             "RunFfmpegAsync",
             Times.Once(),
-            ItExpr.Is<string>(args => args.Contains($"-i "{inputPath}"") && args.Contains($""{outputPath}"")),
+            ItExpr.Is<string>(args => args.Contains($"-i \"{inputPath}\"") && args.Contains($"\"{outputPath}\"")),
             ItExpr.IsAny<IProgress<int>>(),
             ItExpr.IsAny<CancellationToken>());
         File.Delete(inputPath);
@@ -411,7 +411,7 @@ public class VideoConversionServiceTests
         mockService.Protected().Verify(
             "RunFfmpegAsync",
             Times.Once(),
-            ItExpr.Is<string>(args => args.Contains($"-i "{videoPath}"") && args.Contains($"-i "{audioPath}"")),
+            ItExpr.Is<string>(args => args.Contains($"-i \"{videoPath}\"") && args.Contains($"-i \"{audioPath}\"")),
             ItExpr.IsAny<IProgress<int>>(),
             ItExpr.IsAny<CancellationToken>());
         File.Delete(videoPath);

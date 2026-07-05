@@ -88,6 +88,7 @@ public class AudioProcessingService : IAudioProcessingService
                 Directory.CreateDirectory(directory);
 
             FFmpegResult result;
+            string[] args = Array.Empty<string>();
             if (strategy == AudioLoopStrategy.Repeat)
             {
                 // Hotfix: Use FFmpegWrapper's LoopAudioAsync for precise duration trimming
@@ -120,7 +121,7 @@ public class AudioProcessingService : IAudioProcessingService
                 }
                 filterComplex.Add(string.Join("", Enumerable.Range(0, numLoops).Select(i => $"[a{i}]")) + $"amix=inputs={numLoops}:duration=longest:dropout_transition=0,apad[aout]");
 
-                var args = concatArgs.Concat(new[]
+                args = concatArgs.Concat(new[]
                 {
                     "-filter_complex", string.Join(";", filterComplex),
                     "-map", "[aout]",
@@ -136,7 +137,7 @@ public class AudioProcessingService : IAudioProcessingService
                 // Hotfix: BuildStretchCommand and BuildCrossfadeCommand were removed.
                 // For stretch, we'll just copy the audio. If actual stretching is needed,
                 // this logic would need to be enhanced with ffmpeg's atempo filter.
-                var args = new[] { "-i", audioPath, "-c:a", "aac", "-y", outputPath };
+                args = new[] { "-i", audioPath, "-c:a", "aac", "-y", outputPath };
                 result = await _ffmpegWrapper.ExecuteAsync(args);
             }
 

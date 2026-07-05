@@ -22,6 +22,12 @@ public class ValidationException : CoubDownloaderException
         InvalidValue = invalidValue;
     }
 
+    public ValidationException(string message, string parameterName, object? invalidValue, Exception inner) : base(message, inner)
+    {
+        ParameterName = parameterName;
+        InvalidValue = invalidValue;
+    }
+
     public ValidationException(string message, Exception inner) : base(message, inner) { }
 
     public override string ToString()

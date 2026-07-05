@@ -213,19 +213,10 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
                 LogCategory);
             logger.LogDebug($"Filter graph: {filterGraph}", LogCategory);
 
-            var args = new List<string>
-            {
-                "-i", inputPath,
-                "-vf", filterGraph,
-                "-c:v", "libx264",
-                "-crf", "18",
-                "-preset", "medium",
-                "-c:a", "copy",
-                "-y", outputPath
-            };
+            var args = BuildEffectsArguments(inputPath, outputPath, filterGraph);
 
             progress?.Report(15);
-            var result = await ffmpeg.ExecuteAsync(args.ToArray(), TimeSpan.FromMinutes(30));
+            var result = await ffmpeg.ExecuteAsync(args, TimeSpan.FromMinutes(30));
             progress?.Report(95);
 
             if (!result.Success)
@@ -250,6 +241,20 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
         {
             throw new VideoConversionException("Failed to apply effects", inputPath, outputPath, ex);
         }
+    }
+
+    private static string[] BuildEffectsArguments(string inputPath, string outputPath, string filterGraph)
+    {
+        return new[]
+        {
+            "-i", inputPath,
+            "-vf", filterGraph,
+            "-c:v", "libx264",
+            "-crf", "18",
+            "-preset", "medium",
+            "-c:a", "copy",
+            "-y", outputPath
+        };
     }
 
     /// <inheritdoc/>
@@ -354,30 +359,7 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
             var tempFiles = new List<string>();
             try
             {
-                var currentInput = session.SourceFilePath;
-                var opCount = session.Operations.Count;
-
-                for (var i = 0; i < opCount; i++)
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-
-                    var op = session.Operations[i];
-                    var isLastOp = i == opCount - 1;
-                    var stepOutput = isLastOp ? outputPath : GetTempPath(".mp4");
-
-                    if (!isLastOp)
-                        tempFiles.Add(stepOutput);
-
-                    var capturedIndex = i;
-                    var stepProgress = new Progress<int>(p =>
-                        progress?.Report((int)((capturedIndex + p / 100.0) / opCount * 100)));
-
-                    await ApplyOperationAsync(op, currentInput, stepOutput, settings, stepProgress, cancellationToken);
-                    currentInput = stepOutput;
-                }
-
-                progress?.Report(100);
-                return BuildResult(outputPath, TimeSpan.Zero, operationsApplied: opCount);
+                return await ExecuteSessionOperationsAsync(session, outputPath, settings, progress, cancellationToken, tempFiles);
             }
             finally
             {
@@ -393,6 +375,40 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
         {
             throw new VideoConversionException("Failed to apply session", session.SourceFilePath, outputPath, ex);
         }
+    }
+
+    private async Task<VideoEditResult> ExecuteSessionOperationsAsync(
+        VideoEditSession session,
+        string outputPath,
+        ConversionSettings settings,
+        IProgress<int>? progress,
+        CancellationToken cancellationToken,
+        List<string> tempFiles)
+    {
+        var currentInput = session.SourceFilePath;
+        var opCount = session.Operations.Count;
+
+        for (var i = 0; i < opCount; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var op = session.Operations[i];
+            var isLastOp = i == opCount - 1;
+            var stepOutput = isLastOp ? outputPath : GetTempPath(".mp4");
+
+            if (!isLastOp)
+                tempFiles.Add(stepOutput);
+
+            var capturedIndex = i;
+            var stepProgress = new Progress<int>(p =>
+                progress?.Report((int)((capturedIndex + p / 100.0) / opCount * 100)));
+
+            await ApplyOperationAsync(op, currentInput, stepOutput, settings, stepProgress, cancellationToken);
+            currentInput = stepOutput;
+        }
+
+        progress?.Report(100);
+        return BuildResult(outputPath, TimeSpan.Zero, operationsApplied: opCount);
     }
 
     /// <inheritdoc/>

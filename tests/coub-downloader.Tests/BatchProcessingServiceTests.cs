@@ -121,7 +121,8 @@ public class BatchProcessingServiceTests
         var tasks = new List<DownloadTask> { new() { Url = "http://coub.com/1" } };
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.AddTasksAsync(batchId, tasks))
+        await FluentActions.Awaiting(() => _sut.AddTasksAsync(batchId, tasks))
+            .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Cannot add tasks to a batch that is already processing");
     }
 
@@ -154,7 +155,7 @@ public class BatchProcessingServiceTests
             .ReturnsAsync(coubVideo);
         _mockTaskRepository.Setup(repo => repo.UpdateStateAsync(It.IsAny<string>(), It.IsAny<ProcessingState>()))
             .Returns(Task.CompletedTask);
-        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).Returns(Task.CompletedTask);
+        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         // Act
         var result = await _sut.StartBatchAsync(batchId);
@@ -210,7 +211,7 @@ public class BatchProcessingServiceTests
 
         _mockTaskRepository.Setup(repo => repo.UpdateStateAsync(It.IsAny<string>(), It.IsAny<ProcessingState>()))
             .Returns(Task.CompletedTask);
-        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).Returns(Task.CompletedTask);
+        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         // Act
         var result = await _sut.StartBatchAsync(batchId);
@@ -278,7 +279,7 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Setup(repo => repo.UpdateAsync(It.IsAny<BatchJob>())).ReturnsAsync(batch);
         _mockTaskRepository.Setup(repo => repo.UpdateStateAsync(It.IsAny<string>(), It.IsAny<ProcessingState>()))
             .Returns(Task.CompletedTask);
-        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).Returns(Task.CompletedTask);
+        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         var cts = new CancellationTokenSource();
         _mockDownloadService.Setup(ds => ds.DownloadVideoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -319,8 +320,8 @@ public class BatchProcessingServiceTests
         };
 
         _mockBatchRepository.Setup(repo => repo.GetByIdAsync(batchId)).ReturnsAsync(batch);
-        _mockBatchRepository.Setup(repo => repo.UpdateAsync(It.IsAny<BatchJob>())).Returns(Task.CompletedTask);
-        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).Returns(Task.CompletedTask);
+        _mockBatchRepository.Setup(repo => repo.UpdateAsync(It.IsAny<BatchJob>())).ReturnsAsync((BatchJob b) => b);
+        _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         // Act
         await _sut.CancelBatchAsync(batchId);
@@ -461,7 +462,8 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Setup(repo => repo.GetByIdAsync(batchId)).ReturnsAsync(batch);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.DeleteBatchAsync(batchId))
+        await FluentActions.Awaiting(() => _sut.DeleteBatchAsync(batchId))
+            .Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Cannot delete a batch that is currently processing");
     }
 

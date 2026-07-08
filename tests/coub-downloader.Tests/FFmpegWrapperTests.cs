@@ -9,8 +9,16 @@ using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Middleware;
 using System.Linq;
 using System.Diagnostics; // For ProcessStartInfo
+using System.Text.Json;
 
 namespace CoubDownloader.Tests;
+
+/// <summary>Minimal file-system abstraction used to mock File.WriteAllText/Delete in tests.</summary>
+public interface IFileAdapter
+{
+    void WriteAllText(string path, string contents);
+    void Delete(string path);
+}
 
 public class FFmpegWrapperTests
 {

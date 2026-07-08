@@ -170,7 +170,8 @@ public class VideoConversionServiceTests
         var settings = new ConversionSettings();
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.ConvertVideoAsync(inputPath, outputPath, settings))
+        await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(inputPath, outputPath, settings))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("FFmpeg exited with code 1. Error: FFmpeg error message");
         File.Delete(inputPath);
     }
@@ -369,7 +370,8 @@ public class VideoConversionServiceTests
         File.WriteAllText(filePath, "dummy video content");
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.GetVideoMetadataAsync(filePath))
+        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("FFprobe exited with code 1. Error: FFprobe error");
         File.Delete(filePath);
     }
@@ -384,7 +386,8 @@ public class VideoConversionServiceTests
         File.WriteAllText(filePath, "dummy video content");
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.GetVideoMetadataAsync(filePath))
+        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("Failed to parse ffprobe JSON output: *");
         File.Delete(filePath);
     }
@@ -478,7 +481,8 @@ public class VideoConversionServiceTests
         var settings = new ConversionSettings();
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings))
+        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("Failed to apply audio track. Error: Audio error");
         File.Delete(videoPath);
         File.Delete(audioPath);
@@ -536,7 +540,8 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, width, height))
+        await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, width, height))
+            .Should().ThrowAsync<ArgumentException>()
             .WithMessage("Width and height must be greater than 0");
         File.Delete(inputPath);
     }
@@ -552,7 +557,8 @@ public class VideoConversionServiceTests
         File.WriteAllText(inputPath, "dummy video");
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, 100, 100))
+        await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, 100, 100))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("Failed to rescale video to 100x100. Error: Rescale error");
         File.Delete(inputPath);
     }
@@ -617,7 +623,8 @@ public class VideoConversionServiceTests
         File.WriteAllText(inputPath, "dummy video");
 
         // Act & Assert
-        await Assert.ThrowsAsync<VideoConversionException>(() => mockService.Object.ConvertToShortsAsync(inputPath, outputPath))
+        await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(inputPath, outputPath))
+            .Should().ThrowAsync<VideoConversionException>()
             .WithMessage("Failed to convert video to Shorts format. Error: Shorts error");
         File.Delete(inputPath);
     }

@@ -10,13 +10,19 @@ using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure;
 using CoubDownloader.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .Build();
 
 var services = new ServiceCollection();
 
 // Configure dependency injection
 services
-    .AddCoubDownloaderServices()
+    .AddCoubDownloaderServices(configuration)
     .AddHttpClient();
 
 var serviceProvider = services.BuildServiceProvider();

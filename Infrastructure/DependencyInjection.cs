@@ -5,8 +5,10 @@
 // =============================================================================
 
 using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models.Options;
 using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Repositories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CoubDownloader.Infrastructure;
@@ -57,8 +59,14 @@ public static class DependencyInjection
     }
 
     /// <summary>Configure all application dependencies</summary>
-    public static IServiceCollection AddCoubDownloaderServices(this IServiceCollection services)
+    public static IServiceCollection AddCoubDownloaderServices(this IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<DownloadOptions>().Bind(configuration.GetSection("Download")).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ConversionOptions>().Bind(configuration.GetSection("Conversion")).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<AudioOptions>().Bind(configuration.GetSection("Audio")).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<ApiOptions>().Bind(configuration.GetSection("Api")).ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<LoggingOptions>().Bind(configuration.GetSection("Logging")).ValidateDataAnnotations().ValidateOnStart();
+
         services
             .AddRepositories()
             .AddApplicationServices();

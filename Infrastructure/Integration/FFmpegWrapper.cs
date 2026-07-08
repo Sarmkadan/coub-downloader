@@ -258,7 +258,7 @@ public sealed class FFmpegWrapper : IFFmpegWrapper
         }
     }
 
-    private class MediaInfoWrapper
+    internal class MediaInfoWrapper
     {
         public MediaInfo? Format { get; set; }
     }

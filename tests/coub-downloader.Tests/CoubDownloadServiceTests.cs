@@ -178,7 +178,8 @@ public class CoubDownloadServiceTests
             .ReturnsAsync((CoubVideoInfo)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<MetadataExtractionException>(() => _sut.FetchMetadataAsync(coubUrl))
+        await FluentActions.Awaiting(() => _sut.FetchMetadataAsync(coubUrl))
+            .Should().ThrowAsync<MetadataExtractionException>()
             .WithMessage("Failed to fetch video metadata");
     }
 
@@ -221,7 +222,8 @@ public class CoubDownloadServiceTests
             .ReturnsAsync((CoubVideoInfo)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<MetadataExtractionException>(() => _sut.ExtractVideoSourceAsync(coubUrl))
+        await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(coubUrl))
+            .Should().ThrowAsync<MetadataExtractionException>()
             .WithMessage("Failed to get video ID for source extraction");
     }
 
@@ -235,7 +237,8 @@ public class CoubDownloadServiceTests
             .ReturnsAsync(mockVideoInfo);
 
         // Act & Assert
-        await Assert.ThrowsAsync<MetadataExtractionException>(() => _sut.ExtractVideoSourceAsync(coubUrl))
+        await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(coubUrl))
+            .Should().ThrowAsync<MetadataExtractionException>()
             .WithMessage("Failed to get video ID for source extraction");
     }
 
@@ -331,7 +334,7 @@ public class CoubDownloadServiceTests
         // Assert
         result.Should().Be(outputPath);
         File.Exists(outputPath).Should().BeTrue();
-        await File.ReadAllTextAsync(outputPath).Should().BeEquivalentTo(content);
+        (await File.ReadAllTextAsync(outputPath)).Should().BeEquivalentTo(content);
 
         // Clean up
         File.Delete(outputPath);

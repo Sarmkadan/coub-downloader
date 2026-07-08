@@ -515,6 +515,63 @@ The application uses the .NET Options pattern for configuration. Settings are lo
 | `Api` | Coub API settings (base URL, timeouts, limits) | URL, range checks |
 | `Logging` | Logging settings (levels, file output) | Path, range checks |
 
+### Available Settings
+
+#### Download Section
+
+| Setting | Type | Default | Description | Validation |
+| :------ | :--- | :------ | :---------- | :--------- |
+| `OutputPath` | string | `./downloads` | Directory where downloaded videos will be saved | Required |
+| `CachePath` | string | `./cache` | Directory for caching API responses and metadata | - |
+| `MaxRetries` | int | `3` | Maximum number of retry attempts for failed downloads | Range: 0-100 |
+| `TimeoutSeconds` | int | `300` | Timeout in seconds for download operations | Range: 1-3600 |
+| `EnableCaching` | bool | `true` | Enable/disable caching of API responses | - |
+| `MaxCacheSizeGb` | double | `1.0` | Maximum cache size in gigabytes | Range: 0.1-100.0 |
+| `ParallelDownloads` | int | `4` | Number of parallel downloads | Range: 1-50 |
+
+#### Conversion Section
+
+| Setting | Type | Default | Description | Validation |
+| :------ | :--- | :------ | :---------- | :--------- |
+| `DefaultQuality` | string | `High` | Default video quality preset | Required, enum: Low, Medium, High, Ultra, 4K |
+| `DefaultFormat` | string | `MP4` | Default output format | Required, enum: MP4, WebM, Shorts |
+| `DefaultFrameRate` | int | `30` | Default frame rate in FPS | Range: 1-120 |
+| `EnableHardwareAcceleration` | bool | `false` | Enable GPU-based encoding (NVIDIA NVENC, AMD VCE, Intel Quick Sync) | - |
+| `FFmpegPath` | string | `ffmpeg` | Path to FFmpeg executable | Required |
+| `FFprobePath` | string | `ffprobe` | Path to FFprobe executable | Required |
+| `ThreadCount` | int | `4` | Number of threads for FFmpeg encoding | Range: 1-64 |
+
+#### Audio Section
+
+| Setting | Type | Default | Description | Validation |
+| :------ | :--- | :------ | :---------- | :--------- |
+| `DefaultLoopStrategy` | string | `Repeat` | Default audio loop strategy | Required, enum: Repeat, Fade, Silent |
+| `DefaultSampleRate` | int | `44100` | Default audio sample rate in Hz | Range: 8000-192000 |
+| `DefaultChannels` | int | `2` | Default number of audio channels | Range: 1-8 |
+| `DefaultBitrate` | int | `128` | Default audio bitrate in kbps | Range: 32-320 |
+
+#### Api Section
+
+| Setting | Type | Default | Description | Validation |
+| :------ | :--- | :------ | :---------- | :--------- |
+| `CoubBaseUrl` | string | `https://coub.com` | Base URL for Coub API | Required, valid URL |
+| `TimeoutSeconds` | int | `30` | Timeout in seconds for API requests | Range: 1-300 |
+| `RateLimitPerMinute` | int | `60` | Maximum API requests per minute | Range: 1-1000 |
+| `RetryPolicy` | string | `exponential` | Retry policy type | Required, enum: exponential, linear, constant |
+| `VerifySSL` | bool | `true` | Verify SSL certificates for API requests | - |
+
+#### Logging Section
+
+| Setting | Type | Default | Description | Validation |
+| :------ | :--- | :------ | :---------- | :--------- |
+| `LogLevel.Default` | string | `Information` | Default log level | Required, enum: Trace, Debug, Information, Warning, Error, Critical |
+| `LogLevel.Microsoft` | string | `Warning` | Microsoft namespace log level | Required, enum: Trace, Debug, Information, Warning, Error, Critical |
+| `LogLevel.System` | string | `Warning` | System namespace log level | Required, enum: Trace, Debug, Information, Warning, Error, Critical |
+| `File.Enabled` | bool | `false` | Enable file logging | - |
+| `File.Path` | string | `./logs/app.log` | Path to log file | Required |
+| `File.MaxFileSizeBytes` | int | `10485760` | Maximum log file size in bytes (10MB) | Range: 1024-1073741824 |
+| `File.MaxBackupFiles` | int | `3` | Maximum number of backup log files | Range: 1-100 |
+
 ### Example Configuration (appsettings.example.json)
 
 ```json
@@ -568,11 +625,81 @@ The application uses the .NET Options pattern for configuration. Settings are lo
 
 ### Environment Variables
 
-Settings can be overridden via environment variables using the `COUB_` prefix.
+Settings can be overridden via environment variables using the `COUB_` prefix. Use double underscore `__` for nested properties.
 
 Examples:
 - `COUB_DOWNLOAD__OUTPUTPATH=/downloads`
+- `COUB_CONVERSION__FFMPEGPATH=/usr/bin/ffmpeg`
 - `COUB_API__TIMEOUTSECONDS=60`
+- `COUB_LOGGING__FILE__ENABLED=true`
+
+### Quality Presets
+
+The `DefaultQuality` setting supports the following presets:
+
+- **Low**: 240p (426x240)
+- **Medium**: 360p (640x360)
+- **High**: 480p (854x480)
+- **Ultra**: 720p (1280x720)
+- **4K**: 2160p (3840x2160)
+
+### Hardware Acceleration
+
+To enable hardware acceleration, set `EnableHardwareAcceleration` to `true` and configure the appropriate codec:
+
+```json
+{
+  "Conversion": {
+    "EnableHardwareAcceleration": true,
+    "FFmpegPath": "ffmpeg"
+  }
+}
+```
+
+Supported hardware acceleration options:
+- **NVIDIA**: Use `h264_nvenc` or `hevc_nvenc` codec
+- **AMD**: Use `h264_amf` or `hevc_amf` codec  
+- **Intel**: Use `h264_qsv` or `hevc_qsv` codec
+
+
+### Custom FFmpeg Path
+
+If FFmpeg is not on your system PATH, specify the full path:
+
+```json
+{
+  "Conversion": {
+    "FFmpegPath": "/usr/local/bin/ffmpeg",
+    "FFprobePath": "/usr/local/bin/ffprobe"
+  }
+}
+```
+
+### Parallel Processing
+
+Increase `ParallelDownloads` for faster batch processing (up to 50), but be mindful of system resources:
+
+```json
+{
+  "Download": {
+    "ParallelDownloads": 8
+  }
+}
+```
+
+### Cache Configuration
+
+Configure caching to reduce API calls and improve performance:
+
+```json
+{
+  "Download": {
+    "EnableCaching": true,
+    "MaxCacheSizeGb": 5.0,
+    "CachePath": "/var/cache/coub-downloader"
+  }
+}
+```
 
 ## Testing
 

@@ -84,13 +84,12 @@ public class CoubDownloadService : ICoubDownloadService
                 Url = coubUrl,
                 Title = videoInfo.Title ?? throw new MetadataExtractionException("Video title is null", coubUrl),
                 Duration = videoInfo.Duration,
-                // Assuming default width/height if not provided by API
-                Width = 1920,
-                Height = 1080,
-                CreatorName = videoInfo.ChannelUrl ?? "Unknown", // Using ChannelUrl as creator name for now
+                Width = 1920, // Default HD width
+                Height = 1080, // Default HD height
+                CreatorName = videoInfo.ChannelUrl ?? "Unknown",
                 ViewCount = videoInfo.ViewCount,
                 HasAudio = videoInfo.HasAudio,
-                UploadedDate = DateTime.UtcNow // API doesn't provide this, using current time
+                UploadedDate = null // API doesn't provide upload date
             };
 
             return video;
@@ -124,9 +123,7 @@ public class CoubDownloadService : ICoubDownloadService
             if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
                 throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);
 
-            // Assuming this is the pattern for direct video download based on the previous implementation
-            // This can be further refined if the Coub API provides a direct download link in the future.
-            return await Task.FromResult($"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm");
+            return $"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm";
         }
         catch (CoubDownloaderException)
         {
@@ -159,8 +156,7 @@ public class CoubDownloadService : ICoubDownloadService
             if (fileInfo.Length == 0)
                 return false;
 
-            // In a real implementation, would verify file integrity with hash or format validation
-            return await Task.FromResult(true);
+            return true;
         }
         catch (Exception ex)
         {

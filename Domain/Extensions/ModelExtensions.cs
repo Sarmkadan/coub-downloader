@@ -57,13 +57,17 @@ public static class CoubVideoExtensions
 
     /// <summary>Calculates the required audio duration to match the video duration through looping.</summary>
     /// <param name="video">The video instance.</param>
-    /// <returns>The total duration required from the audio track to cover the video duration through looping.</returns>
+    /// <returns>
+    /// The total duration required from the audio track to cover the video duration through looping,
+    /// or 0 when the video has no audio track or the audio track has a non-positive duration.
+    /// </returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="video"/> is <see langword="null"/>.</exception>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="video.AudioTrack"/> is <see langword="null"/>.</exception>
     public static double CalculateRequiredAudioDuration(this CoubVideo video)
     {
         ArgumentNullException.ThrowIfNull(video);
-        ArgumentNullException.ThrowIfNull(video.AudioTrack);
+
+        if (video.AudioTrack is null || video.AudioTrack.Duration <= 0)
+            return 0;
 
         var requiredLoops = Math.Ceiling(video.Duration / video.AudioTrack.Duration);
         return video.AudioTrack.Duration * requiredLoops;

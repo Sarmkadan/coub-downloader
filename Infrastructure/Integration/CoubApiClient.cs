@@ -40,7 +40,10 @@ public class CoubApiClient : ICoubApiClient
 
     public async Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"video_info_{url.GetHashCode()}";
+        if (string.IsNullOrWhiteSpace(url))
+            return null;
+
+        var cacheKey = $"video_info_{url}";
 
         if (_cache.TryGet(cacheKey, out CoubVideoInfo? cached))
         {
@@ -90,7 +93,10 @@ public class CoubApiClient : ICoubApiClient
 
     public async Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"video_exists_{url.GetHashCode()}";
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        var cacheKey = $"video_exists_{url}";
 
         if (_cache.TryGet(cacheKey, out bool cached))
             return cached;
@@ -104,7 +110,10 @@ public class CoubApiClient : ICoubApiClient
 
     public async Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
-        var cacheKey = $"search_{query}_{limit}".ToLower();
+        if (string.IsNullOrWhiteSpace(query))
+            return [];
+
+        var cacheKey = $"search_{query}_{limit}".ToLowerInvariant();
 
         if (_cache.TryGet(cacheKey, out List<CoubVideoInfo>? cached))
             return cached ?? [];
@@ -143,11 +152,13 @@ public class CoubApiClient : ICoubApiClient
         }
     }
 
-    private string? ExtractVideoId(string url)
+    private static string? ExtractVideoId(string url)
     {
-        var uri = new Uri(url);
-        var segments = uri.PathAndQuery.Split('/');
-        return segments.LastOrDefault()?.Split('?').FirstOrDefault();
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            return null;
+
+        var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return segments.LastOrDefault();
     }
 }
 

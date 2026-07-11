@@ -157,6 +157,10 @@ public class OperationTimer : IDisposable
 /// <summary>Real-time performance statistics</summary>
 public class RuntimeStatistics
 {
+    private static readonly object CpuSampleLock = new();
+    private static DateTime _lastCpuSampleTimeUtc;
+    private static TimeSpan _lastTotalProcessorTime;
+
     /// <summary>Get current memory usage</summary>
     public static long GetMemoryUsageMb()
     {
@@ -164,14 +168,41 @@ public class RuntimeStatistics
         return process.WorkingSet64 / (1024 * 1024);
     }
 
-    /// <summary>Get CPU usage (not available on all platforms)</summary>
+    /// <summary>
+    /// Get the CPU usage of the current process as a percentage of total machine capacity.
+    /// The value is averaged over the interval since the previous call
+    /// (since process start on the first call).
+    /// </summary>
     public static double GetCpuUsagePercent()
     {
         try
         {
-            // CPU monitoring requires System.Diagnostics.PerformanceCounter package
-            // Simplified version without external dependency
-            return 0;
+            using var process = Process.GetCurrentProcess();
+
+            lock (CpuSampleLock)
+            {
+                var nowUtc = DateTime.UtcNow;
+                var totalProcessorTime = process.TotalProcessorTime;
+
+                var intervalStartUtc = _lastCpuSampleTimeUtc == default
+                    ? process.StartTime.ToUniversalTime()
+                    : _lastCpuSampleTimeUtc;
+                var previousProcessorTime = _lastCpuSampleTimeUtc == default
+                    ? TimeSpan.Zero
+                    : _lastTotalProcessorTime;
+
+                _lastCpuSampleTimeUtc = nowUtc;
+                _lastTotalProcessorTime = totalProcessorTime;
+
+                var wallClockMs = (nowUtc - intervalStartUtc).TotalMilliseconds;
+                if (wallClockMs <= 0)
+                    return 0;
+
+                var cpuMs = (totalProcessorTime - previousProcessorTime).TotalMilliseconds;
+                var usage = cpuMs / (wallClockMs * Environment.ProcessorCount) * 100.0;
+
+                return Math.Clamp(usage, 0, 100);
+            }
         }
         catch
         {

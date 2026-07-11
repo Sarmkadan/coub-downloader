@@ -1,5 +1,5 @@
 #nullable enable
-// =============================================================================
+// =====================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
 // =====================================================================
@@ -9,34 +9,36 @@ using System.Text.Json;
 namespace CoubDownloader.Infrastructure.Events;
 
 /// <summary>
-/// Extension methods for DomainEvent providing common utility operations
+/// Extension methods for <see cref="DomainEvent"/> providing common utility operations
+/// for working with domain events in the CoubDownloader system.
 /// </summary>
 public static class DomainEventExtensions
 {
     /// <summary>
-    /// Creates a deep clone of the domain event using JSON serialization
+    /// Creates a deep clone of the domain event using JSON serialization.
     /// </summary>
-    /// <typeparam name="TEvent">Type of the domain event</typeparam>
-    /// <param name="event">The event to clone</param>
-    /// <returns>A deep copy of the event</returns>
+    /// <typeparam name="TEvent">Type of the domain event.</typeparam>
+    /// <param name="event">The event to clone.</param>
+    /// <returns>A deep copy of the event.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
+    /// <exception cref="JsonException">Thrown when JSON serialization or deserialization fails.</exception>
     public static TEvent DeepClone<TEvent>(this TEvent @event) where TEvent : DomainEvent
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         var json = JsonSerializer.Serialize(@event, new JsonSerializerOptions { WriteIndented = false });
-        return JsonSerializer.Deserialize<TEvent>(json)!;
+        return JsonSerializer.Deserialize<TEvent>(json) ?? throw new JsonException("Deserialization returned null");
     }
 
     /// <summary>
-    /// Safely gets the VideoId property from the event if it exists, otherwise returns null
+    /// Safely gets the VideoId property from the event if it exists, otherwise returns null.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>VideoId if available, otherwise null</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>VideoId if available, otherwise null.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static string? GetVideoId(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event switch
         {
@@ -50,14 +52,14 @@ public static class DomainEventExtensions
     }
 
     /// <summary>
-    /// Safely gets the OutputFile property from the event if it exists, otherwise returns null
+    /// Safely gets the OutputFile property from the event if it exists, otherwise returns null.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>OutputFile if available, otherwise null</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>OutputFile if available, otherwise null.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static string? GetOutputFile(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event switch
         {
@@ -69,14 +71,14 @@ public static class DomainEventExtensions
     }
 
     /// <summary>
-    /// Safely gets the Error property from the event if it exists, otherwise returns null
+    /// Safely gets the Error property from the event if it exists, otherwise returns null.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>Error message if available, otherwise null</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>Error message if available, otherwise null.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static string? GetError(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event switch
         {
@@ -86,58 +88,57 @@ public static class DomainEventExtensions
     }
 
     /// <summary>
-    /// Determines if the event represents a failure state
+    /// Determines if the event represents a failure state.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>True if the event is a failure event, otherwise false</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>True if the event is a failure event, otherwise false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static bool IsFailure(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event is VideoDownloadFailedEvent;
     }
 
     /// <summary>
-    /// Determines if the event represents a successful completion
+    /// Determines if the event represents a successful completion.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>True if the event is a completion event, otherwise false</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>True if the event is a completion event, otherwise false.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static bool IsSuccess(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event is VideoDownloadCompletedEvent or ConversionCompletedEvent;
     }
 
     /// <summary>
-    /// Gets the duration of the operation from the event if available
+    /// Gets the duration of the operation from the event if available.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>Duration if available, otherwise TimeSpan.Zero</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>Duration if available, otherwise <see cref="TimeSpan.Zero"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static TimeSpan GetDuration(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event switch
         {
-            VideoDownloadCompletedEvent e => TimeSpan.Zero, // No duration for download
             ConversionCompletedEvent e => e.Duration,
             _ => TimeSpan.Zero
         };
     }
 
     /// <summary>
-    /// Gets the file size in bytes from the event if available
+    /// Gets the file size in bytes from the event if available.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <returns>File size in bytes if available, otherwise 0</returns>
+    /// <param name="event">The domain event.</param>
+    /// <returns>File size in bytes if available, otherwise 0.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static long GetFileSize(this DomainEvent @event)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         return @event switch
         {
@@ -147,15 +148,15 @@ public static class DomainEventExtensions
     }
 
     /// <summary>
-    /// Creates a standardized log message for the event
+    /// Creates a standardized log message for the event.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <param name="includeTimestamp">Whether to include timestamp in the message</param>
-    /// <returns>Formatted log message</returns>
+    /// <param name="event">The domain event.</param>
+    /// <param name="includeTimestamp">Whether to include timestamp in the message.</param>
+    /// <returns>Formatted log message.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
     public static string ToLogMessage(this DomainEvent @event, bool includeTimestamp = true)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
+        ArgumentNullException.ThrowIfNull(@event);
 
         var message = @event switch
         {
@@ -182,17 +183,17 @@ public static class DomainEventExtensions
     }
 
     /// <summary>
-    /// Checks if the event is related to a specific video ID
+    /// Checks if the event is related to a specific video ID.
     /// </summary>
-    /// <param name="event">The domain event</param>
-    /// <param name="videoId">The video ID to check against</param>
-    /// <returns>True if the event is related to the specified video ID</returns>
+    /// <param name="event">The domain event.</param>
+    /// <param name="videoId">The video ID to check against.</param>
+    /// <returns>True if the event is related to the specified video ID.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="event"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="videoId"/> is null or whitespace.</exception>
     public static bool IsForVideo(this DomainEvent @event, string videoId)
     {
-        if (@event == null)
-            throw new ArgumentNullException(nameof(@event));
-        if (string.IsNullOrWhiteSpace(videoId))
-            throw new ArgumentException("Video ID cannot be null or empty", nameof(videoId));
+        ArgumentNullException.ThrowIfNull(@event);
+        ArgumentException.ThrowIfNullOrWhiteSpace(videoId);
 
         var eventVideoId = @event.GetVideoId();
         return string.Equals(eventVideoId, videoId, StringComparison.OrdinalIgnoreCase);

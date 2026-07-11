@@ -115,8 +115,11 @@ public class BuildDateAttribute : Attribute
 
     public BuildDateAttribute(string buildDate)
     {
-        if (DateTime.TryParse(buildDate, out var date))
+        if (DateTime.TryParse(buildDate, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var date))
+        {
             BuildDate = date;
+        }
     }
 }
 

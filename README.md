@@ -933,6 +933,61 @@ var options = new ObjectPoolOptions
 - Use parallel downloads with appropriate concurrency
 - Implement connection pooling
 
+## DomainEventExtensions
+
+Extension methods for `DomainEvent` that provide convenient utilities for working with domain events in the CoubDownloader system. These methods enable type-safe access to event properties, status checking, and standardized logging without requiring manual type casting.
+
+### Usage Example
+
+```csharp
+// Subscribe to domain events
+var eventBus = serviceProvider.GetRequiredService<IEventBus>();
+eventBus.Subscribe<VideoDownloadCompletedEvent>(onVideoDownloadCompleted);
+
+// Process events using extension methods
+void onVideoDownloadCompleted(VideoDownloadCompletedEvent @event)
+{
+    // Get video ID safely
+    string? videoId = @event.GetVideoId();
+    if (videoId is null) return;
+
+    // Check if event represents success
+    if (@event.IsSuccess())
+    {
+        // Get output file path
+        string? outputFile = @event.GetOutputFile();
+        if (outputFile is not null)
+        {
+            Console.WriteLine($"Successfully downloaded video {videoId} to {outputFile}");
+        }
+
+        // Get file size and duration
+        long fileSize = @event.GetFileSize();
+        TimeSpan duration = @event.GetDuration();
+        Console.WriteLine($"File size: {fileSize:N0} bytes, Duration: {duration.TotalSeconds:F2}s");
+    }
+    else if (@event.IsFailure())
+    {
+        // Get error message
+        string? error = @event.GetError();
+        Console.WriteLine($"Failed to download video {videoId}: {error ?? "Unknown error"}");
+    }
+
+    // Log the event with timestamp
+    Console.WriteLine(@event.ToLogMessage());
+
+    // Check if event is for specific video
+    if (@event.IsForVideo("abc123"))
+    {
+        Console.WriteLine("This event is for our target video!");
+    }
+
+    // Deep clone the event for processing
+    var clonedEvent = @event.DeepClone();
+    Console.WriteLine($"Cloned event ID: {clonedEvent.Id}");
+}
+```
+
 ## Related Projects
 
 Part of a collection of .NET libraries and tools. See more at [github.com/sarmkadan](https://github.com/sarmkadan).

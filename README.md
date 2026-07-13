@@ -51,4 +51,34 @@ Console.WriteLine($"Age in days: {audioTrack.GetAgeInDays()}");
 Console.WriteLine($"Is recently created: {audioTrack.IsRecentlyCreated()}");
 ```
 
+## VideoEditorServiceExtensions
+
+`VideoEditorServiceExtensions` provides helper methods to edit and manipulate video instances, offering insights into trimming, rendering, and applying effects. It also provides methods to get the edit history and create a new video edit session.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Application.Services;
+
+// Trim the first 5 seconds of a video
+var video = GetVideo(); // Assume this retrieves a video instance
+var trimmedVideo = await VideoEditorServiceExtensions.TrimFirstSecondsAsync(video, 5);
+
+// Trim and render a video
+var trimmedAndRenderedVideo = await VideoEditorServiceExtensions.TrimAndRenderAsync(video, 5, 10);
+
+// Generate a standard preview for a video
+var preview = await VideoEditorServiceExtensions.GenerateStandardPreviewAsync(video);
+
+// Apply effects to a video
+var editedVideo = await VideoEditorServiceExtensions.ApplyEffectsAsync(video);
+
+// Get the edit history of a video
+var editHistory = VideoEditorServiceExtensions.GetEditHistory(video);
+
+// Create a new video edit session
+var editSession = VideoEditorServiceExtensions.WithOperations(video);
+```
+
 // ... (rest of the README.md content remains the same)
+```

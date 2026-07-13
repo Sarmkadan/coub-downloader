@@ -80,5 +80,22 @@ var editHistory = VideoEditorServiceExtensions.GetEditHistory(video);
 var editSession = VideoEditorServiceExtensions.WithOperations(video);
 ```
 
-// ... (rest of the README.md content remains the same)
-```
+## EventHandlingExampleExtensions
+
+`EventHandlingExampleExtensions` provides helper methods to analyze and format event handling results. It offers insights into progress status, output filename, error conditions, duration, file size, and retry status.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Examples;
+
+// Analyze an event handling result
+var eventHandlingResult = GetEventHandlingResult(); // Assume this retrieves an event handling result instance
+
+Console.WriteLine($"Progress status: {EventHandlingExampleExtensions.GetProgressStatus(eventHandlingResult)}");
+Console.WriteLine($"Output filename: {EventHandlingExampleExtensions.GetOutputFilename(eventHandlingResult)}");
+Console.WriteLine($"Has error: {EventHandlingExampleExtensions.HasError(eventHandlingResult)}");
+Console.WriteLine($"Formatted duration: {EventHandlingExampleExtensions.GetFormattedDuration(eventHandlingResult)}");
+Console.WriteLine($"Formatted file size: {EventHandlingExampleExtensions.GetFormattedFileSize(eventHandlingResult)}");
+Console.WriteLine($"Retry status: {EventHandlingExampleExtensions.GetRetryStatus(eventHandlingResult)}");
+``` 

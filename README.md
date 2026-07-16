@@ -1506,6 +1506,105 @@ public class AudioProcessingDemo
 }
 ```
 
+## AudioProcessingService
+
+The `AudioProcessingService` provides audio extraction, manipulation, and synchronization capabilities for Coub video processing. It handles extracting audio from video files, looping audio to match target durations using different strategies (Repeat, Crossfade, Stretch), applying audio effects like fades and volume adjustments, and synchronizing audio tracks with video content. The service integrates with FFmpeg through the `IFFmpegWrapper` interface to provide high-quality audio processing with comprehensive error handling.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Domain.Models;
+
+public class AudioProcessingDemo
+{
+    public async Task RunAudioProcessingExample()
+    {
+        // Create the audio processing service
+        var ffmpeg = new FFmpegWrapper();
+        var audioService = new AudioProcessingService(ffmpeg);
+
+        // Define file paths
+        var videoPath = Path.Combine(Path.GetTempPath(), "input_video.mp4");
+        var audioPath = Path.Combine(Path.GetTempPath(), "extracted_audio.aac");
+        var outputPath = Path.Combine(Path.GetTempPath(), "processed_audio.aac");
+        var syncedVideoPath = Path.Combine(Path.GetTempPath(), "output_video.mp4");
+
+        // Create dummy files for demonstration
+        File.WriteAllText(videoPath, "dummy video content");
+
+        // ExtractAudioAsync - Extract audio from video file
+        var extractedAudioPath = await audioService.ExtractAudioAsync(videoPath, audioPath);
+        Console.WriteLine($"Extracted audio to: {extractedAudioPath}");
+
+        // GetAudioDurationAsync - Get duration of audio file
+        var duration = await audioService.GetAudioDurationAsync(audioPath);
+        Console.WriteLine($"Audio duration: {duration:F2}s");
+
+        // LoopAudioAsync - Loop audio with Repeat strategy
+        var loopedPath = Path.Combine(Path.GetTempPath(), "looped_audio.aac");
+        await audioService.LoopAudioAsync(audioPath, 30.0, loopedPath, AudioLoopStrategy.Repeat);
+        Console.WriteLine("Audio looped with Repeat strategy");
+
+        // LoopAudioAsync - Loop audio with Crossfade strategy
+        var crossfadedPath = Path.Combine(Path.GetTempPath(), "crossfaded_audio.aac");
+        await audioService.LoopAudioAsync(audioPath, 25.0, crossfadedPath, AudioLoopStrategy.Crossfade);
+        Console.WriteLine("Audio looped with Crossfade strategy");
+
+        // LoopAudioAsync - Loop audio with Stretch strategy
+        var stretchedPath = Path.Combine(Path.GetTempPath(), "stretched_audio.aac");
+        await audioService.LoopAudioAsync(audioPath, 20.0, stretchedPath, AudioLoopStrategy.Stretch);
+        Console.WriteLine("Audio looped with Stretch strategy");
+
+        // ApplyAudioEffectsAsync - Apply fade in/out and volume adjustment
+        var audioTrack = new AudioTrack
+        {
+            Duration = duration,
+            FadeInMs = 500,
+            FadeOutMs = 500,
+            VolumeLevel = 0.8
+        };
+
+        var effectsPath = Path.Combine(Path.GetTempPath(), "audio_with_effects.aac");
+        await audioService.ApplyAudioEffectsAsync(audioPath, effectsPath, audioTrack);
+        Console.WriteLine("Audio effects applied (fade in/out and volume adjustment)");
+
+        // AdjustVolumeAsync - Adjust audio volume
+        var volumeAdjustedPath = Path.Combine(Path.GetTempPath(), "volume_adjusted.aac");
+        await audioService.AdjustVolumeAsync(audioPath, volumeAdjustedPath, 1.5);
+        Console.WriteLine("Audio volume adjusted to 150%");
+
+        // SyncAudioWithVideoAsync - Synchronize audio with video duration
+        var syncedAudioPath = Path.Combine(Path.GetTempPath(), "synced_audio.aac");
+        await audioService.LoopAudioAsync(audioPath, 15.0, syncedAudioPath, AudioLoopStrategy.Repeat);
+        
+        var finalVideoPath = await audioService.SyncAudioWithVideoAsync(
+            syncedAudioPath, 
+            videoPath, 
+            syncedVideoPath, 
+            AudioLoopStrategy.Repeat
+        );
+        Console.WriteLine($"Audio synchronized with video: {finalVideoPath}");
+
+        // Cleanup
+        File.Delete(videoPath);
+        File.Delete(audioPath);
+        File.Delete(outputPath);
+        File.Delete(loopedPath);
+        File.Delete(crossfadedPath);
+        File.Delete(stretchedPath);
+        File.Delete(effectsPath);
+        File.Delete(volumeAdjustedPath);
+        File.Delete(syncedAudioPath);
+        File.Delete(syncedVideoPath);
+    }
+}
+```
+
 ## DateTimeExtensionsTests
 
 The `DateTimeExtensionsTests` class provides a suite of xUnit tests that verify the behavior of extension methods for `DateTime` and `TimeSpan` operations, including relative time formatting, duration formatting, date range validation, and Unix timestamp conversion.

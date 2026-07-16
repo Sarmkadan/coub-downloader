@@ -150,6 +150,111 @@ public class VideoConversionDemo
 }
 ```
 
+## VideoEditorService
+
+The `VideoEditorService` provides session-based, non-destructive video editing capabilities for trimming, merging, applying effects, and generating previews. It orchestrates video editing operations through the `FFmpegWrapper` and maintains edit history in `VideoEditSession` objects. Operations can be composed sequentially, with each step's output piped into the next, and temporary intermediate files are automatically cleaned up on completion or cancellation.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class VideoEditorDemo
+{
+    public async Task RunVideoEditingExample()
+    {
+        // Create the video editor service
+        var ffmpeg = new FFmpegWrapper();
+        var logger = new ConsoleLoggingService();
+        var videoEditor = new VideoEditorService(ffmpeg, logger);
+
+        // Define paths
+        var inputPath = Path.Combine(Path.GetTempPath(), "input.mp4");
+        var trimmedPath = Path.Combine(Path.GetTempPath(), "trimmed.mp4");
+        var mergedPath = Path.Combine(Path.GetTempPath(), "merged.mp4");
+        var effectsPath = Path.Combine(Path.GetTempPath(), "with_effects.mp4");
+        var finalPath = Path.Combine(Path.GetTempPath(), "final_output.mp4");
+
+        // Create dummy input file for demonstration
+        File.WriteAllText(inputPath, "dummy video content");
+
+        // CreateSessionAsync - Initialize a new editing session
+        var session = await videoEditor.CreateSessionAsync(inputPath);
+        Console.WriteLine($"Created edit session: {session.SessionId}");
+
+        // TrimVideoAsync - Trim video from start to end time
+        var trimResult = await videoEditor.TrimVideoAsync(
+            inputPath, 
+            trimmedPath, 
+            TimeSpan.FromSeconds(5),  // Start at 5 seconds
+            TimeSpan.FromSeconds(15)   // End at 15 seconds
+        );
+        Console.WriteLine($"Trimmed video: {trimResult.Duration} duration, {trimResult.FileSizeBytes} bytes");
+
+        // MergeVideosAsync - Combine multiple video clips
+        var mergeResult = await videoEditor.MergeVideosAsync(
+            new[] { trimmedPath, trimmedPath }, // Merge two copies of trimmed video
+            mergedPath,
+            new MergeOperation(MergeStrategy.Sequential)
+        );
+        Console.WriteLine($"Merged videos: {mergeResult.OperationsApplied} operations applied");
+
+        // ApplyEffectsAsync - Add visual effects to video
+        var effects = new[] { VideoEffect.Grayscale, VideoEffect.VintageFilter };
+        var effectsResult = await videoEditor.ApplyEffectsAsync(
+            mergedPath,
+            effectsPath,
+            effects
+        );
+        Console.WriteLine($"Applied {effectsResult.OperationsApplied} effects to video");
+
+        // GeneratePreviewAsync - Create a low-resolution preview
+        var previewOptions = new PreviewOptions
+        {
+            StartOffset = TimeSpan.FromSeconds(2),
+            ClipDuration = TimeSpan.FromSeconds(5),
+            ScaleFactor = 0.5, // 50% scale
+            Quality = PreviewQuality.Draft
+        };
+        
+        var previewResult = await videoEditor.GeneratePreviewAsync(
+            session,
+            Path.Combine(Path.GetTempPath(), "preview.mp4"),
+            previewOptions
+        );
+        Console.WriteLine($"Generated preview: {previewResult.IsPreview}, {previewResult.FileSizeBytes} bytes");
+
+        // GetEditHistory - View the sequence of operations performed
+        var editHistory = videoEditor.GetEditHistory(session);
+        Console.WriteLine("Edit history:");
+        foreach (var entry in editHistory)
+        {
+            Console.WriteLine($"  {entry}");
+        }
+
+        // Cleanup
+        File.Delete(inputPath);
+        File.Delete(trimmedPath);
+        File.Delete(mergedPath);
+        File.Delete(effectsPath);
+    }
+}
+
+// Simple logging service implementation
+public class ConsoleLoggingService : ILoggingService
+{
+    public void LogInfo(string message, string? context = null) => Console.WriteLine($"[INFO] {message}");
+    public void LogWarning(string message, string? context = null) => Console.WriteLine($"[WARN] {message}");
+    public void LogError(string message, Exception? exception = null, string? context = null) => Console.WriteLine($"[ERROR] {message}: {exception?.Message}");
+    public void LogDebug(string message, string? context = null) => Console.WriteLine($"[DEBUG] {message}");
+}
+```
+
 ## BatchProcessingServiceTests
 
 The `BatchProcessingServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `BatchProcessingService` class. It tests batch job creation, task management, batch processing workflows, cancellation, status retrieval, and batch deletion operations with various edge cases and error scenarios.

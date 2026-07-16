@@ -1417,6 +1417,92 @@ public class CoubVideoDemo
 }
 ```
 
+## CoubVideoExtensions
+
+The `CoubVideoExtensions` static class provides utility methods for analyzing and working with Coub video properties. It includes methods for calculating aspect ratios, determining video orientation and quality, formatting view counts, calculating required audio durations for looping, and estimating output file sizes. These extension methods help standardize video analysis and processing across the application.
+
+
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Extensions;
+
+public class CoubVideoExtensionsDemo
+{
+public void AnalyzeVideo(CoubVideo video)
+{
+// Get video aspect ratio
+var aspectRatio = video.GetAspectRatio();
+Console.WriteLine($"Aspect ratio: {aspectRatio:F2}");
+
+// Check video orientation
+if (video.IsVerticalFormat())
+{
+Console.WriteLine("Video is in vertical/portrait format");
+}
+
+// Check video quality
+if (video.IsHdQuality())
+{
+Console.WriteLine("Video is HD quality (720p or higher)");
+}
+
+if (video.Is4kQuality())
+{
+Console.WriteLine("Video is 4K quality");
+}
+
+// Get formatted view count
+var viewsText = video.GetFormattedViewCount();
+Console.WriteLine($"Views: {viewsText}");
+
+// Calculate required audio duration for looping
+var requiredAudioDuration = CoubVideoExtensions.CalculateRequiredAudioDuration(video);
+Console.WriteLine($"Required audio duration: {requiredAudioDuration}s");
+
+// Get duration category
+var durationCategory = video.GetDurationCategory();
+Console.WriteLine($"Duration category: {durationCategory}");
+
+// Get audio specifications
+var audioSpec = CoubVideoExtensions.GetAudioSpec(video);
+Console.WriteLine($"Audio: {audioSpec}");
+
+// Calculate looped duration
+var loopedDuration = CoubVideoExtensions.CalculateLoopedDuration(video);
+Console.WriteLine($"Looped duration: {loopedDuration}s");
+
+// Check audio channel configuration
+if (CoubVideoExtensions.IsStereo(video))
+{
+Console.WriteLine("Audio is stereo");
+}
+
+if (CoubVideoExtensions.IsMono(video))
+{
+Console.WriteLine("Audio is mono");
+}
+
+// Get FFmpeg codec parameters
+var codecParams = CoubVideoExtensions.GetFFmpegCodecParams(video);
+Console.WriteLine($"FFmpeg codec params: {codecParams}");
+
+// Estimate output file size
+var estimatedSize = CoubVideoExtensions.EstimateOutputSize(video);
+Console.WriteLine($"Estimated output size: {estimatedSize:N0} bytes");
+
+// Check if hardware acceleration should be used
+if (CoubVideoExtensions.ShouldUseHardwareAcceleration(video))
+{
+Console.WriteLine("Hardware acceleration recommended for this video");
+}
+}
+}
+```
+
 
 ## CoubApiClientTests
 

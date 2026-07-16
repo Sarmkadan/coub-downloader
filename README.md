@@ -1724,9 +1724,94 @@ public class BatchJobDemo
 }
 ```
 
-## CoubPlaylist
+## PlaylistProcessingService
 
-The `CoubPlaylist` class represents a Coub playlist sourced from a channel feed or tag page, containing an ordered collection of video URLs ready for batch processing. It provides properties for playlist metadata and methods to check validity and retrieve effective video URLs while respecting optional limits.
+The `PlaylistProcessingService` fetches Coub channel feeds or tag pages and converts them into batch processing queues. It provides functionality to discover videos from playlists, validate playlist data, and create batch jobs for processing multiple videos from a single source.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using Microsoft.Extensions.DependencyInjection;
+
+public class PlaylistProcessingDemo
+{
+    public async Task RunPlaylistProcessingExample()
+    {
+        // Setup DI container
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ILoggingService, ConsoleLoggingService>();
+        services.AddPlaylistProcessing();
+        services.AddBatchProcessing();
+        
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Create playlist processing service
+        var playlistService = ActivatorUtilities.CreateInstance<PlaylistProcessingService>(
+            serviceProvider,
+            serviceProvider.GetRequiredService<HttpClient>(),
+            serviceProvider.GetRequiredService<IBatchProcessingService>(),
+            serviceProvider.GetRequiredService<ILoggingService>()
+        );
+        
+        // Define playlist URL and output directory
+        var playlistUrl = "https://coub.com/channel/funnycats";
+        var outputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubPlaylists", "funnycats");
+        Directory.CreateDirectory(outputDirectory);
+        
+        // Fetch playlist - discovers videos from channel
+        var playlist = await playlistService.FetchPlaylistAsync(playlistUrl, maxPages: 2);
+        Console.WriteLine($"Fetched playlist: {playlist.Title}");
+        Console.WriteLine($"Total videos discovered: {playlist.TotalVideos}");
+        Console.WriteLine($"Playlist URL: {playlist.PlaylistUrl}");
+        
+        // Queue playlist for batch processing with custom settings
+        var conversionSettings = new ConversionSettings
+        {
+            Width = 1280,
+            Height = 720,
+            FrameRate = 30,
+            VideoCodec = VideoCodec.H264,
+            AudioCodec = AudioCodec.AAC,
+            VideoBitrate = 2500,
+            AudioBitrate = 128,
+            Format = VideoFormat.MP4
+        };
+        
+        var batchJob = await playlistService.QueuePlaylistAsync(
+            playlist,
+            outputDirectory,
+            settings: conversionSettings,
+            maxPages: 1
+        );
+        
+        Console.WriteLine($"Created batch job: {batchJob.Id}");
+        Console.WriteLine($"Batch name: {batchJob.Name}");
+        Console.WriteLine($"Total tasks: {batchJob.TotalTasks}");
+        
+        // Get active playlist jobs
+        var activeJobs = await playlistService.GetActivePlaylistJobsAsync();
+        Console.WriteLine($"Active playlist jobs: {activeJobs.Count()}");
+    }
+}
+
+// Simple logging service implementation
+public class ConsoleLoggingService : ILoggingService
+{
+    public void LogInfo(string message, string? context = null) => Console.WriteLine($"[INFO] {message}");
+    public void LogWarning(string message, string? context = null) => Console.WriteLine($"[WARN] {message}");
+    public void LogError(string message, Exception? exception = null, string? context = null) => Console.WriteLine($"[ERROR] {message}: {exception?.Message}");
+    public void LogDebug(string message, string? context = null) => Console.WriteLine($"[DEBUG] {message}");
+}
+```
+
+## CoubPlaylist
 
 ### Usage Example
 

@@ -1760,6 +1760,139 @@ public class DownloadOptionsDemo
 }
 ```
 
+## BatchProcessingService
+
+The `BatchProcessingService` manages batch processing jobs for downloading and converting multiple Coub videos in parallel. It provides functionality to create batch jobs, add download tasks, start processing, monitor progress, and manage batch lifecycle. The service supports parallel task execution with configurable limits, error handling with configurable continuation policies, and comprehensive status tracking.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Infrastructure.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+
+public class BatchProcessingDemo
+{
+    public async Task RunBatchProcessingExample()
+    {
+        // Setup DI container
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<IBatchJobRepository, BatchJobRepository>();
+        services.AddSingleton<IDownloadTaskRepository, DownloadTaskRepository>();
+        services.AddSingleton<ICoubDownloadService, CoubDownloadService>();
+        services.AddSingleton<BatchProcessingService>();
+        
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Create the batch processing service
+        var batchService = serviceProvider.GetRequiredService<BatchProcessingService>();
+        
+        // Define output directory
+        var outputDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CoubDownloads",
+            DateTime.Now.ToString("yyyy-MM-dd")
+        );
+        Directory.CreateDirectory(outputDirectory);
+        
+        // CreateBatchJobAsync - Create a new batch job
+        var batch = await batchService.CreateBatchJobAsync(
+            name: "Weekend Coub Download Batch",
+            outputDirectory: outputDirectory,
+            sharedSettings: new ConversionSettings
+            {
+                Width = 1920,
+                Height = 1080,
+                FrameRate = 30,
+                VideoCodec = VideoCodec.H264,
+                AudioCodec = AudioCodec.AAC,
+                VideoBitrate = 5000,
+                AudioBitrate = 192,
+                Format = "mp4"
+            }
+        );
+        
+        Console.WriteLine($"Created batch: {batch.Id} - {batch.Name}");
+        Console.WriteLine($"State: {batch.State}");
+        
+        // AddTasksAsync - Add download tasks to the batch
+        var tasks = new List<DownloadTask>
+        {
+            new DownloadTask
+            {
+                Url = "https://coub.com/view/coub123",
+                OutputFileName = "funny_cat_coub.mp4"
+            },
+            new DownloadTask
+            {
+                Url = "https://coub.com/view/coub456", 
+                OutputFileName = "dancing_dog_coub.mp4"
+            },
+            new DownloadTask
+            {
+                Url = "https://coub.com/view/coub789",
+                OutputFileName = "epic_fail_coub.mp4"
+            }
+        };
+        
+        await batchService.AddTasksAsync(batch.Id, tasks);
+        Console.WriteLine($"Added {tasks.Count} tasks to batch");
+        
+        // GetBatchStatusAsync - Check batch status
+        var batchStatus = await batchService.GetBatchStatusAsync(batch.Id);
+        Console.WriteLine($"Batch has {batchStatus.TotalTasks} tasks, {batchStatus.CompletedTasks} completed");
+        
+        // StartBatchAsync - Process all tasks in the batch
+        var completedBatch = await batchService.StartBatchAsync(batch.Id);
+        Console.WriteLine($"Batch completed: {completedBatch.State}");
+        Console.WriteLine($"All tasks completed: {completedBatch.Tasks.All(t => t.State == ProcessingState.Completed)}");
+        
+        // GetActiveBatchesAsync - Get all batches that are not completed
+        var activeBatches = await batchService.GetActiveBatchesAsync();
+        Console.WriteLine($"Active batches: {activeBatches.Count()}");
+        
+        // GetAllBatchesAsync - Get all batches
+        var allBatches = await batchService.GetAllBatchesAsync();
+        Console.WriteLine($"Total batches: {allBatches.Count()}");
+        
+        // CancelBatchAsync - Cancel a running batch
+        var runningBatch = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Running Batch",
+            State = ProcessingState.Downloading,
+            Tasks = new List<DownloadTask>
+            {
+                new DownloadTask { Id = "t1", State = ProcessingState.Downloading }
+            }
+        };
+        // Note: In real usage, you would persist this batch first
+        
+        await batchService.CancelBatchAsync(runningBatch.Id);
+        Console.WriteLine($"Batch cancelled: {runningBatch.State}");
+        
+        // DeleteBatchAsync - Delete a completed batch
+        var completedBatchForDeletion = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Completed Batch",
+            State = ProcessingState.Completed
+        };
+        // Note: In real usage, you would persist this batch first
+        
+        var deleted = await batchService.DeleteBatchAsync(completedBatchForDeletion.Id);
+        Console.WriteLine($"Batch deleted: {deleted}");
+    }
+}
+```
+
 ## BatchJob
 
 The `BatchJob` class represents a batch processing job for downloading and converting multiple Coub videos. It manages a collection of download tasks with shared settings and provides progress tracking, status management, and batch lifecycle operations. Batch jobs support parallel processing, error handling, and detailed progress reporting.

@@ -226,6 +226,82 @@ public class VideoConversionServiceDemo
 }
 ```
 
+## VideoConversionService
+
+The `VideoConversionService` provides FFmpeg-based video conversion and processing capabilities for the Coub Downloader application. It handles video format conversion, metadata extraction, audio track manipulation, and format-specific transformations like converting to vertical Shorts format. The service integrates seamlessly with FFmpeg tools to provide high-quality video processing with progress reporting and comprehensive error handling.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class VideoConversionDemo
+{
+    public async Task RunConversionExample()
+    {
+        // Create the video conversion service
+        var videoService = new VideoConversionService();
+
+        // Define paths
+        var inputPath = Path.Combine(Path.GetTempPath(), "input.mp4");
+        var outputPath = Path.Combine(Path.GetTempPath(), "output.mp4");
+        var audioPath = Path.Combine(Path.GetTempPath(), "audio.mp3");
+        var shortsOutputPath = Path.Combine(Path.GetTempPath(), "shorts.mp4");
+
+        // Create dummy files for demonstration
+        File.WriteAllText(inputPath, "dummy video content");
+        File.WriteAllText(audioPath, "dummy audio content");
+
+        // ConvertVideoAsync - Convert video with custom settings
+        var settings = new ConversionSettings
+        {
+            Width = 1280,
+            Height = 720,
+            FrameRate = 30,
+            VideoCodec = VideoCodec.H264,
+            AudioCodec = AudioCodec.AAC,
+            VideoBitrate = 2500,
+            AudioBitrate = 128
+        };
+
+        var convertedPath = await videoService.ConvertVideoAsync(inputPath, outputPath, settings);
+        Console.WriteLine($"Converted video to: {convertedPath}");
+
+        // GetVideoMetadataAsync - Extract metadata from video file
+        var metadata = await videoService.GetVideoMetadataAsync(outputPath);
+        Console.WriteLine($"Video metadata: {metadata.Width}x{metadata.Height}, {metadata.Duration}s, {metadata.VideoCodec}");
+
+        // ApplyAudioTrackAsync - Replace or add audio track to video
+        var audioOutputPath = Path.Combine(Path.GetTempPath(), "output_with_audio.mp4");
+        var audioAppliedPath = await videoService.ApplyAudioTrackAsync(outputPath, audioPath, audioOutputPath, settings);
+        Console.WriteLine($"Video with audio: {audioAppliedPath}");
+
+        // RescaleVideoAsync - Resize video to specific dimensions
+        var rescaledPath = Path.Combine(Path.GetTempPath(), "rescaled.mp4");
+        var rescaledPathResult = await videoService.RescaleVideoAsync(outputPath, rescaledPath, 640, 480);
+        Console.WriteLine($"Rescaled video to: {rescaledPathResult}");
+
+        // ConvertToShortsAsync - Convert video to Shorts format (9:16)
+        var shortsPath = Path.Combine(Path.GetTempPath(), "shorts_format.mp4");
+        var shortsResult = await videoService.ConvertToShortsAsync(outputPath, shortsPath);
+        Console.WriteLine($"Shorts format video: {shortsResult}");
+
+        // Cleanup
+        File.Delete(inputPath);
+        File.Delete(audioPath);
+        File.Delete(outputPath);
+        File.Delete(audioOutputPath);
+        File.Delete(rescaledPath);
+        File.Delete(shortsPath);
+    }
+}
+```
+
 ## VideoEditorService
 
 The `VideoEditorService` provides session-based, non-destructive video editing capabilities for trimming, merging, applying effects, and generating previews. It orchestrates video editing operations through the `FFmpegWrapper` and maintains edit history in `VideoEditSession` objects. Operations can be composed sequentially, with each step's output piped into the next, and temporary intermediate files are automatically cleaned up on completion or cancellation.

@@ -1035,6 +1035,82 @@ public class FileOperationExample
 }
 ```
 
+## ProcessExecutionException
+
+The `ProcessExecutionException` class is a custom exception thrown when external process execution fails (e.g., FFmpeg, FFprobe, or other command-line tools). It extends `CoubDownloaderException` and captures detailed information about the failed process including the process name, arguments, exit code, and standard error output. This exception is particularly useful for debugging video processing failures and provides all necessary context to diagnose issues with external tool execution.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Exceptions;
+
+public class VideoProcessingService
+{
+    public void ConvertVideoWithFFmpeg(string inputPath, string outputPath)
+    {
+        try
+        {
+            // Execute FFmpeg process
+            var process = System.Diagnostics.Process.Start("ffmpeg", $"-i \"{inputPath}\" -c:v libx264 \"{outputPath}\"");
+            process.WaitForExit();
+
+            // Check exit code
+            if (process.ExitCode != 0)
+            {
+                throw new ProcessExecutionException(
+                    "FFmpeg process failed to convert video.",
+                    "ffmpeg",
+                    $"-i \"{inputPath}\" -c:v libx264 \"{outputPath}\"",
+                    process.ExitCode,
+                    process.StandardError.ReadToEnd()
+                );
+            }
+        }
+        catch (ProcessExecutionException ex)
+        {
+            // Log detailed error information
+            Console.WriteLine($"Process failed: {ex.Message}");
+            Console.WriteLine($"Process: {ex.ProcessName}");
+            Console.WriteLine($"Arguments: {ex.Arguments}");
+            Console.WriteLine($"Exit Code: {ex.ExitCode}");
+            Console.WriteLine($"Error Output: {ex.StandardError}");
+            
+            // Re-throw with additional context
+            throw new ProcessExecutionException(
+                $"Video conversion failed for file: {inputPath}",
+                ex
+            );
+        }
+    }
+
+    public void CheckFFprobeVersion()
+    {
+        try
+        {
+            var process = System.Diagnostics.Process.Start("ffprobe", "-version");
+            process.WaitForExit();
+            
+            if (process.ExitCode != 0)
+            {
+                throw new ProcessExecutionException(
+                    "FFprobe failed to execute.",
+                    "ffprobe",
+                    "-version",
+                    process.ExitCode,
+                    process.StandardError.ReadToEnd()
+                );
+            }
+        }
+        catch (Exception ex) when (ex is ProcessExecutionException)
+        {
+            // Handle process execution failure
+            throw;
+        }
+    }
+}
+```
+
 ## CoubVideoTests
 
 The `CoubVideoTests` class provides a suite of xUnit tests that verify the behavior of the `CoubVideo` class and its extension methods. It tests video validation, aspect ratio calculation, duration categorization, view count formatting, quality detection, and audio duration calculations.

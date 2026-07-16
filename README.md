@@ -943,6 +943,98 @@ public class DateTimeDemo
 }
 ```
 
+## FileOperationException
+
+The `FileOperationException` class is a custom exception used to indicate file system operation failures in the application. It extends `CoubDownloaderException` and provides additional context about which file path caused the error and what type of operation failed. This exception is particularly useful for scenarios where file operations might fail due to permission issues, missing directories, or corrupted files, allowing for better error diagnosis and recovery.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using CoubDownloader.Domain.Exceptions;
+using CoubDownloader.Domain.Enums;
+
+public class FileOperationExample
+{
+    public void ProcessVideoFile(string inputPath, string outputPath)
+    {
+        try
+        {
+            // Validate input file exists
+            if (!File.Exists(inputPath))
+            {
+                throw new FileOperationException(
+                    "Input video file does not exist.",
+                    inputPath,
+                    FileOperationType.ExistsCheck
+                );
+            }
+
+            // Ensure output directory exists
+            var outputDirectory = Path.GetDirectoryName(outputPath);
+            if (!Directory.Exists(outputDirectory))
+            {
+                throw new FileOperationException(
+                    "Output directory does not exist and cannot be created.",
+                    outputDirectory,
+                    FileOperationType.CreateDirectory
+                );
+            }
+
+            // Read video file
+            var videoContent = File.ReadAllBytes(inputPath);
+            
+            // Process video content...
+            
+            // Write output file
+            File.WriteAllBytes(outputPath, videoContent);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            throw new FileOperationException(
+                "Access denied while processing video file.",
+                inputPath,
+                FileOperationType.Write,
+                ex
+            );
+        }
+        catch (IOException ex)
+        {
+            throw new FileOperationException(
+                "Failed to read or write video file due to I/O error.",
+                inputPath,
+                FileOperationType.Write,
+                ex
+            );
+        }
+    }
+
+    public void DeleteTemporaryFiles(string[] tempFiles)
+    {
+        foreach (var filePath in tempFiles)
+        {
+            try
+            {
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                throw new FileOperationException(
+                    $"Failed to delete temporary file: {filePath}",
+                    filePath,
+                    FileOperationType.Delete,
+                    ex
+                );
+            }
+        }
+    }
+}
+```
+
 ## CoubVideoTests
 
 The `CoubVideoTests` class provides a suite of xUnit tests that verify the behavior of the `CoubVideo` class and its extension methods. It tests video validation, aspect ratio calculation, duration categorization, view count formatting, quality detection, and audio duration calculations.

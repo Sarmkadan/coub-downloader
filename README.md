@@ -2256,3 +2256,71 @@ Console.WriteLine(apiSearchResults[1].Id); // "d2"
 ```
 
 ## IFileAdapter
+## VideoEditSession
+
+The `VideoEditSession` class represents a video editing session that manages a sequence of edit operations on a source video file. It tracks the editing state, including all applied operations, timestamps, and output configuration. The session supports creating, modifying, and finalizing video edits with comprehensive operation tracking.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class VideoEditSessionDemo
+{
+    public void CreateAndProcessVideoEditSession()
+    {
+        // Create a new video edit session
+        var session = VideoEditSession.Create(
+            sourceFilePath: @"/home/user/videos/source.mp4",
+            outputFilePath: @"/home/user/videos/edited_output.mp4"
+        );
+
+        // Add trim operation
+        session = session.WithOperation(new EditOperation
+        {
+            Label = "Opening Scene",
+            Timestamp = DateTime.UtcNow,
+            StartTime = TimeSpan.FromSeconds(5),
+            EndTime = TimeSpan.FromSeconds(15),
+            Mode = TrimMode.Trim
+        });
+
+        // Add merge operation with clips
+        session = session.WithOperation(new EditOperation
+        {
+            Label = "Merge Clips",
+            Timestamp = DateTime.UtcNow,
+            ClipPaths = new List<string> { "/path/to/clip1.mp4", "/path/to/clip2.mp4" },
+            Strategy = MergeStrategy.Sequential
+        });
+
+        // Add effect operation
+        session = session.WithOperation(new EditOperation
+        {
+            Label = "Add Filter",
+            Timestamp = DateTime.UtcNow,
+            Effects = new List<VideoEffect> { new()
+            {
+                Type = VideoEffectType.ColorCorrection,
+                Intensity = 0.7,
+                Parameters = new Dictionary<string, string> { { "brightness", "1.2" } }
+            }},
+            TransitionDuration = TimeSpan.FromMilliseconds(300)
+        });
+
+        // Check session state
+        Console.WriteLine($"Session ID: {session.SessionId}");
+        Console.WriteLine($"Source file: {session.SourceFilePath}");
+        Console.WriteLine($"Operations count: {session.Operations.Count}");
+        Console.WriteLine($"Is dirty: {session.IsDirty}");
+        Console.WriteLine($"Created at: {session.CreatedAt}");
+
+        // Apply all operations and save
+        var finalOutput = session.OutputFilePath;
+        Console.WriteLine($"Final output will be saved to: {finalOutput}");
+    }
+}
+```

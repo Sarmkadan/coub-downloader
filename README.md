@@ -75,6 +75,174 @@ public class VideoConversionDemo
 }
 ```
 
+## CoubApiClientTests
+
+The `CoubApiClientTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `CoubApiClient` class. It tests various scenarios including cache hits, API calls, error handling, and invalid inputs for video information retrieval, video existence verification, and video search operations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Integration;
+using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Middleware;
+using Moq;
+
+public class CoubApiClientDemo
+{
+public async Task RunAll()
+{
+// Create mock dependencies
+var mockLogger = new Mock<ILoggingService>();
+var mockCache = new Mock<ICacheService>();
+var mockHttpMessageHandler = new Mock<System.Net.Http.HttpMessageHandler>(MockBehavior.Strict);
+var httpClient = new System.Net.Http.HttpClient(mockHttpMessageHandler.Object)
+{
+BaseAddress = new Uri("https://coub.com/api/v2/")
+};
+
+// Create the API client
+var apiClient = new CoubApiClient(httpClient, mockLogger.Object, mockCache.Object);
+
+// GetVideoInfoAsync - Get video info with cache hit (avoids API call)
+var videoUrl = "https://coub.com/view/testcoub";
+var cachedVideoInfo = new CoubVideoInfo { Id = "testcoub", Title = "Cached Coub", Duration = 10 };
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out cachedVideoInfo!))
+.Returns(true);
+
+var videoInfo = await apiClient.GetVideoInfoAsync(videoUrl);
+Console.WriteLine(videoInfo?.Title); // "Cached Coub"
+
+// GetVideoInfoAsync - Get video info from API (cache miss)
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<CoubVideoInfo?>.IsAny))
+.Returns(false);
+
+// Configure mock HTTP response
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"id\": \"api123\",
+  \"title\": \"API Fetched Coub\",
+  \"duration\": 15,
+  \"has_audio\": true
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<CoubVideoInfo>(), It.IsAny<TimeSpan>()));
+
+var apiVideoInfo = await apiClient.GetVideoInfoAsync(videoUrl);
+Console.WriteLine(apiVideoInfo?.Title); // "API Fetched Coub"
+
+// GetVideoInfoAsync - Handle 404 Not Found
+var notFoundUrl = "https://coub.com/view/nonexistent";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<CoubVideoInfo?>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.NotFound
+});
+
+var notFoundInfo = await apiClient.GetVideoInfoAsync(notFoundUrl);
+Console.WriteLine(notFoundInfo); // null
+
+// VerifyVideoExistsAsync - Check if video exists with cache hit
+var existsUrl = "https://coub.com/view/existing";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out true))
+.Returns(true);
+
+var exists = await apiClient.VerifyVideoExistsAsync(existsUrl);
+Console.WriteLine(exists); // true
+
+// VerifyVideoExistsAsync - Check if video exists from API
+var apiExistsUrl = "https://coub.com/view/checkexists";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<bool>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"id\": \"exists123\",
+  \"title\": \"Existing Coub\"
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<TimeSpan>()));
+
+var apiExists = await apiClient.VerifyVideoExistsAsync(apiExistsUrl);
+Console.WriteLine(apiExists); // true
+
+// SearchVideosAsync - Search videos with cache hit
+var searchQuery = "funny cats";
+var cachedVideos = new List<CoubVideoInfo> { new() { Id = "c1", Title = "Funny Cat 1" } };
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out cachedVideos!))
+.Returns(true);
+
+var searchResults = await apiClient.SearchVideosAsync(searchQuery, 5);
+Console.WriteLine(searchResults.Count); // 1
+
+// SearchVideosAsync - Search videos from API
+var apiSearchQuery = "dogs playing";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<List<CoubVideoInfo>?>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"coubs\": [
+    {\"id\": \"d1\", \"title\": \"Dog Playing 1\"},
+    {\"id\": \"d2\": \"title\": \"Dog Playing 2\"},
+    {\"id\": \"d3\", \"title\": \"Dog Playing 3\"}
+  ]
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<List<CoubVideoInfo>>(), It.IsAny<TimeSpan>()));
+
+var apiSearchResults = await apiClient.SearchVideosAsync(apiSearchQuery, 2);
+Console.WriteLine(apiSearchResults.Count); // 2
+Console.WriteLine(apiSearchResults[0].Id); // "d1"
+Console.WriteLine(apiSearchResults[1].Id); // "d2"
+}
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.
@@ -367,6 +535,174 @@ public class CoubVideoDemo
         video.AudioTrack = null;
         Console.WriteLine(CoubVideoExtensions.CalculateRequiredAudioDuration(video)); // 0
     }
+}
+```
+
+## CoubApiClientTests
+
+The `CoubApiClientTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `CoubApiClient` class. It tests various scenarios including cache hits, API calls, error handling, and invalid inputs for video information retrieval, video existence verification, and video search operations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Integration;
+using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Middleware;
+using Moq;
+
+public class CoubApiClientDemo
+{
+public async Task RunAll()
+{
+// Create mock dependencies
+var mockLogger = new Mock<ILoggingService>();
+var mockCache = new Mock<ICacheService>();
+var mockHttpMessageHandler = new Mock<System.Net.Http.HttpMessageHandler>(MockBehavior.Strict);
+var httpClient = new System.Net.Http.HttpClient(mockHttpMessageHandler.Object)
+{
+BaseAddress = new Uri("https://coub.com/api/v2/")
+};
+
+// Create the API client
+var apiClient = new CoubApiClient(httpClient, mockLogger.Object, mockCache.Object);
+
+// GetVideoInfoAsync - Get video info with cache hit (avoids API call)
+var videoUrl = "https://coub.com/view/testcoub";
+var cachedVideoInfo = new CoubVideoInfo { Id = "testcoub", Title = "Cached Coub", Duration = 10 };
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out cachedVideoInfo!))
+.Returns(true);
+
+var videoInfo = await apiClient.GetVideoInfoAsync(videoUrl);
+Console.WriteLine(videoInfo?.Title); // "Cached Coub"
+
+// GetVideoInfoAsync - Get video info from API (cache miss)
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<CoubVideoInfo?>.IsAny))
+.Returns(false);
+
+// Configure mock HTTP response
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"id\": \"api123\",
+  \"title\": \"API Fetched Coub\",
+  \"duration\": 15,
+  \"has_audio\": true
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<CoubVideoInfo>(), It.IsAny<TimeSpan>()));
+
+var apiVideoInfo = await apiClient.GetVideoInfoAsync(videoUrl);
+Console.WriteLine(apiVideoInfo?.Title); // "API Fetched Coub"
+
+// GetVideoInfoAsync - Handle 404 Not Found
+var notFoundUrl = "https://coub.com/view/nonexistent";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<CoubVideoInfo?>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.NotFound
+});
+
+var notFoundInfo = await apiClient.GetVideoInfoAsync(notFoundUrl);
+Console.WriteLine(notFoundInfo); // null
+
+// VerifyVideoExistsAsync - Check if video exists with cache hit
+var existsUrl = "https://coub.com/view/existing";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out true))
+.Returns(true);
+
+var exists = await apiClient.VerifyVideoExistsAsync(existsUrl);
+Console.WriteLine(exists); // true
+
+// VerifyVideoExistsAsync - Check if video exists from API
+var apiExistsUrl = "https://coub.com/view/checkexists";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<bool>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"id\": \"exists123\",
+  \"title\": \"Existing Coub\"
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<TimeSpan>()));
+
+var apiExists = await apiClient.VerifyVideoExistsAsync(apiExistsUrl);
+Console.WriteLine(apiExists); // true
+
+// SearchVideosAsync - Search videos with cache hit
+var searchQuery = "funny cats";
+var cachedVideos = new List<CoubVideoInfo> { new() { Id = "c1", Title = "Funny Cat 1" } };
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out cachedVideos!))
+.Returns(true);
+
+var searchResults = await apiClient.SearchVideosAsync(searchQuery, 5);
+Console.WriteLine(searchResults.Count); // 1
+
+// SearchVideosAsync - Search videos from API
+var apiSearchQuery = "dogs playing";
+mockCache.Setup(c => c.TryGet(It.IsAny<string>(), out It.Ref<List<CoubVideoInfo>?>.IsAny))
+.Returns(false);
+
+mockHttpMessageHandler
+.Protected()
+.Setup<Task<System.Net.Http.HttpResponseMessage>>(
+"SendAsync",
+ItExpr.IsAny<System.Net.Http.HttpRequestMessage>(),
+ItExpr.IsAny<System.Threading.CancellationToken>())
+)
+.ReturnsAsync(new System.Net.Http.HttpResponseMessage
+{
+StatusCode = System.Net.HttpStatusCode.OK,
+Content = new System.Net.Http.StringContent(@"{
+  
+  \"coubs\": [
+    {\"id\": \"d1\", \"title\": \"Dog Playing 1\"},
+    {\"id\": \"d2\": \"title\": \"Dog Playing 2\"},
+    {\"id\": \"d3\", \"title\": \"Dog Playing 3\"}
+  ]
+}")
+});
+
+mockCache.Setup(c => c.Set(It.IsAny<string>(), It.IsAny<List<CoubVideoInfo>>(), It.IsAny<TimeSpan>()));
+
+var apiSearchResults = await apiClient.SearchVideosAsync(apiSearchQuery, 2);
+Console.WriteLine(apiSearchResults.Count); // 2
+Console.WriteLine(apiSearchResults[0].Id); // "d1"
+Console.WriteLine(apiSearchResults[1].Id); // "d2"
+}
 }
 ```
 

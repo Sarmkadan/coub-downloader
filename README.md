@@ -1837,9 +1837,74 @@ public class VideoProcessingService
 }
 ```
 
-## CoubVideoTests
+## CoubVideo
 
-The `CoubVideoTests` class provides a suite of xUnit tests that verify the behavior of the `CoubVideo` class and its extension methods. It tests video validation, aspect ratio calculation, duration categorization, view count formatting, quality detection, and audio duration calculations.
+The `CoubVideo` class represents a Coub video with comprehensive metadata and processing information. It contains properties for video identification, technical specifications, content details, and timestamps. The class also provides utility methods for validation, aspect ratio calculation, and format detection.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Extensions;
+
+public class CoubVideoDemo
+{
+    public void ProcessCoubVideo()
+    {
+        // Create a Coub video instance
+        var video = new CoubVideo
+        {
+            Id = "x7f3h2k9",
+            Title = "Funny Cat Jumping",
+            Url = "https://coub.com/view/x7f3h2k9",
+            Duration = 12.45,
+            Width = 1280,
+            Height = 720,
+            SourceUrl = "https://coub.com/view/x7f3h2k9/download",
+            ThumbnailUrl = "https://coub-assets.imgix.net/assets/thumb/2024/06/15/123456789_coub_thumb.jpg",
+            CreatorName = "FunnyCatsChannel",
+            Description = "A funny cat jumping from the couch",
+            UploadedDate = new DateTime(2024, 6, 15),
+            ViewCount = 1567890,
+            HasAudio = true,
+            AudioTrack = new AudioTrack
+            {
+                Id = "audio_123",
+                Duration = 12.45,
+                SampleRate = 44100,
+                Channels = 2,
+                Bitrate = 192,
+                Codec = "aac"
+            },
+            Sections = new List<VideoSection>(),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Validate video properties
+        Console.WriteLine($"Video is valid: {video.IsValid()}");
+        
+        // Calculate aspect ratio
+        var aspectRatio = video.GetAspectRatio();
+        Console.WriteLine($"Aspect ratio: {aspectRatio:F2}"); // 1.78 (16:9)
+        
+        // Check video orientation
+        Console.WriteLine($"Is vertical format: {video.IsVerticalFormat()}"); // false
+        
+        // Access video properties
+        Console.WriteLine($"Video: {video.Title}");
+        Console.WriteLine($"Duration: {video.Duration}s");
+        Console.WriteLine($"Resolution: {video.Width}x{video.Height}");
+        Console.WriteLine($"Views: {video.ViewCount:N0}");
+        Console.WriteLine($"Has audio: {video.HasAudio}");
+        
+        // Update timestamps
+        video.UpdatedAt = DateTime.UtcNow;
+    }
+}
+```
 
 ### Usage Example
 

@@ -75,6 +75,119 @@ public class VideoConversionDemo
 }
 ```
 
+## BatchProcessingServiceTests
+
+The `BatchProcessingServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `BatchProcessingService` class. It tests batch job creation, task management, batch processing workflows, cancellation, status retrieval, and batch deletion operations with various edge cases and error scenarios.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Infrastructure.Repositories;
+using Moq;
+
+public class BatchProcessingDemo
+{
+public async Task RunAll()
+{
+// Create mock repositories
+var mockBatchRepo = new Mock<IBatchJobRepository>();
+var mockTaskRepo = new Mock<IDownloadTaskRepository>();
+var mockDownloadService = new Mock<ICoubDownloadService>();
+
+// Create the batch processing service
+var batchService = new BatchProcessingService(
+    mockBatchRepo.Object,
+    mockTaskRepo.Object,
+    mockDownloadService.Object);
+
+// CreateBatchAsync - Create a new batch job
+var batchName = "My Video Download Batch";
+var outputDir = Path.Combine(Path.GetTempPath(), "coub-downloads");
+Directory.CreateDirectory(outputDir);
+
+var newBatch = await batchService.CreateBatchJobAsync(batchName, outputDir);
+Console.WriteLine($"Created batch: {newBatch.Id} - {newBatch.Name}");
+Console.WriteLine($"State: {newBatch.State}"); // ProcessingState.Pending
+
+// AddTasksAsync - Add download tasks to the batch
+var tasks = new List<DownloadTask>
+{
+    new() { Url = "https://coub.com/view/coub1" },
+    new() { Url = "https://coub.com/view/coub2" },
+    new() { Url = "https://coub.com/view/coub3" }
+};
+
+await batchService.AddTasksAsync(newBatch.Id, tasks);
+Console.WriteLine($"Added {tasks.Count} tasks to batch");
+
+// GetBatchStatusAsync - Check batch status
+var batchStatus = await batchService.GetBatchStatusAsync(newBatch.Id);
+Console.WriteLine($"Batch has {batchStatus.TotalTasks} tasks, {batchStatus.CompletedTasks} completed");
+
+// StartBatchAsync - Process all tasks in the batch
+// Note: In real usage, this would actually download videos
+// Here we mock the download service to return successful results
+mockDownloadService.Setup(ds => ds.DownloadVideoAsync(
+    It.IsAny<string>(),
+    It.IsAny<System.Threading.CancellationToken>()))
+.ReturnsAsync(new CoubVideo { Id = "test1", Url = "https://coub.com/view/coub1" });
+
+var completedBatch = await batchService.StartBatchAsync(newBatch.Id);
+Console.WriteLine($"Batch completed: {completedBatch.State}"); // ProcessingState.Completed
+Console.WriteLine($"All tasks completed: {completedBatch.Tasks.All(t => t.State == ProcessingState.Completed)}");
+
+// GetActiveBatchesAsync - Get all batches that are not completed
+var activeBatches = await batchService.GetActiveBatchesAsync();
+Console.WriteLine($"Active batches: {activeBatches.Count}");
+
+// GetAllBatchesAsync - Get all batches
+var allBatches = await batchService.GetAllBatchesAsync();
+Console.WriteLine($"Total batches: {allBatches.Count}");
+
+// CancelBatchAsync - Cancel a running batch
+var runningBatch = new BatchJob
+{
+    Id = Guid.NewGuid().ToString(),
+    Name = "Running Batch",
+    State = ProcessingState.Downloading,
+    Tasks = new List<DownloadTask>
+    {
+        new() { Id = "t1", State = ProcessingState.Downloading }
+    }
+};
+mockBatchRepo.Setup(repo => repo.GetByIdAsync(runningBatch.Id)).ReturnsAsync(runningBatch);
+mockBatchRepo.Setup(repo => repo.UpdateAsync(It.IsAny<BatchJob>())).ReturnsAsync(runningBatch);
+mockTaskRepo.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
+
+await batchService.CancelBatchAsync(runningBatch.Id);
+Console.WriteLine($"Batch cancelled: {runningBatch.State}"); // ProcessingState.Cancelled
+
+// DeleteBatchAsync - Delete a completed batch
+var completedBatchForDeletion = new BatchJob
+{
+    Id = Guid.NewGuid().ToString(),
+    Name = "Completed Batch",
+    State = ProcessingState.Completed
+};
+mockBatchRepo.Setup(repo => repo.GetByIdAsync(completedBatchForDeletion.Id)).ReturnsAsync(completedBatchForDeletion);
+mockBatchRepo.Setup(repo => repo.DeleteAsync(completedBatchForDeletion.Id)).ReturnsAsync(true);
+
+var deleted = await batchService.DeleteBatchAsync(completedBatchForDeletion.Id);
+Console.WriteLine($"Batch deleted: {deleted}"); // true
+
+// Cleanup
+directory.Delete(outputDir, true);
+}
+}
+```
+
 ## CoubApiClientTests
 
 The `CoubApiClientTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `CoubApiClient` class. It tests various scenarios including cache hits, API calls, error handling, and invalid inputs for video information retrieval, video existence verification, and video search operations.
@@ -537,6 +650,7 @@ public class CoubVideoDemo
     }
 }
 ```
+
 
 ## CoubApiClientTests
 

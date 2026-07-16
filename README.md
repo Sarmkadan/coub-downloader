@@ -1,3 +1,4 @@
+// README.md
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.
@@ -30,45 +31,46 @@ public class MyClass
 
 ## FileUtilitiesTests
 
-The `FileUtilitiesTests` class contains unit tests for the `FileUtilities` static class, verifying file system operations such as generating safe file names, formatting file sizes, ensuring directory creation, and handling file operations with progress tracking.
+The `FileUtilitiesTests` class provides a suite of xUnit tests that verify the behavior of the `FileUtilities` helper methods, such as safe file name generation, file size formatting, directory creation, unique file naming, file copying with progress, and recursive directory deletion.
 
 ### Usage Example
 
 ```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
 using CoubDownloader.Tests;
-using Xunit;
+using FluentAssertions;
 
-public class FileUtilitiesExample
+public class FileUtilitiesTestsDemo
 {
-    [Fact]
-    public void ExampleUsage()
+    public async Task RunAll()
     {
-        // Generate a safe file name from an invalid path
-        string safeName = FileUtilities.GenerateSafeFileName("invalid/file\\name", ".mp4");
-        Assert.Equal("invalidfilename.mp4", safeName);
+        var tests = new FileUtilitiesTests();
 
-        // Format file size in human-readable format
-        string formattedSize = FileUtilities.FormatFileSize(1048576);
-        Assert.Equal("1.00 MB", formattedSize);
+        // GenerateSafeFileName test
+        tests.GenerateSafeFileName_ShouldReturnSafeName(
+            input: "invalid/file\\name",
+            extension: ".mp4",
+            expected: "invalidfilename.mp4");
 
-        // Ensure a directory exists
-        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-        string ensuredPath = FileUtilities.EnsureDirectory(tempDir);
-        Assert.True(Directory.Exists(ensuredPath));
-        Directory.Delete(ensuredPath, true);
+        // FormatFileSize test
+        tests.FormatFileSize_ShouldReturnHumanReadableSize(
+            bytes: 1048576,
+            expected: "1.00 MB");
 
-        // Get unique file name when file doesn't exist
-        string uniquePath = FileUtilities.GetUniqueFileName("/tmp/test.txt");
-        Assert.Equal("/tmp/test.txt", uniquePath);
+        // EnsureDirectory test
+        tests.EnsureDirectory_ShouldCreateDirectoryIfDoesNotExist();
 
-        // Get unique file name when file exists
-        string existingPath = Path.Combine(Path.GetTempPath(), "existing.txt");
-        File.WriteAllText(existingPath, "content");
-        string newPath = FileUtilities.GetUniqueFileName(existingPath);
-        Assert.NotEqual(existingPath, newPath);
-        Assert.EndsWith("_1.txt", newPath);
-        File.Delete(existingPath);
-        if (File.Exists(newPath)) File.Delete(newPath);
+        // GetUniqueFileName tests
+        tests.GetUniqueFileName_ShouldReturnOriginalIfFileDoesNotExist();
+        tests.GetUniqueFileName_ShouldReturnNewNameIfFileExists();
+
+        // CopyFileWithProgressAsync test
+        await tests.CopyFileWithProgressAsync_ShouldCopyFileSuccessfully();
+
+        // DeleteDirectoryRecursively test
+        tests.DeleteDirectoryRecursively_ShouldDeleteDirectory();
     }
 }
 ```

@@ -1281,6 +1281,55 @@ public class ConversionSettingsDemo
 }
 ```
 
+## DownloadOptions
+
+The `DownloadOptions` class defines configuration parameters for download operations including output paths, retry behavior, caching settings, and parallel processing options. These settings control where downloaded videos are saved, how failures are handled, and whether to use caching for better performance. The class includes validation attributes to ensure values stay within reasonable bounds.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models.Options;
+
+public class DownloadOptionsDemo
+{
+    public void ConfigureDownloadOptions()
+    {
+        // Create download options with custom settings
+        var downloadOptions = new DownloadOptions
+        {
+            OutputPath = "/home/user/Videos/CoubDownloads",
+            CachePath = "/home/user/.coub-cache",
+            MaxRetries = 5,
+            TimeoutSeconds = 600, // 10 minutes
+            EnableCaching = true,
+            MaxCacheSizeGb = 5.0, // 5GB cache limit
+            ParallelDownloads = 8 // Download 8 videos simultaneously
+        };
+
+        // Validate configuration
+        if (downloadOptions.MaxRetries > 100)
+        {
+            Console.WriteLine("MaxRetries exceeds maximum value of 100");
+        }
+
+        if (downloadOptions.ParallelDownloads > 50)
+        {
+            Console.WriteLine("ParallelDownloads exceeds maximum value of 50");
+        }
+
+        // Access download options
+        Console.WriteLine($"Output directory: {downloadOptions.OutputPath}");
+        Console.WriteLine($"Cache directory: {downloadOptions.CachePath}");
+        Console.WriteLine($"Max retries: {downloadOptions.MaxRetries}");
+        Console.WriteLine($"Timeout: {downloadOptions.TimeoutSeconds} seconds");
+        Console.WriteLine($"Caching enabled: {downloadOptions.EnableCaching}");
+        Console.WriteLine($"Cache size limit: {downloadOptions.MaxCacheSizeGb} GB");
+        Console.WriteLine($"Parallel downloads: {downloadOptions.ParallelDownloads}");
+    }
+}
+```
+
 ## BatchJob
 
 The `BatchJob` class represents a batch processing job for downloading and converting multiple Coub videos. It manages a collection of download tasks with shared settings and provides progress tracking, status management, and batch lifecycle operations. Batch jobs support parallel processing, error handling, and detailed progress reporting.

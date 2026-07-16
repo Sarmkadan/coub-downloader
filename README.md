@@ -573,6 +573,70 @@ public class ValidationExample
 }
 ```
 
+## ConfigurationException
+
+The `ConfigurationException` class is a custom exception used to indicate configuration-related errors in the application. It extends `System.Exception` and provides additional context about which configuration key caused the error. This exception is particularly useful for scenarios where application configuration is invalid or missing, allowing for better error diagnosis and recovery.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Exceptions;
+
+public class ConfigurationExample
+{
+    public void LoadConfiguration(string configKey)
+    {
+        // Validate configuration
+        if (string.IsNullOrEmpty(configKey))
+        {
+            throw new ConfigurationException(
+                "Configuration key cannot be null or empty.",
+                configKey
+            );
+        }
+
+        // Check if configuration exists
+        var configValue = Environment.GetEnvironmentVariable(configKey);
+        if (string.IsNullOrEmpty(configValue))
+        {
+            throw new ConfigurationException(
+                $"Required configuration '{configKey}' is missing or empty.",
+                configKey
+            );
+        }
+
+        // Validate configuration format
+        if (!int.TryParse(configValue, out var parsedValue) || parsedValue <= 0)
+        {
+            throw new ConfigurationException(
+                $"Configuration '{configKey}' must be a positive integer.",
+                configKey,
+                new FormatException("Invalid format")
+            );
+        }
+
+        // Use configuration...
+    }
+
+    public void ProcessWithInnerException(string filePath)
+    {
+        try
+        {
+            // Some operation that might fail due to configuration
+        }
+        catch (Exception ex)
+        {
+            throw new ConfigurationException(
+                "Failed to process configuration-dependent operation.",
+                nameof(filePath),
+                ex
+            );
+        }
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

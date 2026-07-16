@@ -1151,6 +1151,72 @@ public class DateTimeDemo
 }
 ```
 
+## CoubPlaylist
+
+The `CoubPlaylist` class represents a Coub playlist sourced from a channel feed or tag page, containing an ordered collection of video URLs ready for batch processing. It provides properties for playlist metadata and methods to check validity and retrieve effective video URLs while respecting optional limits.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Linq;
+using CoubDownloader.Domain.Models;
+
+public class CoubPlaylistDemo
+{
+    public void ProcessPlaylist()
+    {
+        // Create a new playlist
+        var playlist = new CoubPlaylist
+        {
+            Id = "channel_funny_cats",
+            Title = "Funny Cats Channel",
+            Description = "A collection of funny cat videos from Coub",
+            PlaylistUrl = "https://coub.com/channel/funnycats",
+            MaxVideos = 10,
+            CreatedAt = DateTime.UtcNow,
+            FetchedAt = DateTime.UtcNow
+        };
+
+        // Add video URLs to the playlist
+        playlist.VideoUrls.AddRange(new[]
+        {
+            "https://coub.com/view/coub1",
+            "https://coub.com/view/coub2",
+            "https://coub.com/view/coub3",
+            "https://coub.com/view/coub4",
+            "https://coub.com/view/coub5"
+        });
+
+        // Check if playlist is valid (has ID, URL, and videos)
+        Console.WriteLine($"Is valid: {playlist.IsValid()}"); // true
+
+        // Check if playlist is empty
+        Console.WriteLine($"Is empty: {playlist.IsEmpty()}"); // false
+
+        // Get total video count
+        Console.WriteLine($"Total videos: {playlist.TotalVideos}"); // 5
+
+        // Get effective video URLs (respects MaxVideos limit)
+        var effectiveUrls = playlist.GetEffectiveVideoUrls();
+        Console.WriteLine($"Effective URLs count: {effectiveUrls.Count()}"); // 5
+
+        // Update MaxVideos to limit the playlist
+        playlist.MaxVideos = 3;
+        var limitedUrls = playlist.GetEffectiveVideoUrls();
+        Console.WriteLine($"Limited URLs count: {limitedUrls.Count()}"); // 3
+
+        // Access playlist properties
+        Console.WriteLine($"Playlist ID: {playlist.Id}");
+        Console.WriteLine($"Title: {playlist.Title}");
+        Console.WriteLine($"Description: {playlist.Description}");
+        Console.WriteLine($"Playlist URL: {playlist.PlaylistUrl}");
+        Console.WriteLine($"Created at: {playlist.CreatedAt}");
+        Console.WriteLine($"Fetched at: {playlist.FetchedAt}");
+    }
+}
+```
+
 ## FileOperationException
 
 The `FileOperationException` class is a custom exception used to indicate file system operation failures in the application. It extends `CoubDownloaderException` and provides additional context about which file path caused the error and what type of operation failed. This exception is particularly useful for scenarios where file operations might fail due to permission issues, missing directories, or corrupted files, allowing for better error diagnosis and recovery.

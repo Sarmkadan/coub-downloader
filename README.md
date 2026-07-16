@@ -1,4 +1,80 @@
 // README.md
+## VideoConversionServiceTests
+
+The `VideoConversionServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `VideoConversionService` class. It tests all major video conversion operations including converting videos with custom settings, extracting metadata from video files, applying audio tracks to videos, rescaling videos to different dimensions, and converting videos to Shorts format (9:16 aspect ratio with centered content).
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class VideoConversionDemo
+{
+    public async Task RunAll()
+    {
+        // Create the service instance
+        var videoService = new VideoConversionService();
+
+        // Define paths
+        var inputPath = Path.Combine(Path.GetTempPath(), "input.mp4");
+        var outputPath = Path.Combine(Path.GetTempPath(), "output.mp4");
+        var audioPath = Path.Combine(Path.GetTempPath(), "audio.mp3");
+        var shortsOutputPath = Path.Combine(Path.GetTempPath(), "shorts.mp4");
+
+        // Create dummy files for demonstration
+        File.WriteAllText(inputPath, "dummy video content");
+        File.WriteAllText(audioPath, "dummy audio content");
+
+        // ConvertVideoAsync - Convert video with custom settings
+        var settings = new ConversionSettings
+        {
+            Width = 1280,
+            Height = 720,
+            FrameRate = 30,
+            VideoCodec = VideoCodec.H264,
+            AudioCodec = AudioCodec.AAC,
+            VideoBitrate = 2500,
+            AudioBitrate = 128
+        };
+
+        var convertedPath = await videoService.ConvertVideoAsync(inputPath, outputPath, settings);
+        Console.WriteLine($"Converted video to: {convertedPath}");
+
+        // GetVideoMetadataAsync - Extract metadata from video file
+        var metadata = await videoService.GetVideoMetadataAsync(outputPath);
+        Console.WriteLine($"Video metadata: {metadata.Width}x{metadata.Height}, {metadata.Duration}s, {metadata.VideoCodec}");
+
+        // ApplyAudioTrackAsync - Replace or add audio track to video
+        var audioOutputPath = Path.Combine(Path.GetTempPath(), "output_with_audio.mp4");
+        var audioAppliedPath = await videoService.ApplyAudioTrackAsync(outputPath, audioPath, audioOutputPath, settings);
+        Console.WriteLine($"Video with audio: {audioAppliedPath}");
+
+        // RescaleVideoAsync - Resize video to specific dimensions
+        var rescaledPath = Path.Combine(Path.GetTempPath(), "rescaled.mp4");
+        var rescaledPathResult = await videoService.RescaleVideoAsync(outputPath, rescaledPath, 640, 480);
+        Console.WriteLine($"Rescaled video to: {rescaledPathResult}");
+
+        // ConvertToShortsAsync - Convert video to Shorts format (9:16)
+        var shortsPath = Path.Combine(Path.GetTempPath(), "shorts_format.mp4");
+        var shortsResult = await videoService.ConvertToShortsAsync(outputPath, shortsPath);
+        Console.WriteLine($"Shorts format video: {shortsResult}");
+
+        // Cleanup
+        File.Delete(inputPath);
+        File.Delete(audioPath);
+        File.Delete(outputPath);
+        File.Delete(audioOutputPath);
+        File.Delete(rescaledPath);
+        File.Delete(shortsPath);
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

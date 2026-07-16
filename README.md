@@ -1239,6 +1239,172 @@ public class BatchJobDemo
             task.State = ProcessingState.Downloading;
             batchJob.CompletedTasks++;
             batchJob.UpdatedAt = DateTime.UtcNow;
+
+            Console.WriteLine($"Processed task {task.OutputFileName}: {task.State}");
+        }
+
+        // Mark batch as completed
+        batchJob.State = ProcessingState.Completed;
+        batchJob.CompletedAt = DateTime.UtcNow;
+        batchJob.UpdatedAt = DateTime.UtcNow;
+
+        Console.WriteLine($"\nBatch completed successfully!");
+        Console.WriteLine($"Total duration: {batchJob.GetElapsedTime()?.ToString("g")}");
+        Console.WriteLine($"Final progress: {batchJob.GetProgressPercent()}%");
+        Console.WriteLine($"Failed tasks: {batchJob.FailedTasks}");
+        Console.WriteLine($"Output directory: {batchJob.OutputDirectory}");
+
+        // Check pending tasks (should be 0 after completion)
+        Console.WriteLine($"Pending tasks: {batchJob.GetPendingTaskCount()}");
+        Console.WriteLine($"Is completed: {batchJob.IsCompleted}");
+    }
+}
+```
+
+## AudioTrack
+
+The `AudioTrack` class represents an audio track extracted from a Coub video. It contains detailed audio metadata including technical specifications (sample rate, channels, bitrate, codec), looping configuration for synchronization with video content, and validation methods to ensure audio track integrity.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class AudioTrackDemo
+{
+    public void ProcessAudioTrack()
+    {
+        // Create an audio track with default settings
+        var audioTrack = new AudioTrack
+        {
+            Id = "audio_12345",
+            VideoId = "video_67890",
+            Duration = 15.5,
+            SampleRate = 44100,
+            Channels = 2,
+            Bitrate = 192,
+            Codec = "aac",
+            FilePath = @"/path/to/audio.mp3",
+            LoopStrategy = AudioLoopStrategy.Repeat,
+            LoopCount = 3,
+            FadeInMs = 100,
+            FadeOutMs = 200,
+            VolumeLevel = 1.0,
+            SyncDuration = 15.5,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Validate the audio track
+        Console.WriteLine($"Is valid: {audioTrack.IsValid()}");
+        Console.WriteLine($"Audio spec: {audioTrack.GetAudioSpec()}");
+        Console.WriteLine($"Original duration: {audioTrack.Duration}s");
+        Console.WriteLine($"Looped duration: {audioTrack.CalculateLoopedDuration():F2}s");
+
+        // Update audio properties
+        audioTrack.LoopStrategy = AudioLoopStrategy.Crossfade;
+        audioTrack.LoopCount = 2;
+        audioTrack.VolumeLevel = 0.8;
+
+        // Calculate new looped duration
+        var newLoopedDuration = audioTrack.CalculateLoopedDuration();
+        Console.WriteLine($"Updated looped duration: {newLoopedDuration:F2}s");
+
+        // Access audio metadata
+        Console.WriteLine($"Sample rate: {audioTrack.SampleRate}Hz");
+        Console.WriteLine($"Channels: {audioTrack.Channels}");
+        Console.WriteLine($"Bitrate: {audioTrack.Bitrate}kbps");
+        Console.WriteLine($"Codec: {audioTrack.Codec}");
+        Console.WriteLine($"Created at: {audioTrack.CreatedAt}");
+    }
+}
+```
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class BatchJobDemo
+{
+    public async Task RunBatchProcessingDemo()
+    {
+        // Create a new batch job
+        var batchJob = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Weekend Coub Download Batch",
+            Description = "Download and convert trending Coubs from this weekend",
+            OutputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubDownloads", DateTime.Now.ToString("yyyy-MM-dd")),
+            MaxParallelTasks = 4,
+            ContinueOnError = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Add download tasks to the batch
+        batchJob.Tasks = new List<DownloadTask>
+        {
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub123",
+                OutputFileName = "funny_cat_coub.mp4",
+                State = ProcessingState.Pending
+            },
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub456",
+                OutputFileName = "dancing_dog_coub.mp4",
+                State = ProcessingState.Pending
+            },
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub789",
+                OutputFileName = "epic_fail_coub.mp4",
+                State = ProcessingState.Pending
+            }
+        };
+
+        // Set shared conversion settings for all tasks
+        batchJob.SharedSettings = new ConversionSettings
+        {
+            Width = 1920,
+            Height = 1080,
+            FrameRate = 30,
+            VideoCodec = VideoCodec.H264,
+            AudioCodec = AudioCodec.AAC,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            Format = "mp4"
+        };
+
+        // Check batch status
+        Console.WriteLine($"Batch created: {batchJob.Name}");
+        Console.WriteLine($"Total tasks: {batchJob.TotalTasks}");
+        Console.WriteLine($"State: {batchJob.State}");
+        Console.WriteLine($"Progress: {batchJob.GetProgressPercent()}%");
+        Console.WriteLine($"Estimated time: {batchJob.GetElapsedTime()?.ToString("g") ?? "Not started"}");
+
+        // Start processing the batch
+        batchJob.State = ProcessingState.Downloading;
+        batchJob.StartedAt = DateTime.UtcNow;
+        batchJob.UpdatedAt = DateTime.UtcNow;
+
+        // Simulate processing tasks
+        foreach (var task in batchJob.Tasks)
+        {
+            task.State = ProcessingState.Downloading;
+            batchJob.CompletedTasks++;
+            batchJob.UpdatedAt = DateTime.UtcNow;
             
             Console.WriteLine($"Processed task {task.OutputFileName}: {task.State}");
         }

@@ -917,6 +917,80 @@ public class NetworkOperationsDemo
 }
 ```
 
+## CoubDownloadService
+
+The `CoubDownloadService` is the core service for downloading and extracting data from Coub videos. It provides functionality to fetch video metadata, extract video source URLs, download videos, and verify downloads. The service integrates with the Coub API client and video repository to provide a complete download pipeline with proper error handling and progress reporting.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using Microsoft.Extensions.DependencyInjection;
+
+public class CoubDownloadServiceDemo
+{
+    public async Task RunDownloadExample()
+    {
+        // Setup DI container
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        services.AddSingleton<ICoubDownloadService, CoubDownloadService>();
+        services.AddSingleton<ICoubVideoRepository, CoubVideoRepository>();
+        services.AddSingleton<ICoubApiClient, CoubApiClient>();
+        services.AddLogging();
+        
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Create the download service
+        var downloadService = serviceProvider.GetRequiredService<ICoubDownloadService>();
+        
+        // Define video URL and output path
+        var videoUrl = "https://coub.com/view/xyz123";
+        var outputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubDownloads");
+        Directory.CreateDirectory(outputDirectory);
+        var outputPath = Path.Combine(outputDirectory, "funny_coub.mp4");
+        
+        // Download video with metadata fetching
+        var downloadedVideo = await downloadService.DownloadVideoAsync(videoUrl);
+        Console.WriteLine($"Downloaded video: {downloadedVideo.Title}");
+        Console.WriteLine($"Video ID: {downloadedVideo.Id}");
+        Console.WriteLine($"Duration: {downloadedVideo.Duration}s");
+        Console.WriteLine($"Resolution: {downloadedVideo.Width}x{downloadedVideo.Height}");
+        
+        // Fetch metadata only (without downloading the video file)
+        var videoMetadata = await downloadService.FetchMetadataAsync(videoUrl);
+        Console.WriteLine($"\nFetched metadata:");
+        Console.WriteLine($"Title: {videoMetadata.Title}");
+        Console.WriteLine($"Views: {videoMetadata.ViewCount}");
+        Console.WriteLine($"Has audio: {videoMetadata.HasAudio}");
+        
+        // Extract video source URL
+        var sourceUrl = await downloadService.ExtractVideoSourceAsync(videoUrl);
+        Console.WriteLine($"\nVideo source URL: {sourceUrl}");
+        
+        // Download video file with progress reporting
+        var progress = new Progress<int>(percent => 
+            Console.WriteLine($"Download progress: {percent}%"));
+        
+        var downloadedFilePath = await downloadService.DownloadVideoFileAsync(
+            sourceUrl, 
+            outputPath, 
+            progress
+        );
+        Console.WriteLine($"\nVideo file downloaded to: {downloadedFilePath}");
+        Console.WriteLine($"File exists: {File.Exists(downloadedFilePath)}");
+        
+        // Verify downloaded file
+        var isValid = await downloadService.VerifyDownloadAsync(downloadedFilePath);
+        Console.WriteLine($"File verification: {isValid}");
+    }
+}
+```
+
 ## CoubDownloaderException
 
 The `CoubDownloaderException` class is the base exception type for all custom exceptions in the CoubDownloader application. It extends `System.Exception` and provides additional context about failed operations including the video URL, HTTP status codes, file paths, and information about underlying tool failures. This exception serves as the foundation for all domain-specific exceptions in the application, allowing for consistent error handling and detailed error reporting when downloading, processing, or converting videos.

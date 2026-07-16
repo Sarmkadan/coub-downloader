@@ -2121,6 +2121,124 @@ public class DownloadResultDemo
 }
 ```
 
+## EventHandlingExample
+
+The `EventHandlingExample` class demonstrates how to subscribe to and handle various download and conversion events in the Coub Downloader application. It shows how to register event handlers for different stages of the video processing pipeline including download start, progress updates, completion, failures, and conversion events. This pattern enables real-time monitoring, progress tracking, error handling, and integration with external systems.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Examples;
+using CoubDownloader.Application.Services;
+using Microsoft.Extensions.DependencyInjection;
+
+public class EventHandlingDemo
+{
+    public async Task RunEventHandlingExample()
+    {
+        // Setup dependency injection
+        var services = new ServiceCollection();
+        services.AddCoubDownloaderServices();
+        services.AddHttpClient();
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Get required services
+        var eventBus = serviceProvider.GetRequiredService<IEventBus>();
+        var downloadService = serviceProvider.GetRequiredService<ICoubDownloadService>();
+
+        // Subscribe to download started event
+        eventBus.Subscribe<DownloadStartedEvent>(@event =>
+        {
+            Console.WriteLine($"📥 Download Started");
+            Console.WriteLine($" URL: {@event.VideoUrl}");
+            Console.WriteLine($" Title: {@event.VideoTitle}");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        // Subscribe to download progress event
+        eventBus.Subscribe<DownloadProgressEvent>(@event =>
+        {
+            Console.WriteLine($"⏳ Progress: {@event.ProgressPercent}%");
+            if (@event.DownloadedBytes > 0)
+            {
+                Console.WriteLine($" Downloaded: {@event.DownloadedBytes / 1024 / 1024} MB");
+            }
+        });
+
+        // Subscribe to download completed event
+        eventBus.Subscribe<DownloadCompletedEvent>(@event =>
+        {
+            Console.WriteLine($"✓ Download Completed");
+            Console.WriteLine($" Output: {@event.OutputPath}");
+            Console.WriteLine($" Size: {@event.FileSizeBytes / 1024 / 1024} MB");
+            Console.WriteLine($" Duration: {@event.Duration:F2}s");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        // Subscribe to download failed event
+        eventBus.Subscribe<DownloadFailedEvent>(@event =>
+        {
+            Console.WriteLine($"✗ Download Failed");
+            Console.WriteLine($" Error: {@event.Error}");
+            Console.WriteLine($" Retry Attempt: {@event.RetryAttempt}");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        // Subscribe to conversion started event
+        eventBus.Subscribe<ConversionStartedEvent>(@event =>
+        {
+            Console.WriteLine($"🎬 Conversion Started");
+            Console.WriteLine($" Input: {@event.InputPath}");
+            Console.WriteLine($" Output: {@event.OutputPath}");
+            Console.WriteLine($" Quality: {@event.Quality}");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        // Subscribe to conversion completed event
+        eventBus.Subscribe<ConversionCompletedEvent>(@event =>
+        {
+            Console.WriteLine($"✓ Conversion Completed");
+            Console.WriteLine($" Output: {@event.OutputPath}");
+            Console.WriteLine($" Duration: {@event.DurationMs}ms");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        // Subscribe to conversion failed event
+        eventBus.Subscribe<ConversionFailedEvent>(@event =>
+        {
+            Console.WriteLine($"✗ Conversion Failed");
+            Console.WriteLine($" Error: {@event.Error}");
+            Console.WriteLine($" Input: {@event.InputPath}");
+            Console.WriteLine($" Time: {@event.Timestamp:HH:mm:ss}");
+        });
+
+        Console.WriteLine("Event handlers registered. Starting download...\n");
+
+        // Trigger events by downloading a video
+        var coubUrl = "https://coub.com/view/xyz123";
+        var outputDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CoubDownloads"
+        );
+        Directory.CreateDirectory(outputDirectory);
+        var outputPath = Path.Combine(outputDirectory, "event_demo.mp4");
+
+        try
+        {
+            var result = await downloadService.DownloadAsync(coubUrl);
+            Console.WriteLine("\n✓ Download with events completed successfully!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n✗ Download failed: {ex.Message}");
+        }
+    }
+}
+```
+
 ## AudioTrack
 
 The `AudioTrack` class represents an audio track extracted from a Coub video. It contains detailed audio metadata including technical specifications (sample rate, channels, bitrate, codec), looping configuration for synchronization with video content, and validation methods to ensure audio track integrity.

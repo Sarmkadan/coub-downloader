@@ -737,6 +737,114 @@ public class NetworkOperationsDemo
 }
 ```
 
+## CoubDownloaderException
+
+The `CoubDownloaderException` class is the base exception type for all custom exceptions in the CoubDownloader application. It extends `System.Exception` and provides additional context about failed operations including the video URL, HTTP status codes, file paths, and information about underlying tool failures. This exception serves as the foundation for all domain-specific exceptions in the application, allowing for consistent error handling and detailed error reporting when downloading, processing, or converting videos.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Exceptions;
+
+public class CoubDownloaderExceptionExample
+{
+    public void ProcessVideoWithErrorHandling(string videoUrl, string outputPath)
+    {
+        try
+        {
+            // Attempt to download and process a video
+            DownloadAndProcessVideo(videoUrl, outputPath);
+        }
+        catch (CoubDownloaderException ex) when (ex.VideoUrl != null)
+        {
+            // Log detailed error information
+            Console.WriteLine($"CoubDownloader error occurred: {ex.Message}");
+            Console.WriteLine($"Video URL: {ex.VideoUrl}");
+            
+            if (ex.HttpStatusCode.HasValue)
+            {
+                Console.WriteLine($"HTTP Status Code: {ex.HttpStatusCode}");
+            }
+            
+            if (ex.InnerException != null)
+            {
+                Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+            }
+            
+            // Handle specific exception types
+            switch (ex)
+            {
+                case VideoDownloadException downloadEx:
+                    Console.WriteLine($"Video download failed: {downloadEx.Message}");
+                    break;
+                    
+                case VideoConversionException conversionEx:
+                    Console.WriteLine($"Video conversion failed: {conversionEx.Message}");
+                    if (!string.IsNullOrEmpty(conversionEx.InputPath))
+                    {
+                        Console.WriteLine($"Input file: {conversionEx.InputPath}");
+                    }
+                    if (!string.IsNullOrEmpty(conversionEx.OutputPath))
+                    {
+                        Console.WriteLine($"Output file: {conversionEx.OutputPath}");
+                    }
+                    break;
+                    
+                case AudioProcessingException audioEx:
+                    Console.WriteLine($"Audio processing failed: {audioEx.Message}");
+                    if (!string.IsNullOrEmpty(audioEx.AudioFilePath))
+                    {
+                        Console.WriteLine($"Audio file: {audioEx.AudioFilePath}");
+                    }
+                    break;
+                    
+                case ProcessExecutionException processEx:
+                    Console.WriteLine($"External tool failed: {processEx.Message}");
+                    Console.WriteLine($"Tool: {processEx.ToolName}");
+                    break;
+                    
+                case MetadataExtractionException metadataEx:
+                    Console.WriteLine($"Metadata extraction failed: {metadataEx.Message}");
+                    if (!string.IsNullOrEmpty(metadataEx.SourceUrl))
+                    {
+                        Console.WriteLine($"Source URL: {metadataEx.SourceUrl}");
+                    }
+                    break;
+                    
+                case ToolNotFoundException toolEx:
+                    Console.WriteLine($"Required tool not found: {toolEx.Message}");
+                    Console.WriteLine($"Tool name: {toolEx.ToolName}");
+                    break;
+                    
+                case FileOperationException fileEx:
+                    Console.WriteLine($"File operation failed: {fileEx.Message}");
+                    Console.WriteLine($"File path: {fileEx.FilePath}");
+                    break;
+                    
+                case NetworkException networkEx:
+                    Console.WriteLine($"Network error: {networkEx.Message}");
+                    Console.WriteLine($"URL: {networkEx.Url}");
+                    if (networkEx.HttpStatusCode.HasValue)
+                    {
+                        Console.WriteLine($"HTTP Status: {networkEx.HttpStatusCode}");
+                    }
+                    Console.WriteLine($"Is Timeout: {networkEx.IsTimeout}");
+                    break;
+            }
+            
+            throw; // Re-throw the exception
+        }
+    }
+    
+    private void DownloadAndProcessVideo(string videoUrl, string outputPath)
+    {
+        // Implementation that may throw CoubDownloaderException
+        // or any of its derived exception types
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

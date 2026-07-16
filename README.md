@@ -356,6 +356,157 @@ Console.WriteLine(apiSearchResults[1].Id); // "d2"
 }
 ```
 
+## MemoryCacheServiceTests
+
+The `MemoryCacheServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `MemoryCacheService` class. It tests basic cache operations including setting and retrieving values, handling missing keys, removing entries, clearing the cache, tracking cache statistics, and handling expiration scenarios. The tests also cover complex type serialization/deserialization and remote cache synchronization.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Caching.Memory;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
+using Moq;
+
+public class MemoryCacheServiceDemo
+{
+    public async Task RunAll()
+    {
+        // Create mock dependencies
+        var mockOptions = Options.Create(new MemoryCacheOptions());
+        var mockMemoryCache = new Mock<IMemoryCache>();
+        var mockRemoteCache = new Mock<IRemoteCache>();
+
+        // Create the cache service
+        var cacheService = new MemoryCacheService(mockOptions, mockMemoryCache.Object, mockRemoteCache.Object);
+
+        // Set_ThenGet_ReturnsStoredValue - Store and retrieve a simple value
+        await cacheService.SetAsync("test_key", "test_value", TimeSpan.FromMinutes(5));
+        var value = await cacheService.GetAsync<string>("test_key");
+        Console.WriteLine(value); // "test_value"
+
+        // TryGet_ExistingKey_ReturnsTrueAndValue - Retrieve existing key with TryGet
+        var existsResult = await cacheService.TryGetAsync<string>("test_key");
+        Console.WriteLine(existsResult.Exists); // true
+        Console.WriteLine(existsResult.Value); // "test_value"
+
+        // TryGet_MissingKey_ReturnsFalseAndDefault - TryGet on missing key
+        var missingResult = await cacheService.TryGetAsync<string>("missing_key");
+        Console.WriteLine(missingResult.Exists); // false
+        Console.WriteLine(missingResult.Value); // null
+
+        // Remove_ExistingKey_KeyNoLongerRetrievable - Remove a cached entry
+        await cacheService.SetAsync("removable_key", "to_remove");
+        await cacheService.RemoveAsync("removable_key");
+        var removedValue = await cacheService.GetAsync<string>("removable_key");
+        Console.WriteLine(removedValue); // null
+
+        // Clear_AfterMultipleSets_CacheIsEmpty - Clear entire cache
+        await cacheService.SetAsync("key1", "value1");
+        await cacheService.SetAsync("key2", "value2");
+        await cacheService.ClearAsync();
+        var clearedValue1 = await cacheService.GetAsync<string>("key1");
+        var clearedValue2 = await cacheService.GetAsync<string>("key2");
+        Console.WriteLine(clearedValue1); // null
+        Console.WriteLine(clearedValue2); // null
+
+        // GetStatistics_AfterHitsAndMisses_TracksAccurately - Check cache statistics
+        await cacheService.SetAsync("stats_key", "stats_value");
+        await cacheService.GetAsync<string>("stats_key"); // hit
+        await cacheService.TryGetAsync<string>("missing_stats_key"); // miss
+        
+        var stats = cacheService.GetStatistics();
+        Console.WriteLine(stats.Hits); // 1
+        Console.WriteLine(stats.Misses); // 1
+        Console.WriteLine(stats.Total); // 2
+
+        // GetStatistics_EmptyCache_HitRateIsZero - Statistics for empty cache
+        var emptyCacheService = new MemoryCacheService(
+            Options.Create(new MemoryCacheOptions()),
+            new Mock<IMemoryCache>().Object,
+            new Mock<IRemoteCache>().Object
+        );
+        var emptyStats = emptyCacheService.GetStatistics();
+        Console.WriteLine(emptyStats.Hits); // 0
+        Console.WriteLine(emptyStats.Misses); // 0
+        Console.WriteLine(emptyStats.HitRate); // 0
+
+        // Set_ExpiredTtl_EntryNotRetrievable - Set with expiration
+        await cacheService.SetAsync("expiring_key", "expiring_value", TimeSpan.FromMilliseconds(100));
+        await Task.Delay(200); // Wait for expiration
+        var expiredValue = await cacheService.GetAsync<string>("expiring_key");
+        Console.WriteLine(expiredValue); // null
+
+        // Set_OverwritesExistingKey - Overwrite existing key
+        await cacheService.SetAsync("overwrite_key", "first_value");
+        await cacheService.SetAsync("overwrite_key", "second_value");
+        var overwrittenValue = await cacheService.GetAsync<string>("overwrite_key");
+        Console.WriteLine(overwrittenValue); // "second_value"
+
+        // TryGet_ComplexType_DeserializesCorrectly - Complex type handling
+        var complexObject = new TestData { Name = "Test", Value = 42 };
+        await cacheService.SetAsync("complex_key", complexObject);
+        var retrievedComplex = await cacheService.GetAsync<TestData>("complex_key");
+        Console.WriteLine(retrievedComplex?.Name); // "Test"
+        Console.WriteLine(retrievedComplex?.Value); // 42
+
+        // Set_PropagatesValueToRemoteCache - Remote cache synchronization
+        await cacheService.SetAsync("remote_key", "remote_value");
+        mockRemoteCache.Verify(r => r.SetAsync("remote_key", "remote_value", It.IsAny<TimeSpan>()), Times.Once);
+
+        // TryGet_HitOnLocal_DoesNotQueryRemote - Local cache hit optimization
+        await cacheService.SetAsync("local_hit_key", "local_value");
+        var localHitResult = await cacheService.TryGetAsync<string>("local_hit_key");
+        Console.WriteLine(localHitResult.Exists); // true
+        mockRemoteCache.Verify(r => r.TryGetAsync<string>(It.IsAny<string>()), Times.Never);
+
+        // TryGet_LocalMissRemoteHit_CachesLocallyAndReturnsValue - Remote fallback
+        mockMemoryCache.Setup(m => m.TryGetValue(It.IsAny<object>(), out It.Ref<object>.IsAny))
+            .Returns(false);
+        mockRemoteCache.Setup(r => r.TryGetAsync<string>("remote_miss_key"))
+            .ReturnsAsync((true, "remote_value"));
+        
+        var remoteHitResult = await cacheService.TryGetAsync<string>("remote_miss_key");
+        Console.WriteLine(remoteHitResult.Exists); // true
+        Console.WriteLine(remoteHitResult.Value); // "remote_value"
+        
+        // Verify local cache was populated
+        mockMemoryCache.Verify(m => m.Set("remote_miss_key", "remote_value", It.IsAny<TimeSpan>()), Times.Once);
+
+        // Remove_PropagatesDeletionToRemoteCache - Remove from remote cache
+        await cacheService.RemoveAsync("remote_remove_key");
+        mockRemoteCache.Verify(r => r.RemoveAsync("remote_remove_key"), Times.Once);
+
+        // Clear_PropagatesClearToRemoteCache - Clear remote cache
+        await cacheService.ClearAsync();
+        mockRemoteCache.Verify(r => r.ClearAsync(), Times.Once);
+
+        // Set_RemoteThrows_DoesNotBubbleException - Error handling
+        mockRemoteCache.Setup(r => r.SetAsync(It.IsAny<string>(), It.IsAny<object>(), It.IsAny<TimeSpan>()))
+            .ThrowsAsync(new Exception("Remote cache error"));
+        
+        try
+        {
+            await cacheService.SetAsync("error_key", "error_value");
+            Console.WriteLine("No exception thrown");
+        }
+        catch
+        {
+            Console.WriteLine("Exception was thrown");
+        }
+    }
+
+    private class TestData
+    {
+        public string? Name { get; set; }
+        public int Value { get; set; }
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

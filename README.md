@@ -84,3 +84,32 @@ if (report.Warnings.Count > 0)
 string diagnosticsString = diagnostics.GetDiagnosticsString();
 Console.WriteLine(diagnosticsString);
 ```
+
+## DomainBenchmarks
+
+`DomainBenchmarks` is a BenchmarkDotNet benchmark class that measures the performance of common domain operations such as formatting view counts, formatting file sizes, estimating conversion output size, and calculating batch‑job progress. It provides a `Setup` method to initialise test data and individual benchmark methods that can also be invoked directly.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Benchmarks;
+
+// Create an instance of the benchmark class
+var benchmarks = new DomainBenchmarks();
+
+// Initialise the benchmark data
+benchmarks.Setup();
+
+// Run individual benchmark methods
+string viewCount = benchmarks.GetFormattedViewCount();
+Console.WriteLine($"Formatted view count: {viewCount}");
+
+string fileSize = benchmarks.GetFormattedFileSize();
+Console.WriteLine($"Formatted file size: {fileSize}");
+
+long estimatedSize = benchmarks.EstimateOutputSize();
+Console.WriteLine($"Estimated output size (bytes): {estimatedSize}");
+
+int progress = benchmarks.GetProgressPercent();
+Console.WriteLine($"Batch job progress: {progress}%");
+```

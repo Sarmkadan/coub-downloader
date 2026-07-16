@@ -1261,6 +1261,71 @@ public class BatchJobDemo
 }
 ```
 
+## DownloadResult
+
+The `DownloadResult` class represents the outcome of a download and conversion operation. It contains detailed information about the operation's success or failure, including output file paths, processing metrics, video format and quality settings, error details, warnings, and metadata. This class is used throughout the application to track and report on individual download tasks.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class DownloadResultDemo
+{
+    public void ProcessDownloadResult()
+    {
+        // Create a successful download result
+        var successResult = new DownloadResult
+        {
+            Id = Guid.NewGuid().ToString(),
+            TaskId = "task_12345",
+            Success = true,
+            OutputFilePath = @"/home/user/Videos/coub-downloads/funny_cat.mp4",
+            OutputFileSizeBytes = 5242880, // 5MB
+            ProcessingTimeMs = 1250,
+            Format = VideoFormat.Mp4,
+            Quality = VideoQuality.Hd1080p,
+            VideoMetadata = "{"width":1920,"height":1080,"duration":15.5}",
+            AudioSyncInfo = "Audio synced successfully (15.5s)",
+            CompletedAt = DateTime.UtcNow
+        };
+
+        // Add warnings if any occurred during processing
+        successResult.AddWarning("Audio normalization applied");
+        successResult.AddWarning("Metadata extraction warning: bitrate mismatch");
+
+        // Display result information
+        Console.WriteLine($"Status: {successResult.GetStatusMessage()}");
+        Console.WriteLine($"File: {Path.GetFileName(successResult.OutputFilePath)}");
+        Console.WriteLine($"Size: {successResult.OutputFileSizeBytes} bytes ({successResult.FormatFileSize(successResult.OutputFileSizeBytes)})");
+        Console.WriteLine($"Processing time: {successResult.ProcessingTimeMs}ms");
+        Console.WriteLine($"Format: {successResult.Format}");
+        Console.WriteLine($"Quality: {successResult.Quality}");
+        Console.WriteLine($"Warnings: {successResult.Warnings.Count}");
+        
+        // Create a failed download result
+        var failedResult = new DownloadResult
+        {
+            Id = Guid.NewGuid().ToString(),
+            TaskId = "task_67890",
+            Success = false,
+            ErrorMessage = "Network timeout while downloading video source",
+            ErrorType = "NetworkError",
+            ErrorStackTrace = "at CoubDownloader.Infrastructure.Services.DownloadService.DownloadVideoAsync...",
+            CompletedAt = DateTime.UtcNow
+        };
+
+        // Display failure information
+        Console.WriteLine($"\nFailed result: {failedResult.GetStatusMessage()}");
+        Console.WriteLine($"Error: {failedResult.ErrorMessage}");
+        Console.WriteLine($"Error type: {failedResult.ErrorType}");
+    }
+}
+```
+
 ## AudioTrack
 
 The `AudioTrack` class represents an audio track extracted from a Coub video. It contains detailed audio metadata including technical specifications (sample rate, channels, bitrate, codec), looping configuration for synchronization with video content, and validation methods to ensure audio track integrity.

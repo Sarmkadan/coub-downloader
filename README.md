@@ -1,4 +1,79 @@
 // README.md
+
+## DownloadTask
+
+The `DownloadTask` class represents a single video download and conversion task. It tracks the state of downloading, processing, and converting a Coub video with comprehensive progress reporting and error handling. Each task maintains detailed metadata about the video being processed, output configuration, and processing statistics.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class DownloadTaskDemo
+{
+    public async Task RunDownloadTaskExample()
+    {
+        // Create a new download task for a specific Coub video
+        var downloadTask = new DownloadTask
+        {
+            Id = Guid.NewGuid().ToString(),
+            VideoId = "x7f3h2k9",
+            Url = "https://coub.com/view/x7f3h2k9",
+            OutputPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+                "CoubDownloads",
+                "funny_cat_jump.mp4"
+            ),
+            State = ProcessingState.Pending,
+            Format = VideoFormat.Mp4,
+            Quality = VideoQuality.Hd720p,
+            AudioLoop = AudioLoopStrategy.Repeat,
+            ProgressPercent = 0,
+            FileSizeBytes = 0,
+            StartedAt = null,
+            CompletedAt = null,
+            ErrorMessage = null,
+            RetryCount = 0,
+            MaxRetries = 3,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            BatchJobId = "batch_12345"
+        };
+
+        // Start the download task
+        downloadTask.State = ProcessingState.Downloading;
+        downloadTask.StartedAt = DateTime.UtcNow;
+        downloadTask.UpdatedAt = DateTime.UtcNow;
+
+        Console.WriteLine($"Starting download: {downloadTask.VideoId}");
+        Console.WriteLine($"Target file: {downloadTask.OutputPath}");
+        Console.WriteLine($"Quality: {downloadTask.Quality}");
+        Console.WriteLine($"Audio loop strategy: {downloadTask.AudioLoop}");
+
+        // Simulate progress updates
+        downloadTask.ProgressPercent = 25;
+        downloadTask.FileSizeBytes = 1048576; // 1MB
+        downloadTask.UpdatedAt = DateTime.UtcNow;
+        Console.WriteLine($"Progress: {downloadTask.ProgressPercent}% ({downloadTask.FormatFileSize(downloadTask.FileSizeBytes)})");
+
+        // Complete the task
+        downloadTask.State = ProcessingState.Completed;
+        downloadTask.CompletedAt = DateTime.UtcNow;
+        downloadTask.UpdatedAt = DateTime.UtcNow;
+        downloadTask.ProgressPercent = 100;
+
+        Console.WriteLine($"\nTask completed successfully!");
+        Console.WriteLine($"Duration: {downloadTask.GetElapsedTime()?.ToString("g")}");
+        Console.WriteLine($"Final size: {downloadTask.FormatFileSize(downloadTask.FileSizeBytes)}");
+        Console.WriteLine($"Output file exists: {File.Exists(downloadTask.OutputPath)}");
+    }
+}
+```
+
 ## VideoConversionServiceTests
 
 The `VideoConversionServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `VideoConversionService` class. It tests all major video conversion operations including converting videos with custom settings, extracting metadata from video files, applying audio tracks to videos, rescaling videos to different dimensions, and converting videos to Shorts format (9:16 aspect ratio with centered content).

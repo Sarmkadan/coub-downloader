@@ -162,6 +162,65 @@ public class FileUtilitiesDemo
 }
 ```
 
+## AudioProcessingServiceTests
+
+The `AudioProcessingServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `AudioProcessingService` class. It tests audio processing operations including extracting audio duration, looping audio with different strategies, and synchronizing audio with video duration.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Enums;
+
+public class AudioProcessingDemo
+{
+    public async Task RunAll()
+    {
+        // Create the service instance
+        var audioService = new AudioProcessingService();
+
+        // Define paths
+        var audioPath = Path.Combine(Path.GetTempPath(), "audio.mp3");
+        var outputPath = Path.Combine(Path.GetTempPath(), "looped_audio.mp3");
+        var videoPath = Path.Combine(Path.GetTempPath(), "video.mp4");
+        var syncedOutputPath = Path.Combine(Path.GetTempPath(), "synced_output.mp4");
+
+        // Create dummy files for demonstration
+        File.WriteAllText(audioPath, "dummy audio content");
+        File.WriteAllText(videoPath, "dummy video content");
+
+        // GetAudioDurationAsync - Extract duration from audio file
+        var duration = await audioService.GetAudioDurationAsync(audioPath);
+        Console.WriteLine($"Audio duration: {duration}s");
+
+        // LoopAudioAsync - Loop audio with Repeat strategy
+        var loopedPath = Path.Combine(Path.GetTempPath(), "repeated_audio.mp3");
+        await audioService.LoopAudioAsync(audioPath, 30.0, loopedPath, AudioLoopStrategy.Repeat);
+        Console.WriteLine("Audio looped with Repeat strategy");
+
+        // LoopAudioAsync - Loop audio with Crossfade strategy
+        var crossfadedPath = Path.Combine(Path.GetTempPath(), "crossfaded_audio.mp3");
+        await audioService.LoopAudioAsync(audioPath, 25.0, crossfadedPath, AudioLoopStrategy.Crossfade);
+        Console.WriteLine("Audio looped with Crossfade strategy");
+
+        // SyncAudioWithVideoAsync - Synchronize audio with video duration
+        await audioService.SyncAudioWithVideoAsync(audioPath, videoPath, syncedOutputPath, AudioLoopStrategy.Repeat);
+        Console.WriteLine("Audio synchronized with video duration");
+
+        // Cleanup
+        File.Delete(audioPath);
+        File.Delete(videoPath);
+        File.Delete(outputPath);
+        File.Delete(loopedPath);
+        File.Delete(crossfadedPath);
+        File.Delete(syncedOutputPath);
+    }
+}
+```
+
 ## DateTimeExtensionsTests
 
 The `DateTimeExtensionsTests` class provides a suite of xUnit tests that verify the behavior of extension methods for `DateTime` and `TimeSpan` operations, including relative time formatting, duration formatting, date range validation, and Unix timestamp conversion.

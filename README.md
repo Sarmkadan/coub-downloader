@@ -10,28 +10,28 @@ using CoubDownloader.Tests;
 
 public class MyClass
 {
-    private readonly IFileAdapter _fileAdapter;
+  private readonly IFileAdapter _fileAdapter;
 
-    public MyClass(IFileAdapter fileAdapter)
-    {
-        _fileAdapter = fileAdapter;
-    }
+  public MyClass(IFileAdapter fileAdapter)
+  {
+    _fileAdapter = fileAdapter;
+  }
 
-    public void WriteToFile(string path, string contents)
-    {
-        _fileAdapter.WriteAllText(path, contents);
-    }
+  public void WriteToFile(string path, string contents)
+  {
+    _fileAdapter.WriteAllText(path, contents);
+  }
 
-    public void DeleteFile(string path)
-    {
-        _fileAdapter.Delete(path);
-    }
+  public void DeleteFile(string path)
+  {
+    _fileAdapter.Delete(path);
+  }
 }
-``` 
+```
 
 ## FileUtilitiesTests
 
-The `FileUtilitiesTests` class provides a suite of xUnit tests that verify the behavior of the `FileUtilities` helper methods, such as safe file name generation, file size formatting, directory creation, unique file naming, file copying with progress, and recursive directory deletion.
+The `FileUtilitiesTests` class provides a suite of xUnit tests that verify the behavior of the `FileUtilities` helper methods, including safe file name generation, file size formatting, directory creation, unique file naming, file copying with progress, and recursive directory deletion.
 
 ### Usage Example
 
@@ -40,37 +40,48 @@ using System;
 using System.IO;
 using System.Threading.Tasks;
 using CoubDownloader.Tests;
-using FluentAssertions;
 
-public class FileUtilitiesTestsDemo
+public class FileUtilitiesDemo
 {
-    public async Task RunAll()
+    public void RunAll()
     {
-        var tests = new FileUtilitiesTests();
+        // GenerateSafeFileName - converts invalid file names to safe versions
+        var safeName = FileUtilities.GenerateSafeFileName(
+            input: "video?file*name",
+            extension: ".mp4");
+        Console.WriteLine(safeName); // "videofilename.mp4"
 
-        // GenerateSafeFileName test
-        tests.GenerateSafeFileName_ShouldReturnSafeName(
-            input: "invalid/file\\name",
-            extension: ".mp4",
-            expected: "invalidfilename.mp4");
+        // FormatFileSize - converts bytes to human-readable format
+        var sizeText = FileUtilities.FormatFileSize(1572864);
+        Console.WriteLine(sizeText); // "1.50 MB"
 
-        // FormatFileSize test
-        tests.FormatFileSize_ShouldReturnHumanReadableSize(
-            bytes: 1048576,
-            expected: "1.00 MB");
+        // EnsureDirectory - creates directory if it doesn't exist
+        var directoryPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos),
+            "CoubDownloader");
+        var ensuredPath = FileUtilities.EnsureDirectory(directoryPath);
+        Console.WriteLine(Directory.Exists(ensuredPath)); // true
 
-        // EnsureDirectory test
-        tests.EnsureDirectory_ShouldCreateDirectoryIfDoesNotExist();
+        // GetUniqueFileName - returns unique filename for existing files
+        var basePath = Path.Combine(Path.GetTempPath(), "download.mp4");
+        var uniquePath = FileUtilities.GetUniqueFileName(basePath);
+        Console.WriteLine(Path.GetFileName(uniquePath)); // "download.mp4" or "download_1.mp4"
 
-        // GetUniqueFileName tests
-        tests.GetUniqueFileName_ShouldReturnOriginalIfFileDoesNotExist();
-        tests.GetUniqueFileName_ShouldReturnNewNameIfFileExists();
+        // CopyFileWithProgressAsync - copies file with progress reporting
+        var source = Path.Combine(Path.GetTempPath(), "source.txt");
+        var destination = Path.Combine(Path.GetTempPath(), "destination.txt");
+        File.WriteAllText(source, "test content");
+        
+        await FileUtilities.CopyFileWithProgressAsync(source, destination);
+        Console.WriteLine(File.Exists(destination)); // true
 
-        // CopyFileWithProgressAsync test
-        await tests.CopyFileWithProgressAsync_ShouldCopyFileSuccessfully();
-
-        // DeleteDirectoryRecursively test
-        tests.DeleteDirectoryRecursively_ShouldDeleteDirectory();
+        // DeleteDirectoryRecursively - deletes directory and all contents
+        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(tempDir);
+        File.WriteAllText(Path.Combine(tempDir, "file.txt"), "content");
+        
+        var deleted = FileUtilities.DeleteDirectoryRecursively(tempDir);
+        Console.WriteLine(deleted); // true
     }
 }
 ```

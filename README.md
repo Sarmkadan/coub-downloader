@@ -113,3 +113,60 @@ Console.WriteLine($"Estimated output size (bytes): {estimatedSize}");
 int progress = benchmarks.GetProgressPercent();
 Console.WriteLine($"Batch job progress: {progress}%");
 ```
+
+## ValidationHelperTests
+
+`ValidationHelperTests` provides comprehensive unit tests for the `ValidationHelper` class, covering validation of email addresses, URLs, Coub-specific URLs, bitrates, resolutions, frame rates, and file names. It includes tests for both individual validation methods and the fluent validation builder pattern.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Validation;
+
+// Test email validation
+bool isValidEmail = ValidationHelper.IsValidEmail("user@example.com");
+Console.WriteLine($"Is valid email: {isValidEmail}"); // True
+
+// Test URL validation with various schemes
+bool isValidUrl = ValidationHelper.IsValidUrl("https://example.com/path?query=value");
+Console.WriteLine($"Is valid URL: {isValidUrl}"); // True
+
+// Test Coub URL validation
+bool isValidCoubUrl = ValidationHelper.IsValidCoubUrl("https://coub.com/view/123456");
+Console.WriteLine($"Is valid Coub URL: {isValidCoubUrl}"); // True
+
+// Test non-Coub domain
+bool isNonCoubUrl = ValidationHelper.IsValidCoubUrl("https://youtube.com/watch?v=123");
+Console.WriteLine($"Is non-Coub URL valid: {isNonCoubUrl}"); // False
+
+// Test bitrate validation with boundary values
+bool isValidBitrate = ValidationHelper.IsValidBitrate(256);
+Console.WriteLine($"Is valid bitrate: {isValidBitrate}"); // True
+
+bool isInvalidBitrate = ValidationHelper.IsValidBitrate(0);
+Console.WriteLine($"Is invalid bitrate: {isInvalidBitrate}"); // False
+
+// Test resolution validation
+bool isValidResolution = ValidationHelper.IsValidResolution(1920, 1080);
+Console.WriteLine($"Is valid resolution: {isValidResolution}"); // True
+
+bool isInvalidResolution = ValidationHelper.IsValidResolution(0, 1080);
+Console.WriteLine($"Is invalid resolution: {isInvalidResolution}"); // False
+
+// Test frame rate validation
+bool isValidFrameRate = ValidationHelper.IsValidFrameRate(30);
+Console.WriteLine($"Is valid frame rate: {isValidFrameRate}"); // True
+
+// Test file name sanitization
+string sanitizedName = ValidationHelper.SanitizeFileName("my#file*with<invalid>chars.txt");
+Console.WriteLine($"Sanitized file name: {sanitizedName}"); // "myfilewithinvalidchartxt"
+
+// Test fluent validation builder
+var validationResult = ValidationHelper.ValidationBuilder()
+    .RequireField("username", "testuser")
+    .RequireField("email", "user@example.com")
+    .AddRule("age", 25, minValue: 18, maxValue: 120)
+    .IsValid();
+
+Console.WriteLine($"Validation passed: {validationResult}");
+```

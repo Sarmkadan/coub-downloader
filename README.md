@@ -1334,6 +1334,59 @@ public class DownloadOptionsDemo
 
 The `BatchJob` class represents a batch processing job for downloading and converting multiple Coub videos. It manages a collection of download tasks with shared settings and provides progress tracking, status management, and batch lifecycle operations. Batch jobs support parallel processing, error handling, and detailed progress reporting.
 
+## ApplicationStartup
+
+The `ApplicationStartup` class handles application initialization and lifecycle management. It coordinates configuration loading, directory creation, health diagnostics, and background worker startup/shutdown. This class serves as the entry point for application startup and graceful shutdown procedures, ensuring proper resource cleanup and system state management.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Startup;
+using Microsoft.Extensions.DependencyInjection;
+
+public class ApplicationStartupDemo
+{
+    public async Task RunApplicationStartupExample()
+    {
+        // Create service collection and register required services
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddSingleton<ILoggingService, ConsoleLoggingService>();
+        services.AddSingleton<ConfigurationManager>();
+        services.AddSingleton<DiagnosticsService>();
+        services.AddSingleton<MonitoringWorker>();
+        services.AddSingleton<CleanupWorker>();
+        
+        // Build service provider
+        var serviceProvider = services.BuildServiceProvider();
+        
+        // Create application startup instance
+        var startup = new ApplicationStartup(serviceProvider);
+        
+        // Initialize the application
+        await startup.InitializeAsync();
+        Console.WriteLine("Application initialized successfully");
+        
+        // Application is running...
+        
+        // Gracefully shutdown the application
+        await startup.ShutdownAsync();
+        Console.WriteLine("Application shutdown completed");
+    }
+}
+
+// Custom logging service implementation
+public class ConsoleLoggingService : ILoggingService
+{
+    public void LogInfo(string message, string? context = null) => Console.WriteLine($"[INFO] {message}");
+    public void LogWarning(string message, string? context = null) => Console.WriteLine($"[WARN] {message}");
+    public void LogError(string message, Exception? exception = null, string? context = null) => Console.WriteLine($"[ERROR] {message}: {exception?.Message}");
+    public void LogDebug(string message, string? context = null) => Console.WriteLine($"[DEBUG] {message}");
+}
+```
+
 ### Usage Example
 
 ```csharp

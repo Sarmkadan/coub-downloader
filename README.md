@@ -10,22 +10,22 @@ using CoubDownloader.Tests;
 
 public class MyClass
 {
-  private readonly IFileAdapter _fileAdapter;
+    private readonly IFileAdapter _fileAdapter;
 
-  public MyClass(IFileAdapter fileAdapter)
-  {
-    _fileAdapter = fileAdapter;
-  }
+    public MyClass(IFileAdapter fileAdapter)
+    {
+        _fileAdapter = fileAdapter;
+    }
 
-  public void WriteToFile(string path, string contents)
-  {
-    _fileAdapter.WriteAllText(path, contents);
-  }
+    public void WriteToFile(string path, string contents)
+    {
+        _fileAdapter.WriteAllText(path, contents);
+    }
 
-  public void DeleteFile(string path)
-  {
-    _fileAdapter.Delete(path);
-  }
+    public void DeleteFile(string path)
+    {
+        _fileAdapter.Delete(path);
+    }
 }
 ```
 
@@ -71,7 +71,7 @@ public class FileUtilitiesDemo
         var source = Path.Combine(Path.GetTempPath(), "source.txt");
         var destination = Path.Combine(Path.GetTempPath(), "destination.txt");
         File.WriteAllText(source, "test content");
-        
+
         await FileUtilities.CopyFileWithProgressAsync(source, destination);
         Console.WriteLine(File.Exists(destination)); // true
 
@@ -79,9 +79,62 @@ public class FileUtilitiesDemo
         var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
         File.WriteAllText(Path.Combine(tempDir, "file.txt"), "content");
-        
+
         var deleted = FileUtilities.DeleteDirectoryRecursively(tempDir);
         Console.WriteLine(deleted); // true
     }
 }
 ```
+
+## DateTimeExtensionsTests
+
+The `DateTimeExtensionsTests` class provides a suite of xUnit tests that verify the behavior of extension methods for `DateTime` and `TimeSpan` operations, including relative time formatting, duration formatting, date range validation, and Unix timestamp conversion.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Infrastructure.Utilities;
+
+public class DateTimeDemo
+{
+    public void RunAll()
+    {
+        // GetRelativeTime - formats time spans relative to now
+        var tenSecondsAgo = DateTime.UtcNow.AddSeconds(-10);
+        Console.WriteLine(tenSecondsAgo.GetRelativeTime()); // "just now"
+
+        var oneMinuteAgo = DateTime.UtcNow.AddMinutes(-1);
+        Console.WriteLine(oneMinuteAgo.GetRelativeTime()); // "1m ago"
+
+        var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+        Console.WriteLine(oneHourAgo.GetRelativeTime()); // "1h ago"
+
+        // FormatDuration - formats TimeSpan as HH:MM:SS
+        var duration = new TimeSpan(1, 2, 3);
+        Console.WriteLine(duration.FormatDuration()); // "01:02:03"
+
+        // IsWithinRange - checks if a date falls within a range
+        var testDate = new DateTime(2026, 6, 26, 12, 0, 0);
+        var rangeStart = new DateTime(2026, 6, 26, 0, 0, 0);
+        var rangeEnd = new DateTime(2026, 6, 27, 0, 0, 0);
+        Console.WriteLine(testDate.IsWithinRange(rangeStart, rangeEnd)); // true
+
+        // StartOfDay - returns the date with time set to midnight
+        var now = DateTime.Now;
+        Console.WriteLine(now.StartOfDay()); // "2026-06-26 00:00:00" (date part only)
+
+        // StartOfWeek - returns the date for the start of the week (Monday by default)
+        var friday = new DateTime(2026, 6, 26); // Friday
+        Console.WriteLine(friday.StartOfWeek(DayOfWeek.Monday)); // "2026-06-22" (previous Monday)
+
+        // ToUnixTimestamp / FromUnixTimestamp - roundtrip conversion
+        var utcDate = new DateTime(2026, 6, 26, 12, 0, 0, DateTimeKind.Utc);
+        var timestamp = utcDate.ToUnixTimestamp();
+        var backToDate = timestamp.FromUnixTimestamp().ToUniversalTime();
+        Console.WriteLine(backToDate == utcDate); // true
+    }
+}
+```
+
+## IFileAdapter

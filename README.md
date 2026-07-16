@@ -1151,6 +1151,116 @@ public class DateTimeDemo
 }
 ```
 
+## BatchJob
+
+The `BatchJob` class represents a batch processing job for downloading and converting multiple Coub videos. It manages a collection of download tasks with shared settings and provides progress tracking, status management, and batch lifecycle operations. Batch jobs support parallel processing, error handling, and detailed progress reporting.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class BatchJobDemo
+{
+    public async Task RunBatchProcessingDemo()
+    {
+        // Create a new batch job
+        var batchJob = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Weekend Coub Download Batch",
+            Description = "Download and convert trending Coubs from this weekend",
+            OutputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubDownloads", DateTime.Now.ToString("yyyy-MM-dd")),
+            MaxParallelTasks = 4,
+            ContinueOnError = true,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Add download tasks to the batch
+        batchJob.Tasks = new List<DownloadTask>
+        {
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub123",
+                OutputFileName = "funny_cat_coub.mp4",
+                State = ProcessingState.Pending
+            },
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub456",
+                OutputFileName = "dancing_dog_coub.mp4",
+                State = ProcessingState.Pending
+            },
+            new DownloadTask
+            {
+                Id = Guid.NewGuid().ToString(),
+                Url = "https://coub.com/view/coub789",
+                OutputFileName = "epic_fail_coub.mp4",
+                State = ProcessingState.Pending
+            }
+        };
+
+        // Set shared conversion settings for all tasks
+        batchJob.SharedSettings = new ConversionSettings
+        {
+            Width = 1920,
+            Height = 1080,
+            FrameRate = 30,
+            VideoCodec = VideoCodec.H264,
+            AudioCodec = AudioCodec.AAC,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            Format = "mp4"
+        };
+
+        // Check batch status
+        Console.WriteLine($"Batch created: {batchJob.Name}");
+        Console.WriteLine($"Total tasks: {batchJob.TotalTasks}");
+        Console.WriteLine($"State: {batchJob.State}");
+        Console.WriteLine($"Progress: {batchJob.GetProgressPercent()}%");
+        Console.WriteLine($"Estimated time: {batchJob.GetElapsedTime()?.ToString("g") ?? "Not started"}");
+
+        // Start processing the batch
+        batchJob.State = ProcessingState.Downloading;
+        batchJob.StartedAt = DateTime.UtcNow;
+        batchJob.UpdatedAt = DateTime.UtcNow;
+
+        // Simulate processing tasks
+        foreach (var task in batchJob.Tasks)
+        {
+            task.State = ProcessingState.Downloading;
+            batchJob.CompletedTasks++;
+            batchJob.UpdatedAt = DateTime.UtcNow;
+            
+            Console.WriteLine($"Processed task {task.OutputFileName}: {task.State}");
+        }
+
+        // Mark batch as completed
+        batchJob.State = ProcessingState.Completed;
+        batchJob.CompletedAt = DateTime.UtcNow;
+        batchJob.UpdatedAt = DateTime.UtcNow;
+
+        Console.WriteLine($"\nBatch completed successfully!");
+        Console.WriteLine($"Total duration: {batchJob.GetElapsedTime()?.ToString("g")}");
+        Console.WriteLine($"Final progress: {batchJob.GetProgressPercent()}%");
+        Console.WriteLine($"Failed tasks: {batchJob.FailedTasks}");
+        Console.WriteLine($"Output directory: {batchJob.OutputDirectory}");
+
+        // Check pending tasks (should be 0 after completion)
+        Console.WriteLine($"Pending tasks: {batchJob.GetPendingTaskCount()}");
+        Console.WriteLine($"Is completed: {batchJob.IsCompleted}");
+    }
+}
+```
+
 ## CoubPlaylist
 
 The `CoubPlaylist` class represents a Coub playlist sourced from a channel feed or tag page, containing an ordered collection of video URLs ready for batch processing. It provides properties for playlist metadata and methods to check validity and retrieve effective video URLs while respecting optional limits.

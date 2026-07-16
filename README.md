@@ -688,6 +688,97 @@ Console.WriteLine(apiSearchResults[1].Id); // "d2"
 }
 ```
 
+## JsonFormatter
+
+The `JsonFormatter` class provides JSON serialization capabilities for domain models in the Coub Downloader application. It formats Coub videos, batch jobs, and conversion settings into JSON strings with consistent formatting and camelCase property naming. The formatter uses `System.Text.Json` with custom serialization options including indentation, null value handling, and case-insensitive property matching.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using CoubDownloader.Presentation.Formatters;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class JsonFormatterDemo
+{
+    public void FormatDomainModels()
+    {
+        // Create the JSON formatter
+        var jsonFormatter = new JsonFormatter();
+
+        // Format a single Coub video to JSON
+        var video = new CoubVideo
+        {
+            Id = "x7f3h2k9",
+            Title = "Funny Cat Jump",
+            Url = "https://coub.com/view/x7f3h2k9",
+            Duration = 15,
+            Width = 1280,
+            Height = 720,
+            CreatorName = "cat_lover",
+            ViewCount = 1250,
+            HasAudio = true,
+            Description = "A cat jumping from the couch",
+            UploadedDate = DateTime.UtcNow.AddDays(-7)
+        };
+
+        var videoJson = jsonFormatter.FormatVideo(video);
+        Console.WriteLine(videoJson);
+
+        // Format multiple Coub videos to JSON
+        var videos = new List<CoubVideo>
+        {
+            new CoubVideo { Id = "abc123", Title = "Dancing Dog", Url = "https://coub.com/view/abc123", Duration = 10, Width = 1920, Height = 1080, CreatorName = "dog_lover", ViewCount = 890, HasAudio = true },
+            new CoubVideo { Id = "def456", Title = "Epic Fail", Url = "https://coub.com/view/def456", Duration = 8, Width = 1280, Height = 720, CreatorName = "fail_archive", ViewCount = 2450, HasAudio = false }
+        };
+
+        var videosJson = jsonFormatter.FormatVideos(videos);
+        Console.WriteLine(videosJson);
+
+        // Format a batch job to JSON
+        var batchJob = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Weekend Download Batch",
+            OutputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubDownloads"),
+            State = ProcessingState.Completed,
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            CompletedAt = DateTime.UtcNow,
+            Tasks = new List<DownloadTask>
+            {
+                new DownloadTask { State = ProcessingState.Completed },
+                new DownloadTask { State = ProcessingState.Completed },
+                new DownloadTask { State = ProcessingState.Pending }
+            }
+        };
+
+        var batchJson = jsonFormatter.FormatBatchJob(batchJob);
+        Console.WriteLine(batchJson);
+
+        // Format conversion settings to JSON
+        var settings = new ConversionSettings
+        {
+            Format = "mp4",
+            Quality = VideoQuality.High,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            FrameRate = 30,
+            Width = 1920,
+            Height = 1080,
+            PreserveAspectRatio = true,
+            VideoCodec = "h264",
+            AudioCodec = "aac",
+            EnableHardwareAcceleration = true
+        };
+
+        var settingsJson = jsonFormatter.FormatSettings(settings);
+        Console.WriteLine(settingsJson);
+    }
+}
+```
+
 ## MemoryCacheServiceTests
 
 The `MemoryCacheServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `MemoryCacheService` class. It tests basic cache operations including setting and retrieving values, handling missing keys, removing entries, clearing the cache, tracking cache statistics, and handling expiration scenarios. The tests also cover complex type serialization/deserialization and remote cache synchronization.

@@ -507,6 +507,72 @@ public class MemoryCacheServiceDemo
 }
 ```
 
+## ValidationException
+
+The `ValidationException` class is a custom exception used to indicate validation failures in the application. It extends `System.Exception` and provides additional context about which parameter failed validation, what value was provided, and what the expected behavior should be. This exception is particularly useful for domain validation scenarios where you need to communicate detailed error information to callers.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Exceptions;
+
+public class ValidationExample
+{
+    public void ProcessVideo(string videoId, int duration)
+    {
+        // Validate video ID
+        if (string.IsNullOrWhiteSpace(videoId))
+        {
+            throw new ValidationException(
+                "Video ID cannot be null or empty.",
+                nameof(videoId),
+                videoId
+            );
+        }
+
+        // Validate duration
+        if (duration <= 0)
+        {
+            throw new ValidationException(
+                "Video duration must be a positive number.",
+                nameof(duration),
+                duration
+            );
+        }
+
+        // Validate video ID format
+        if (videoId.Length > 50)
+        {
+            throw new ValidationException(
+                "Video ID exceeds maximum length of 50 characters.",
+                nameof(videoId),
+                videoId
+            );
+        }
+
+        // Process video...
+    }
+
+    public void ProcessWithInnerException(string filePath)
+    {
+        try
+        {
+            // Some operation that might fail
+        }
+        catch (Exception ex)
+        {
+            throw new ValidationException(
+                "Failed to process video file due to validation error.",
+                nameof(filePath),
+                filePath,
+                ex
+            );
+        }
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

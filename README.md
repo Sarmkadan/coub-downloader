@@ -1217,6 +1217,62 @@ public class CoubPlaylistDemo
 }
 ```
 
+## VideoSection
+
+The `VideoSection` class represents a segment or chapter within a video that can be extracted, processed, and combined with other sections to create custom video compositions. It provides properties for timing, descriptions, transitions, and validation to support video editing workflows.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models;
+
+public class VideoSectionDemo
+{
+    public void CreateAndProcessVideoSection()
+    {
+        // Create a video section for a compilation
+        var section = new VideoSection
+        {
+            Id = Guid.NewGuid().ToString(),
+            VideoId = "abc123",
+            Index = 1,
+            StartTime = 15.5,
+            EndTime = 28.75,
+            Description = "Funny cat jumping scene",
+            IsIncluded = true,
+            TransitionEffect = "fade",
+            TransitionDurationMs = 300
+        };
+
+        // Validate the section
+        Console.WriteLine($"Section is valid: {section.IsValid()}"); // true
+        Console.WriteLine($"Section duration: {section.GetDuration():F2}s"); // 13.25s
+
+        // Create another section
+        var outroSection = new VideoSection
+        {
+            Id = Guid.NewGuid().ToString(),
+            VideoId = "abc123",
+            Index = 2,
+            StartTime = 28.75,
+            EndTime = 35.0,
+            Description = "Outro with credits",
+            IsIncluded = true,
+            TransitionEffect = "slide_right",
+            TransitionDurationMs = 500
+        };
+
+        // Process sections
+        var sections = new[] { section, outroSection };
+        foreach (var s in sections.OrderBy(s => s.Index))
+        {
+            Console.WriteLine($"Section {s.Index}: {s.Description} ({s.StartTime:F1}s - {s.EndTime:F1}s)");
+        }
+    }
+}
+```
+
 ## FileOperationException
 
 The `FileOperationException` class is a custom exception used to indicate file system operation failures in the application. It extends `CoubDownloaderException` and provides additional context about which file path caused the error and what type of operation failed. This exception is particularly useful for scenarios where file operations might fail due to permission issues, missing directories, or corrupted files, allowing for better error diagnosis and recovery.

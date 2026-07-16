@@ -1151,6 +1151,61 @@ public class DateTimeDemo
 }
 ```
 
+## ConversionSettings
+
+The `ConversionSettings` class defines configuration parameters for video conversion and processing operations. It controls output format, quality, codecs, resolution, bitrate, and various processing options like hardware acceleration and multi-threading. These settings are used throughout the application for consistent video encoding and can be customized per task or shared across batch operations.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class ConversionSettingsDemo
+{
+    public void ConfigureConversion()
+    {
+        // Create conversion settings with custom parameters
+        var settings = new ConversionSettings
+        {
+            Id = Guid.NewGuid().ToString(),
+            Format = VideoFormat.MP4,
+            Quality = VideoQuality.High,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            VideoCodec = "h264",
+            AudioCodec = "aac",
+            FrameRate = 30,
+            Width = 1920,
+            Height = 1080,
+            AudioLoopStrategy = AudioLoopStrategy.Repeat,
+            PreserveAspectRatio = true,
+            EnableHardwareAcceleration = true,
+            UseMultiThreading = true,
+            ThreadCount = Environment.ProcessorCount,
+            ApplyFades = false,
+            FadeInMs = 500,
+            FadeOutMs = 500,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Use quality presets for common scenarios
+        settings.ApplyQualityPreset();
+        
+        // Get FFmpeg codec parameters for actual conversion
+        var ffmpegParams = settings.GetFFmpegCodecParams();
+        Console.WriteLine($"FFmpeg parameters: {ffmpegParams}");
+        
+        // Validate settings before use
+        if (settings.IsValid())
+        {
+            Console.WriteLine("Settings are valid and ready for conversion");
+        }
+    }
+}
+```
+
 ## BatchJob
 
 The `BatchJob` class represents a batch processing job for downloading and converting multiple Coub videos. It manages a collection of download tasks with shared settings and provides progress tracking, status management, and batch lifecycle operations. Batch jobs support parallel processing, error handling, and detailed progress reporting.

@@ -594,6 +594,115 @@ public class FileUtilitiesDemo
 }
 ```
 
+## CoubDownloadServiceTests
+
+The `CoubDownloadServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `CoubDownloadService` class. It tests various scenarios for downloading, processing, and verifying Coub videos including metadata fetching, video source extraction, file verification, and actual video file downloading with both success and error cases.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Infrastructure.Repositories;
+using Moq;
+
+public class CoubDownloadServiceDemo
+{
+    public async Task RunAll()
+    {
+        // Create mock dependencies
+        var mockHttpClient = new Mock<System.Net.Http.HttpClient>();
+        var mockVideoRepository = new Mock<ICoubVideoRepository>();
+        var mockCoubApiClient = new Mock<ICoubApiClient>();
+
+        // Create the download service
+        var downloadService = new CoubDownloadService(
+            mockHttpClient.Object,
+            mockVideoRepository.Object,
+            mockCoubApiClient.Object);
+
+        // Define test data
+        var coubUrl = "https://coub.com/view/test123";
+        var outputDirectory = Path.Combine(Path.GetTempPath(), "coub-downloads");
+        Directory.CreateDirectory(outputDirectory);
+
+        // FetchMetadataAsync - Retrieve video metadata from Coub API
+        var mockVideoInfo = new CoubVideoInfo
+        {
+            Id = "test123",
+            Title = "Test Coub Video",
+            Duration = 15,
+            HasAudio = true,
+            ChannelUrl = "test_channel",
+            ViewCount = 1250
+        };
+
+        mockCoubApiClient.Setup(api => api.GetVideoInfoAsync(coubUrl, It.IsAny<System.Threading.CancellationToken>()))
+            .ReturnsAsync(mockVideoInfo);
+
+        var metadata = await downloadService.FetchMetadataAsync(coubUrl);
+        Console.WriteLine($"Fetched metadata: {metadata.Title} ({metadata.Duration}s)");
+        Console.WriteLine($"Dimensions: {metadata.Width}x{metadata.Height}");
+        Console.WriteLine($"Views: {metadata.ViewCount}");
+
+        // ExtractVideoSourceAsync - Get the video source URL from metadata
+        var sourceUrl = await downloadService.ExtractVideoSourceAsync(coubUrl);
+        Console.WriteLine($"Video source URL: {sourceUrl}");
+
+        // DownloadVideoAsync - Download a complete Coub video with metadata
+        var downloadedVideo = await downloadService.DownloadVideoAsync(coubUrl);
+        Console.WriteLine($"Downloaded video: {downloadedVideo.Title}");
+        Console.WriteLine($"Saved to repository with ID: {downloadedVideo.Id}");
+
+        // VerifyDownloadAsync - Check if a downloaded file exists and is valid
+        var testFilePath = Path.Combine(outputDirectory, "test_video.mp4");
+        File.WriteAllText(testFilePath, "video content");
+        
+        var isValid = await downloadService.VerifyDownloadAsync(testFilePath);
+        Console.WriteLine($"File verification: {isValid}"); // true
+
+        // DownloadVideoFileAsync - Download the actual video file
+        var outputPath = Path.Combine(outputDirectory, "downloaded_coub.webm");
+        var downloadedPath = await downloadService.DownloadVideoFileAsync(sourceUrl, outputPath);
+        Console.WriteLine($"Video file downloaded to: {downloadedPath}");
+        Console.WriteLine($"File exists: {File.Exists(downloadedPath)}");
+
+        // Error handling examples
+        
+        // Invalid URL - throws ArgumentException
+        try
+        {
+            await downloadService.DownloadVideoAsync("");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Caught expected error: {ex.Message}");
+        }
+
+        // Metadata extraction failure - throws MetadataExtractionException
+        mockCoubApiClient.Setup(api => api.GetVideoInfoAsync(It.IsAny<string>(), It.IsAny<System.Threading.CancellationToken>()))
+            .ReturnsAsync((CoubVideoInfo)null!);
+
+        try
+        {
+            await downloadService.FetchMetadataAsync("https://coub.com/view/nonexistent");
+        }
+        catch (MetadataExtractionException ex)
+        {
+            Console.WriteLine($"Caught expected error: {ex.Message}");
+        }
+
+        // Cleanup
+        if (File.Exists(testFilePath)) File.Delete(testFilePath);
+        if (File.Exists(outputPath)) File.Delete(outputPath);
+        Directory.Delete(outputDirectory, true);
+    }
+}
+```
+
 ## AudioProcessingServiceTests
 
 The `AudioProcessingServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `AudioProcessingService` class. It tests audio processing operations including extracting audio duration, looping audio with different strategies, and synchronizing audio with video duration.

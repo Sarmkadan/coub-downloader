@@ -137,4 +137,102 @@ public class DateTimeDemo
 }
 ```
 
+## CoubVideoTests
+
+The `CoubVideoTests` class provides a suite of xUnit tests that verify the behavior of the `CoubVideo` class and its extension methods. It tests video validation, aspect ratio calculation, duration categorization, view count formatting, quality detection, and audio duration calculations.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Extensions;
+
+public class CoubVideoDemo
+{
+    public void RunAll()
+    {
+        // Create a valid video
+        var video = new CoubVideo
+        {
+            Id = "abc123",
+            Title = "Test Video",
+            Url = "https://coub.com/view/abc123",
+            Duration = 15.0,
+            Width = 1280,
+            Height = 720,
+            ViewCount = 2500000
+        };
+
+        // IsValid - checks if video has all required fields
+        Console.WriteLine(video.IsValid()); // true
+        
+        var invalidVideo = new CoubVideo { Id = "", Duration = 0 };
+        Console.WriteLine(invalidVideo.IsValid()); // false
+
+        // GetAspectRatio - calculates width/height ratio
+        Console.WriteLine(video.GetAspectRatio()); // 1.777... (16:9)
+
+        // IsVerticalFormat - checks if video is in portrait orientation
+        video.Width = 720;
+        video.Height = 1280;
+        Console.WriteLine(video.IsVerticalFormat()); // true
+        
+        video.Width = 1280;
+        video.Height = 720;
+        Console.WriteLine(video.IsVerticalFormat()); // false
+
+        // GetDurationCategory - categorizes video by duration
+        video.Duration = 3.0;
+        Console.WriteLine(video.GetDurationCategory()); // "Short"
+        
+        video.Duration = 8.0;
+        Console.WriteLine(video.GetDurationCategory()); // "Medium"
+        
+        video.Duration = 20.0;
+        Console.WriteLine(video.GetDurationCategory()); // "Long"
+        
+        video.Duration = 60.0;
+        Console.WriteLine(video.GetDurationCategory()); // "Extra Long"
+
+        // GetFormattedViewCount - formats view count with K/M suffix
+        video.ViewCount = 500;
+        Console.WriteLine(video.GetFormattedViewCount()); // "500"
+        
+        video.ViewCount = 1500;
+        Console.WriteLine(video.GetFormattedViewCount()); // "1K"
+        
+        video.ViewCount = 2500000;
+        Console.WriteLine(video.GetFormattedViewCount()); // "2M"
+
+        // IsHdQuality - checks if video is HD (720p or higher)
+        Console.WriteLine(video.IsHdQuality()); // true (1280x720)
+
+        // Is4kQuality - checks if video is 4K resolution
+        video.Width = 3840;
+        video.Height = 2160;
+        Console.WriteLine(video.Is4kQuality()); // true
+        
+        video.Width = 1280;
+        video.Height = 720;
+        Console.WriteLine(video.Is4kQuality()); // false
+
+        // CalculateRequiredAudioDuration - calculates required audio duration for looping
+        video.Duration = 10.0;
+        video.AudioTrack = new AudioTrack
+        {
+            Id = "t1",
+            VideoId = video.Id,
+            Duration = 4.0
+        };
+        
+        var requiredDuration = CoubVideoExtensions.CalculateRequiredAudioDuration(video);
+        Console.WriteLine(requiredDuration); // 12.0 (ceil(10/4) * 4)
+        
+        video.AudioTrack = null;
+        Console.WriteLine(CoubVideoExtensions.CalculateRequiredAudioDuration(video)); // 0
+    }
+}
+```
+
 ## IFileAdapter

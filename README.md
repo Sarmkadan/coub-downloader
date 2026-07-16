@@ -637,6 +637,106 @@ public class ConfigurationExample
 }
 ```
 
+## NetworkException
+
+The `NetworkException` class is a custom exception used to indicate network-related failures in the application, particularly HTTP request failures when interacting with external services. It extends `CoubDownloaderException` and captures detailed information about failed network operations including the target URL, HTTP status code, and whether the failure was due to a timeout. This exception is particularly useful for debugging network issues and provides all necessary context to diagnose failures when downloading videos or communicating with APIs.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Exceptions;
+
+public class NetworkOperationsDemo
+{
+    private readonly HttpClient _httpClient = new HttpClient();
+    
+    public async Task DownloadVideoWithNetworkErrorHandling(string videoUrl)
+    {
+        try
+        {
+            // Attempt to download video from URL
+            var response = await _httpClient.GetAsync(videoUrl);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                // Throw NetworkException with status code
+                throw new NetworkException(
+                    "Failed to download video due to HTTP error.",
+                    videoUrl,
+                    (int)response.StatusCode
+                );
+            }
+            
+            var content = await response.Content.ReadAsStringAsync();
+            Console.WriteLine($"Successfully downloaded: {content.Length} bytes");
+        }
+        catch (HttpRequestException ex) when (ex.Message.Contains("timed out"))
+        {
+            // Timeout-specific error handling
+            throw new NetworkException(
+                "Video download timed out after 30 seconds.",
+                videoUrl,
+                ex
+            );
+        }
+        catch (HttpRequestException ex)
+        {
+            // General network error
+            throw new NetworkException(
+                "Network error occurred while attempting to download video.",
+                videoUrl,
+                ex
+            );
+        }
+    }
+    
+    public async Task CheckApiAvailability(string apiUrl)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync(apiUrl);
+            
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                throw new NetworkException(
+                    "API endpoint not found.",
+                    apiUrl,
+                    (int)HttpStatusCode.NotFound
+                );
+            }
+            
+            if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+            {
+                throw new NetworkException(
+                    "API service is currently unavailable.",
+                    apiUrl,
+                    (int)HttpStatusCode.ServiceUnavailable
+                );
+            }
+            
+            response.EnsureSuccessStatusCode();
+            Console.WriteLine("API is available and responding correctly.");
+        }
+        catch (NetworkException ex)
+        {
+            // Log detailed network error information
+            Console.WriteLine($"Network error: {ex.Message}");
+            Console.WriteLine($"URL: {ex.Url}");
+            Console.WriteLine($"HTTP Status: {ex.HttpStatusCode}");
+            Console.WriteLine($"Is Timeout: {ex.IsTimeout}");
+            Console.WriteLine($"Inner Exception: {ex.InnerException?.Message}");
+            
+            // Re-throw with additional context
+            throw;
+        }
+    }
+}
+```
+
 ## IFileAdapter
 
 The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.

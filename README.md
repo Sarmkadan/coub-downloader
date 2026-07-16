@@ -1,172 +1,29 @@
-// existing content ...
+## IFileAdapter
 
-## RetryHelper
-
-`RetryHelper` provides a set of utility methods for executing operations with retry and fallback strategies. It helps to make operations more resilient to transient failures.
+The `IFileAdapter` interface provides a minimal file-system abstraction for testing purposes. It allows you to mock file operations such as writing to a file and deleting a file.
 
 ### Usage Example
 
 ```csharp
-using CoubDownloader.Infrastructure.Utilities;
+using CoubDownloader.Tests;
 
-// Example 1: Execute with exponential backoff retry
-var data = await RetryHelper.ExecuteWithRetryAsync(
-    () => FetchDataAsync(),
-    maxRetries: 3,
-    initialDelayMs: 500,
-    shouldRetry: (ex, attempt) => ex is TimeoutException
-);
-
-Console.WriteLine($"Fetched data: {data}");
-
-// Example 2: Execute with linear retry
-var data2 = await RetryHelper.ExecuteWithLinearRetryAsync(
-    () => FetchDataAsync(),
-    maxRetries: 5,
-    delayMs: 1000
-);
-
-Console.WriteLine($"Fetched data: {data2}");
-
-// Example 3: Execute with fallback
-var data3 = await RetryHelper.ExecuteWithFallbackAsync(
-    () => FetchDataAsync(),
-    async () => await FetchFallbackDataAsync()
-);
-
-Console.WriteLine($"Fetched data: {data3}");
-
-// Example 4: Execute with timeout
-var data4 = await RetryHelper.ExecuteWithTimeoutAsync(
-    () => FetchDataAsync(),
-    TimeSpan.FromSeconds(10)
-);
-
-Console.WriteLine($"Fetched data: {data4}");
-```
-
-## DiagnosticsService
-
-The `DiagnosticsService` gathers runtime and application health information, producing a detailed diagnostics report. It checks memory usage, disk space, FFmpeg availability, and aggregates performance metrics, exposing both a structured `DiagnosticsReport` object and a formatted string representation.
-
-### Usage Example
-
-```csharp
-using System;
-using CoubDownloader.Infrastructure.Diagnostics;
-using CoubDownloader.Infrastructure.Middleware;
-using CoubDownloader.Infrastructure.Statistics;
-using CoubDownloader.Infrastructure.Utilities;
-
-var logger = new MemoryLoggingService();          // In‑memory logger implementation
-var performanceMonitor = new PerformanceMonitor(); // Collects operation metrics
-
-var diagnostics = new DiagnosticsService(logger, performanceMonitor);
-
-// Perform a health check and obtain the structured report
-DiagnosticsReport report = diagnostics.PerformHealthCheck();
-
-Console.WriteLine("Diagnostics Report:");
-Console.WriteLine($"Timestamp: {report.Timestamp}");
-Console.WriteLine($"Uptime: {report.UpTime}");
-Console.WriteLine($"App Version: {report.AppInfo.AppVersion}");
-Console.WriteLine($"Memory Usage: {report.RuntimeStats.MemoryMb} MB");
-Console.WriteLine($"GC Collections – Gen0: {report.RuntimeStats.Gen0Collections}, Gen1: {report.RuntimeStats.Gen1Collections}, Gen2: {report.RuntimeStats.Gen2Collections}");
-Console.WriteLine($"FFmpeg Available: {report.FFmpegAvailable}");
-Console.WriteLine($"Healthy: {report.IsHealthy}");
-if (report.Warnings.Count > 0)
+public class MyClass
 {
-    Console.WriteLine("Warnings:");
-    report.Warnings.ForEach(w => Console.WriteLine($"- {w}"));
+    private readonly IFileAdapter _fileAdapter;
+
+    public MyClass(IFileAdapter fileAdapter)
+    {
+        _fileAdapter = fileAdapter;
+    }
+
+    public void WriteToFile(string path, string contents)
+    {
+        _fileAdapter.WriteAllText(path, contents);
+    }
+
+    public void DeleteFile(string path)
+    {
+        _fileAdapter.Delete(path);
+    }
 }
-
-// Get a formatted string representation of the diagnostics
-string diagnosticsString = diagnostics.GetDiagnosticsString();
-Console.WriteLine(diagnosticsString);
-```
-
-## DomainBenchmarks
-
-`DomainBenchmarks` is a BenchmarkDotNet benchmark class that measures the performance of common domain operations such as formatting view counts, formatting file sizes, estimating conversion output size, and calculating batch‑job progress. It provides a `Setup` method to initialise test data and individual benchmark methods that can also be invoked directly.
-
-### Usage Example
-
-```csharp
-using CoubDownloader.Benchmarks;
-
-// Create an instance of the benchmark class
-var benchmarks = new DomainBenchmarks();
-
-// Initialise the benchmark data
-benchmarks.Setup();
-
-// Run individual benchmark methods
-string viewCount = benchmarks.GetFormattedViewCount();
-Console.WriteLine($"Formatted view count: {viewCount}");
-
-string fileSize = benchmarks.GetFormattedFileSize();
-Console.WriteLine($"Formatted file size: {fileSize}");
-
-long estimatedSize = benchmarks.EstimateOutputSize();
-Console.WriteLine($"Estimated output size (bytes): {estimatedSize}");
-
-int progress = benchmarks.GetProgressPercent();
-Console.WriteLine($"Batch job progress: {progress}%");
-```
-
-## ValidationHelperTests
-
-`ValidationHelperTests` provides comprehensive unit tests for the `ValidationHelper` class, covering validation of email addresses, URLs, Coub-specific URLs, bitrates, resolutions, frame rates, and file names. It includes tests for both individual validation methods and the fluent validation builder pattern.
-
-### Usage Example
-
-```csharp
-using CoubDownloader.Infrastructure.Validation;
-
-// Test email validation
-bool isValidEmail = ValidationHelper.IsValidEmail("user@example.com");
-Console.WriteLine($"Is valid email: {isValidEmail}"); // True
-
-// Test URL validation with various schemes
-bool isValidUrl = ValidationHelper.IsValidUrl("https://example.com/path?query=value");
-Console.WriteLine($"Is valid URL: {isValidUrl}"); // True
-
-// Test Coub URL validation
-bool isValidCoubUrl = ValidationHelper.IsValidCoubUrl("https://coub.com/view/123456");
-Console.WriteLine($"Is valid Coub URL: {isValidCoubUrl}"); // True
-
-// Test non-Coub domain
-bool isNonCoubUrl = ValidationHelper.IsValidCoubUrl("https://youtube.com/watch?v=123");
-Console.WriteLine($"Is non-Coub URL valid: {isNonCoubUrl}"); // False
-
-// Test bitrate validation with boundary values
-bool isValidBitrate = ValidationHelper.IsValidBitrate(256);
-Console.WriteLine($"Is valid bitrate: {isValidBitrate}"); // True
-
-bool isInvalidBitrate = ValidationHelper.IsValidBitrate(0);
-Console.WriteLine($"Is invalid bitrate: {isInvalidBitrate}"); // False
-
-// Test resolution validation
-bool isValidResolution = ValidationHelper.IsValidResolution(1920, 1080);
-Console.WriteLine($"Is valid resolution: {isValidResolution}"); // True
-
-bool isInvalidResolution = ValidationHelper.IsValidResolution(0, 1080);
-Console.WriteLine($"Is invalid resolution: {isInvalidResolution}"); // False
-
-// Test frame rate validation
-bool isValidFrameRate = ValidationHelper.IsValidFrameRate(30);
-Console.WriteLine($"Is valid frame rate: {isValidFrameRate}"); // True
-
-// Test file name sanitization
-string sanitizedName = ValidationHelper.SanitizeFileName("my#file*with<invalid>chars.txt");
-Console.WriteLine($"Sanitized file name: {sanitizedName}"); // "myfilewithinvalidchartxt"
-
-// Test fluent validation builder
-var validationResult = ValidationHelper.ValidationBuilder()
-    .RequireField("username", "testuser")
-    .RequireField("email", "user@example.com")
-    .AddRule("age", 25, minValue: 18, maxValue: 120)
-    .IsValid();
-
-Console.WriteLine($"Validation passed: {validationResult}");
-```
+``` 

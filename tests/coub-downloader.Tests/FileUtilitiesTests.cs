@@ -1,10 +1,7 @@
 using Xunit;
-using FluentAssertions;
 using System.IO;
 using System.Threading.Tasks;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using CoubDownloader.Infrastructure.Utilities;
 
 namespace CoubDownloader.Tests;
@@ -27,7 +24,7 @@ public class FileUtilitiesTests
     public void GenerateSafeFileName_ShouldReturnSafeName(string input, string extension, string expected)
     {
         var result = FileUtilities.GenerateSafeFileName(input, extension);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     /// <summary>
@@ -43,7 +40,7 @@ public class FileUtilitiesTests
     public void FormatFileSize_ShouldReturnHumanReadableSize(long bytes, string expected)
     {
         var result = FileUtilities.FormatFileSize(bytes);
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     /// <summary>
@@ -58,7 +55,7 @@ public class FileUtilitiesTests
         try
         {
             var result = FileUtilities.EnsureDirectory(path);
-            Directory.Exists(result).Should().BeTrue();
+            Assert.True(Directory.Exists(result));
         }
         finally
         {
@@ -79,7 +76,7 @@ public class FileUtilitiesTests
         if (File.Exists(path)) File.Delete(path);
 
         var result = FileUtilities.GetUniqueFileName(path);
-        result.Should().Be(path);
+        Assert.Equal(path, result);
     }
 
     /// <summary>
@@ -96,9 +93,9 @@ public class FileUtilitiesTests
         try
         {
             var result = FileUtilities.GetUniqueFileName(path);
-            result.Should().NotBe(path);
-            result.Should().EndWith("_1.txt");
-            File.Exists(result).Should().BeFalse();
+            Assert.NotEqual(path, result);
+            Assert.EndsWith("_1.txt", result);
+            Assert.False(File.Exists(result));
         }
         finally
         {
@@ -121,8 +118,8 @@ public class FileUtilitiesTests
         try
         {
             await FileUtilities.CopyFileWithProgressAsync(sourcePath, destPath);
-            File.Exists(destPath).Should().BeTrue();
-            File.ReadAllText(destPath).Should().Be("hello world");
+            Assert.True(File.Exists(destPath));
+            Assert.Equal("hello world", File.ReadAllText(destPath));
         }
         finally
         {
@@ -145,7 +142,7 @@ public class FileUtilitiesTests
         
         var result = FileUtilities.DeleteDirectoryRecursively(path);
         
-        result.Should().BeTrue();
-        Directory.Exists(path).Should().BeFalse();
+        Assert.True(result);
+        Assert.False(Directory.Exists(path));
     }
 }

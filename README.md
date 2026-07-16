@@ -275,6 +275,105 @@ var comparisonResult = VersionHelper.CompareVersions("2.0.0", "1.9.9");
 Console.WriteLine($"Version comparison result: {comparisonResult}"); // Positive if 2.0.0 > 1.9.9
 ```
 
+## ValidationHelper
+
+`ValidationHelper` provides a comprehensive set of validation and sanitization utilities for common data types and formats used throughout the application. It includes methods for validating email addresses, URLs, IP addresses, file paths, video URLs, bitrates, resolutions, frame rates, durations, and batch sizes. The class also provides a `ValidationBuilder` fluent interface for composing multiple validation rules with error collection and exception throwing capabilities.
+
+### Usage Example
+
+```csharp
+using CoubDownloader.Infrastructure.Utilities;
+
+// Example 1: Basic validation methods
+var email = "user@example.com";
+var isValidEmail = ValidationHelper.IsValidEmail(email);
+Console.WriteLine($"Valid email: {isValidEmail}");
+
+var url = "https://coub.com/view/12345";
+var isValidUrl = ValidationHelper.IsValidUrl(url);
+Console.WriteLine($"Valid URL: {isValidUrl}");
+
+var isValidCoubUrl = ValidationHelper.IsValidCoubUrl(url);
+Console.WriteLine($"Valid Coub URL: {isValidCoubUrl}");
+
+var ipAddress = "192.168.1.1";
+var isValidIp = ValidationHelper.IsValidIpAddress(ipAddress);
+Console.WriteLine($"Valid IP: {isValidIp}");
+
+var filePath = "./downloads/video.mp4";
+var isValidPath = ValidationHelper.IsValidFilePath(filePath);
+Console.WriteLine($"Valid file path: {isValidPath}");
+
+// Example 2: Sanitize filename
+var unsafeFileName = "video<>:*.mp4";
+var safeFileName = ValidationHelper.SanitizeFileName(unsafeFileName);
+Console.WriteLine($"Sanitized filename: {safeFileName}");
+
+// Example 3: Media format validation
+var bitrate = 5000; // 5 Mbps
+var isValidBitrate = ValidationHelper.IsValidBitrate(bitrate);
+Console.WriteLine($"Valid bitrate: {isValidBitrate}");
+
+var resolution = ValidationHelper.IsValidResolution(1920, 1080);
+Console.WriteLine($"Valid resolution: {resolution}");
+
+var frameRate = ValidationHelper.IsValidFrameRate(60);
+Console.WriteLine($"Valid frame rate: {frameRate}");
+
+var duration = ValidationHelper.IsValidDuration(125.5);
+Console.WriteLine($"Valid duration: {duration}");
+
+// Example 4: Safe directory path validation
+var basePath = "/var/www/downloads";
+var safePath = "/var/www/downloads/user123/video.mp4";
+var isSafe = ValidationHelper.IsSafeDirectoryPath(basePath, safePath);
+Console.WriteLine($"Safe directory path: {isSafe}");
+
+var unsafePath = "/etc/passwd";
+var isUnsafe = ValidationHelper.IsSafeDirectoryPath(basePath, unsafePath);
+Console.WriteLine($"Unsafe directory path: {isUnsafe}");
+
+// Example 5: Batch size validation
+var batchSize = 100;
+var isValidBatchSize = ValidationHelper.IsValidBatchSize(batchSize);
+Console.WriteLine($"Valid batch size: {isValidBatchSize}");
+
+// Example 6: Pattern matching
+var pattern = @"^[a-zA-Z0-9_]+$";
+var matchesPattern = ValidationHelper.MatchesPattern("valid_username_123", pattern);
+Console.WriteLine($"Matches pattern: {matchesPattern}");
+
+// Example 7: ValidationBuilder fluent interface
+var validator = new ValidationHelper.ValidationBuilder()
+    .RequireNotEmpty("user@example.com", "Email")
+    .RequirePattern("user@example.com", @"^[^@\s]+@[^@\s]+\.[^@\s]+", "Email")
+    .RequireRange(1920, 1280, 4096, "Width")
+    .RequireRange(1080, 720, 2160, "Height")
+    .AddError("CustomField", "This field is required");
+
+if (!validator.IsValid)
+{
+    var errors = validator.GetErrors();
+    foreach (var error in errors)
+    {
+        Console.WriteLine($"Validation error: {error.field} - {error.message}");
+    }
+}
+
+// Example 8: ThrowIfInvalid
+try
+{
+    new ValidationHelper.ValidationBuilder()
+        .RequireNotEmpty(null, "RequiredField")
+        .RequireRange(0, 1, 100, "Percentage")
+        .ThrowIfInvalid();
+}
+catch (ArgumentException ex)
+{
+    Console.WriteLine($"Validation threw: {ex.Message}");
+}
+```
+
 ## ObjectPool
 
 `ObjectPool<T>` provides a generic object pooling mechanism for reusing expensive resources efficiently. It maintains a pool of reusable objects, reducing the overhead of frequent object creation and garbage collection. The pool supports both synchronous and asynchronous resource management patterns through the `ObjectPool<T>` and `ConnectionPool` classes, with optional reset functionality for pooled objects.

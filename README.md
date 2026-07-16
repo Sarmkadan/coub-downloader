@@ -1656,6 +1656,54 @@ public class DateTimeDemo
 }
 ```
 
+## CommandParser
+
+The `CommandParser` class provides command-line argument parsing functionality for the Coub Downloader application. It converts user-provided command-line arguments into strongly-typed option objects for different command types (download, convert, batch, info), enabling consistent and type-safe CLI interface handling across the application.
+
+The parser supports common video format and quality options, along with command-specific parameters like input/output paths, dimensions, and file lists.
+
+### Usage Example
+
+```csharp
+using System;
+using CoubDownloader.Presentation.CLI;
+using CoubDownloader.Domain.Enums;
+
+public class CommandParserDemo
+{
+    public void ParseCommandLineArguments()
+    {
+        var parser = new CommandParser();
+        
+        // Parse download command options
+        var downloadArgs = new[] { "download", "--url", "https://coub.com/view/xyz123", "--output", "/videos/coub.mp4", "--format", "mp4", "--quality", "hd" };
+        var downloadOptions = parser.ParseDownloadOptions(downloadArgs);
+        Console.WriteLine($"Download: {downloadOptions.Url} -> {downloadOptions.OutputPath}");
+        Console.WriteLine($"Format: {downloadOptions.Format}, Quality: {downloadOptions.Quality}");
+        
+        // Parse convert command options
+        var convertArgs = new[] { "convert", "--input", "/videos/source.webm", "--output", "/videos/converted.mp4", 
+                                 "--format", "mp4", "--quality", "high", "--width", "1280", "--height", "720", "--fps", "30" };
+        var convertOptions = parser.ParseConvertOptions(convertArgs);
+        Console.WriteLine($"Convert: {convertOptions.InputFile} -> {convertOptions.OutputFile}");
+        Console.WriteLine($"Resolution: {convertOptions.Width}x{convertOptions.Height}, FPS: {convertOptions.FrameRate}");
+        
+        // Parse batch command options
+        var batchArgs = new[] { "batch", "--files", "video1.mp4,video2.mp4,video3.mp4", 
+                                "--output", "/videos/batch_output", "--name", "my_batch", 
+                                "--format", "mp4", "--quality", "medium" };
+        var batchOptions = parser.ParseBatchOptions(batchArgs);
+        Console.WriteLine($"Batch: {batchOptions.Files.Count} files to {batchOptions.OutputDirectory}");
+        Console.WriteLine($"Name: {batchOptions.Name}, Format: {batchOptions.Format}");
+        
+        // Parse info command options
+        var infoArgs = new[] { "info", "--url", "https://coub.com/view/abc456" };
+        var infoOptions = parser.ParseInfoOptions(infoArgs);
+        Console.WriteLine($"Info for URL: {infoOptions.Url}");
+    }
+}
+```
+
 ## ConversionSettings
 
 The `ConversionSettings` class defines configuration parameters for video conversion and processing operations. It controls output format, quality, codecs, resolution, bitrate, and various processing options like hardware acceleration and multi-threading. These settings are used throughout the application for consistent video encoding and can be customized per task or shared across batch operations.

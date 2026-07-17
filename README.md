@@ -1160,6 +1160,131 @@ public class NetworkOperationsDemo
 }
 ```
 
+## ExportServiceValidation
+
+The `ExportServiceValidation` class provides validation helpers for `ExportService` operations and related models. It includes methods for validating ExportService instances, batch jobs, download results, conversion settings, and various report generation parameters. The validation methods return lists of error messages or throw exceptions when invalid data is encountered, ensuring robust error handling for export operations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Infrastructure.Reporting;
+
+public class ExportServiceValidationDemo
+{
+    public void ValidateExportOperations()
+    {
+        // Validate ExportService instance
+        var exportService = new ExportService();
+        var serviceProblems = exportService.Validate();
+        Console.WriteLine(serviceProblems.Count == 0 ? "ExportService is valid" : "Validation issues found");
+        
+        // Validate ExportService with EnsureValid (throws on invalid)
+        try
+        {
+            exportService.EnsureValid();
+            Console.WriteLine("ExportService passed validation");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"ExportService validation failed: {ex.Message}");
+        }
+        
+        // Validate batch job for report generation
+        var batchJob = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Weekend Download Batch",
+            OutputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubReports"),
+            State = ProcessingState.Completed,
+            TotalTasks = 15,
+            MaxParallelTasks = 4,
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            UpdatedAt = DateTime.UtcNow
+        };
+        
+        var batchProblems = batchJob.ValidateGenerateHtmlReport();
+        Console.WriteLine(batchProblems.Count == 0 ? "Batch job is valid for HTML report" : "Batch validation issues");
+        
+        // Validate ExportBatchReportAsync parameters
+        var outputPath = Path.Combine(batchJob.OutputDirectory, "batch_report.pdf");
+        var reportProblems = batchJob.ValidateExportBatchReportAsync(outputPath, ExportFormat.Pdf);
+        Console.WriteLine(reportProblems.Count == 0 ? "Report parameters are valid" : "Report parameter validation failed");
+        
+        // Validate ExportDownloadResultsAsync with multiple results
+        var downloadResults = new List<DownloadResult>
+        {
+            new DownloadResult
+            {
+                Id = Guid.NewGuid().ToString(),
+                TaskId = "task_1",
+                OutputFileSizeBytes = 10485760, // 10MB
+                ProcessingTimeMs = 2500,
+                CompletedAt = DateTime.UtcNow
+            },
+            new DownloadResult
+            {
+                Id = Guid.NewGuid().ToString(),
+                TaskId = "task_2",
+                OutputFileSizeBytes = 8388608, // 8MB
+                ProcessingTimeMs = 1800,
+                CompletedAt = DateTime.UtcNow
+            }
+        };
+        
+        var resultsProblems = downloadResults.ValidateExportDownloadResultsAsync(outputPath, ExportFormat.Csv);
+        Console.WriteLine(resultsProblems.Count == 0 ? "Download results are valid for export" : "Results validation failed");
+        
+        // Validate ReportBuilder.AddSection parameters
+        var sectionProblems = ExportServiceValidation.ValidateAddSection("Download Statistics", "Summary of all downloaded videos");
+        Console.WriteLine(sectionProblems.Count == 0 ? "Section parameters are valid" : "Section validation failed");
+        
+        // Validate ReportBuilder.AddTable parameters
+        var tableData = new Dictionary<string, string>
+        {
+            {"Total Videos", "15"},
+            {"Total Size", "18.4 MB"},
+            {"Average Duration", "12.5s"}
+        };
+        var tableProblems = ExportServiceValidation.ValidateAddTable("Batch Statistics", tableData);
+        Console.WriteLine(tableProblems.Count == 0 ? "Table parameters are valid" : "Table validation failed");
+        
+        // Validate ConversionSettings
+        var settings = new ConversionSettings
+        {
+            Id = Guid.NewGuid().ToString(),
+            Format = VideoFormat.MP4,
+            Quality = VideoQuality.High,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            FrameRate = 30,
+            Width = 1920,
+            Height = 1080,
+            AudioLoopStrategy = AudioLoopStrategy.Repeat,
+            PreserveAspectRatio = true,
+            EnableHardwareAcceleration = true,
+            UseMultiThreading = true,
+            ThreadCount = Environment.ProcessorCount,
+            ApplyFades = false,
+            CreatedAt = DateTime.UtcNow
+        };
+        
+        var settingsProblems = settings.Validate();
+        Console.WriteLine(settingsProblems.Count == 0 ? "ConversionSettings are valid" : "Settings validation failed");
+        
+        // Check if objects are valid using IsValid extension
+        Console.WriteLine(batchJob.IsValid() ? "Batch job is valid" : "Batch job is invalid");
+        Console.WriteLine(downloadResults[0].IsValid() ? "Download result is valid" : "Download result is invalid");
+        Console.WriteLine(settings.IsValid() ? "Settings are valid" : "Settings are invalid");
+    }
+}
+```
+
 ## WebhookManagerExtensions
 
 The `WebhookManagerExtensions` class provides extension methods for the `WebhookManager` that add convenient functionality for managing webhook subscriptions. It includes methods for subscribing multiple URLs at once, finding active subscriptions, checking subscription status, counting failures, and grouping subscriptions by event type. These extensions simplify common webhook management operations and provide additional query capabilities beyond the base `WebhookManager` functionality.

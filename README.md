@@ -2034,6 +2034,100 @@ public class ConversionSettingsDemo
 }
 ```
 
+## InMemoryDownloadTaskRepositoryValidation
+
+The `InMemoryDownloadTaskRepositoryValidation` class provides validation helpers for `InMemoryDownloadTaskRepository` instances and `DownloadTask` entities. It includes methods for validating repository state and download task data integrity, returning lists of error messages or throwing exceptions when invalid data is encountered. This validation ensures robust error handling for in-memory repository operations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Infrastructure.Repositories;
+
+public class InMemoryDownloadTaskRepositoryValidationDemo
+{
+    public void ValidateRepositoryAndTasks()
+    {
+        // Create an in-memory repository
+        var repository = new InMemoryDownloadTaskRepository();
+        
+        // Validate repository instance - returns list of problems
+        var repositoryProblems = repository.Validate();
+        Console.WriteLine(repositoryProblems.Count == 0 
+            ? "Repository is valid"
+            : $"Repository has {repositoryProblems.Count} validation issues");
+        
+        // Validate repository using IsValid extension - returns boolean
+        var isRepositoryValid = repository.IsValid();
+        Console.WriteLine(isRepositoryValid ? "Repository is valid" : "Repository is invalid");
+        
+        // Validate repository using EnsureValid - throws on invalid
+        try
+        {
+            repository.EnsureValid();
+            Console.WriteLine("Repository passed validation");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Repository validation failed: {ex.Message}");
+        }
+        
+        // Create and add a valid download task
+        var downloadTask = new DownloadTask
+        {
+            Id = Guid.NewGuid().ToString(),
+            VideoId = "x7f3h2k9",
+            Url = "https://coub.com/view/x7f3h2k9",
+            OutputPath = Path.Combine(Path.GetTempPath(), "coub_downloads", "funny_cat_jump.mp4"),
+            State = ProcessingState.Pending,
+            Format = VideoFormat.Mp4,
+            Quality = VideoQuality.Hd720p,
+            AudioLoop = AudioLoopStrategy.Repeat,
+            ProgressPercent = 0,
+            FileSizeBytes = 0,
+            RetryCount = 0,
+            MaxRetries = 3,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        
+        // Validate task entity - returns list of problems
+        var taskProblems = downloadTask.Validate();
+        Console.WriteLine(taskProblems.Count == 0 
+            ? "DownloadTask is valid"
+            : $"DownloadTask has {taskProblems.Count} validation issues");
+        
+        // Validate task using IsValid extension - returns boolean
+        var isTaskValid = downloadTask.IsValid();
+        Console.WriteLine(isTaskValid ? "DownloadTask is valid" : "DownloadTask is invalid");
+        
+        // Validate task using EnsureValid - throws on invalid
+        try
+        {
+            downloadTask.EnsureValid();
+            Console.WriteLine("DownloadTask passed validation");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"DownloadTask validation failed: {ex.Message}");
+        }
+        
+        // Add task to repository
+        repository.Add(downloadTask);
+        
+        // Validate repository again after adding task
+        var updatedProblems = repository.Validate();
+        Console.WriteLine(updatedProblems.Count == 0 
+            ? "Repository with task is valid"
+            : $"Repository with task has {updatedProblems.Count} validation issues");
+    }
+}
+```
+
 ## DownloadOptions
 
 The `DownloadOptions` class defines configuration parameters for download operations including output paths, retry behavior, caching settings, and parallel processing options. These settings control where downloaded videos are saved, how failures are handled, and whether to use caching for better performance. The class includes validation attributes to ensure values stay within reasonable bounds.

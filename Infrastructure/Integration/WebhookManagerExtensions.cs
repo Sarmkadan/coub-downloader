@@ -6,6 +6,7 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+using System.Collections.Immutable;
 
 namespace CoubDownloader.Infrastructure.Integration;
 
@@ -60,13 +61,10 @@ public static class WebhookManagerExtensions
         ArgumentNullException.ThrowIfNull(manager);
         ArgumentNullException.ThrowIfNull(predicate);
 
-        lock (manager.GetSubscriptions().AsEnumerable())
-        {
-            return manager.GetSubscriptions()
-                .Where(predicate)
-                .ToList()
-                .AsReadOnly();
-        }
+        return manager.GetSubscriptions()
+            .Where(predicate)
+            .ToList()
+            .AsReadOnly();
     }
 
     /// <summary>
@@ -140,7 +138,7 @@ public static class WebhookManagerExtensions
             }
         }
 
-        return result.ToDictionary(
+        return result.ToImmutableDictionary(
             kvp => kvp.Key,
             kvp => (IReadOnlyList<WebhookSubscription>)kvp.Value.AsReadOnly()
         );

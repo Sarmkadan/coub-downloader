@@ -2128,6 +2128,68 @@ public class InMemoryDownloadTaskRepositoryValidationDemo
 }
 ```
 
+## CoubVideoProcessingExtensions
+
+The `CoubVideoProcessingExtensions` record defines additional video processing metadata and configuration options for Coub videos. It contains settings for controlling video/audio codecs, bitrates, resolution, hardware acceleration, processing priority, and custom tags. These extensions are used to customize how videos are processed and converted, allowing for different quality profiles and processing behaviors.
+
+### Usage Example
+
+```csharp
+using System;
+using System.IO;
+using CoubDownloader.Domain.Models;
+
+public class CoubVideoProcessingExtensionsDemo
+{
+    public void ConfigureVideoProcessing()
+    {
+        // Create processing extensions with custom configuration
+        var extensions = new CoubVideoProcessingExtensions
+        {
+            Id = Guid.NewGuid().ToString(),
+            VideoId = "x7f3h2k9",
+            Priority = 75, // High priority processing
+            EnableHardwareAcceleration = true,
+            VideoCodec = "h264",
+            AudioCodec = "aac",
+            VideoBitrate = 5000, // 5 Mbps
+            AudioBitrate = 256, // 256 kbps
+            TargetWidth = 1920,
+            TargetHeight = 1080,
+            PreserveAspectRatio = true,
+            MaxDuration = 60.0, // Maximum 60 seconds
+            Tags = new List<string> { "high-quality", "hd", "premium" },
+            ProfileName = "PremiumProfile",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Validate the extensions before use
+        if (extensions.IsValid())
+        {
+            Console.WriteLine("Processing extensions are valid");
+            Console.WriteLine($"Profile: {extensions.ProfileName ?? "default"}");
+            Console.WriteLine($"Resolution: {extensions.TargetWidth}x{extensions.TargetHeight}");
+            Console.WriteLine($"Video codec: {extensions.VideoCodec} @ {extensions.VideoBitrate} kbps");
+            Console.WriteLine($"Audio codec: {extensions.AudioCodec} @ {extensions.AudioBitrate} kbps");
+            Console.WriteLine($"Tags: {string.Join(", ", extensions.Tags)}");
+        }
+
+        // Use in a video processing context
+        var videoExtensions = new CoubVideoProcessingExtensions
+        {
+            VideoId = "test123",
+            Priority = 50,
+            VideoCodec = "h265",
+            AudioCodec = "opus",
+            TargetWidth = 1280,
+            TargetHeight = 720,
+            Tags = new List<string> { "mobile", "compressed" }
+        };
+    }
+}
+```
+
 ## DownloadOptions
 
 The `DownloadOptions` class defines configuration parameters for download operations including output paths, retry behavior, caching settings, and parallel processing options. These settings control where downloaded videos are saved, how failures are handled, and whether to use caching for better performance. The class includes validation attributes to ensure values stay within reasonable bounds.

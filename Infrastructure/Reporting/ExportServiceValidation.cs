@@ -37,10 +37,7 @@ public static class ExportServiceValidation
     /// </summary>
     /// <param name="value">The ExportService instance to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    public static bool IsValid(this ExportService? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this ExportService? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures an ExportService instance is valid, throwing if not.
@@ -55,8 +52,7 @@ public static class ExportServiceValidation
         var problems = Validate(value);
         if (problems.Count > 0)
         {
-            throw new ArgumentException(
-                $"ExportService is invalid. Problems:\n- {string.Join("\n- ", problems)}");
+            throw new ArgumentException($"ExportService is invalid. Problems:\n- {string.Join("\n- ", problems)}");
         }
     }
 
@@ -67,11 +63,14 @@ public static class ExportServiceValidation
     /// <param name="outputPath">Output file path</param>
     /// <param name="format">Export format</param>
     /// <returns>List of validation problems; empty if valid</returns>
+    /// <exception cref="ArgumentNullException">Thrown if outputPath is null</exception>
     public static IReadOnlyList<string> ValidateExportBatchReportAsync(
         this BatchJob? batch,
         string? outputPath,
         ExportFormat format)
     {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
         var problems = new List<string>();
 
         if (batch is null)
@@ -104,11 +103,14 @@ public static class ExportServiceValidation
     /// <param name="outputPath">Output file path</param>
     /// <param name="format">Export format</param>
     /// <returns>List of validation problems; empty if valid</returns>
+    /// <exception cref="ArgumentNullException">Thrown if outputPath is null</exception>
     public static IReadOnlyList<string> ValidateExportDownloadResultsAsync(
         this List<DownloadResult>? results,
         string? outputPath,
         ExportFormat format)
     {
+        ArgumentNullException.ThrowIfNull(outputPath);
+
         var problems = new List<string>();
 
         if (results is null || results.Count == 0)
@@ -152,20 +154,12 @@ public static class ExportServiceValidation
     /// </summary>
     /// <param name="batch">The batch job to generate report for</param>
     /// <returns>List of validation problems; empty if valid</returns>
+    /// <exception cref="ArgumentNullException">Thrown if batch is null</exception>
     public static IReadOnlyList<string> ValidateGenerateHtmlReport(this BatchJob? batch)
     {
-        var problems = new List<string>();
+        ArgumentNullException.ThrowIfNull(batch);
 
-        if (batch is null)
-        {
-            problems.Add("BatchJob cannot be null");
-        }
-        else
-        {
-            problems.AddRange(batch.Validate());
-        }
-
-        return problems.AsReadOnly();
+        return batch.Validate();
     }
 
     /// <summary>
@@ -250,7 +244,7 @@ public static class ExportServiceValidation
             problems.Add("BatchJob.TotalTasks cannot be negative");
         }
 
-        if (value.MaxParallelTasks < 1 || value.MaxParallelTasks > 10)
+        if (value.MaxParallelTasks is < 1 or > 10)
         {
             problems.Add("BatchJob.MaxParallelTasks must be between 1 and 10");
         }
@@ -331,42 +325,42 @@ public static class ExportServiceValidation
             problems.Add("ConversionSettings.Id cannot be null or whitespace");
         }
 
-        if (value.VideoBitrate < 500 || value.VideoBitrate > 20000)
+        if (value.VideoBitrate is < 500 or > 20000)
         {
             problems.Add("ConversionSettings.VideoBitrate must be between 500 and 20000 kbps");
         }
 
-        if (value.AudioBitrate < 32 || value.AudioBitrate > 320)
+        if (value.AudioBitrate is < 32 or > 320)
         {
             problems.Add("ConversionSettings.AudioBitrate must be between 32 and 320 kbps");
         }
 
-        if (value.FrameRate < 15 || value.FrameRate > 120)
+        if (value.FrameRate is < 15 or > 120)
         {
             problems.Add("ConversionSettings.FrameRate must be between 15 and 120 fps");
         }
 
-        if (value.Width < 100 || value.Width > 7680)
+        if (value.Width is < 100 or > 7680)
         {
             problems.Add("ConversionSettings.Width must be between 100 and 7680 pixels");
         }
 
-        if (value.Height < 100 || value.Height > 7680)
+        if (value.Height is < 100 or > 7680)
         {
             problems.Add("ConversionSettings.Height must be between 100 and 7680 pixels");
         }
 
-        if (value.ThreadCount < 1 || value.ThreadCount > 32)
+        if (value.ThreadCount is < 1 or > 32)
         {
             problems.Add("ConversionSettings.ThreadCount must be between 1 and 32");
         }
 
-        if (value.FadeInMs < 0 || value.FadeInMs > 5000)
+        if (value.FadeInMs is < 0 or > 5000)
         {
             problems.Add("ConversionSettings.FadeInMs must be between 0 and 5000 ms");
         }
 
-        if (value.FadeOutMs < 0 || value.FadeOutMs > 5000)
+        if (value.FadeOutMs is < 0 or > 5000)
         {
             problems.Add("ConversionSettings.FadeOutMs must be between 0 and 5000 ms");
         }
@@ -384,10 +378,7 @@ public static class ExportServiceValidation
     /// </summary>
     /// <param name="value">The BatchJob instance to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    public static bool IsValid(this BatchJob? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this BatchJob? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures a BatchJob instance is valid, throwing if not.
@@ -399,58 +390,49 @@ public static class ExportServiceValidation
         var problems = Validate(value);
         if (problems.Count > 0)
         {
-            throw new ArgumentException(
-                $"BatchJob is invalid. Problems:\n- {string.Join("\n- ", problems)}");
+            throw new ArgumentException($"BatchJob is invalid. Problems:\n- {string.Join("\n- ", problems)}");
         }
     }
 
     /// <summary>
     /// Checks if a DownloadResult instance is valid.
     /// </summary>
-    /// <param name="value">The DownloadResult to validate</param>
+    /// <param name="value">The DownloadResult instance to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    public static bool IsValid(this DownloadResult? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this DownloadResult? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures a DownloadResult instance is valid, throwing if not.
     /// </summary>
-    /// <param name="value">The DownloadResult to validate</param>
+    /// <param name="value">The DownloadResult instance to validate</param>
     /// <exception cref="ArgumentException">Thrown if value is invalid with detailed problems</exception>
     public static void EnsureValid(this DownloadResult? value)
     {
         var problems = Validate(value);
         if (problems.Count > 0)
         {
-            throw new ArgumentException(
-                $"DownloadResult is invalid. Problems:\n- {string.Join("\n- ", problems)}");
+            throw new ArgumentException($"DownloadResult is invalid. Problems:\n- {string.Join("\n- ", problems)}");
         }
     }
 
     /// <summary>
     /// Checks if a ConversionSettings instance is valid.
     /// </summary>
-    /// <param name="value">The ConversionSettings to validate</param>
+    /// <param name="value">The ConversionSettings instance to check</param>
     /// <returns>True if valid; false otherwise</returns>
-    public static bool IsValid(this ConversionSettings? value)
-    {
-        return value is not null && Validate(value).Count == 0;
-    }
+    public static bool IsValid(this ConversionSettings? value) => value is not null && Validate(value).Count == 0;
 
     /// <summary>
     /// Ensures a ConversionSettings instance is valid, throwing if not.
     /// </summary>
-    /// <param name="value">The ConversionSettings to validate</param>
+    /// <param name="value">The ConversionSettings instance to validate</param>
     /// <exception cref="ArgumentException">Thrown if value is invalid with detailed problems</exception>
     public static void EnsureValid(this ConversionSettings? value)
     {
         var problems = Validate(value);
         if (problems.Count > 0)
         {
-            throw new ArgumentException(
-                $"ConversionSettings is invalid. Problems:\n- {string.Join("\n- ", problems)}");
+            throw new ArgumentException($"ConversionSettings is invalid. Problems:\n- {string.Join("\n- ", problems)}");
         }
     }
 }

@@ -3,7 +3,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =========================================================================
 
 using System;
 using System.Collections.Generic;
@@ -11,11 +11,11 @@ using System.Globalization;
 
 namespace CoubDownloader.Infrastructure.Utilities;
 
-/// <summary>Validation helpers for ApplicationInfo</summary>
+/// <summary>Validation helpers for <see cref="ApplicationInfo"/> instances</summary>
 public static class VersionHelperValidation
 {
-    /// <summary>Validates an ApplicationInfo instance</summary>
-    /// <param name="value">The ApplicationInfo instance to validate</param>
+    /// <summary>Validates an <see cref="ApplicationInfo"/> instance</summary>
+    /// <param name="value">The <see cref="ApplicationInfo"/> instance to validate</param>
     /// <returns>List of validation problems (empty if valid)</returns>
     /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
     public static IReadOnlyList<string> Validate(this ApplicationInfo? value)
@@ -73,16 +73,14 @@ public static class VersionHelperValidation
         return problems.AsReadOnly();
     }
 
-    /// <summary>Checks if an ApplicationInfo instance is valid</summary>
-    /// <param name="value">The ApplicationInfo instance to check</param>
+    /// <summary>Checks if an <see cref="ApplicationInfo"/> instance is valid</summary>
+    /// <param name="value">The <see cref="ApplicationInfo"/> instance to check</param>
     /// <returns>True if valid, false otherwise</returns>
-    public static bool IsValid(this ApplicationInfo? value)
-    {
-        return value?.Validate().Count == 0;
-    }
+    /// <exception cref="ArgumentNullException">Thrown if value is null when accessed</exception>
+    public static bool IsValid(this ApplicationInfo? value) => value?.Validate().Count == 0;
 
-    /// <summary>Ensures an ApplicationInfo instance is valid, throwing if not</summary>
-    /// <param name="value">The ApplicationInfo instance to validate</param>
+    /// <summary>Ensures an <see cref="ApplicationInfo"/> instance is valid, throwing if not</summary>
+    /// <param name="value">The <see cref="ApplicationInfo"/> instance to validate</param>
     /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
     /// <exception cref="ArgumentException">Thrown if value is invalid, containing all validation problems</exception>
     public static void EnsureValid(this ApplicationInfo? value)
@@ -94,13 +92,14 @@ public static class VersionHelperValidation
         if (problems.Count > 0)
         {
             throw new ArgumentException(
-                $"ApplicationInfo validation failed:{Environment.NewLine}  - {string.Join($"{Environment.NewLine}  - ", problems)}");
+                $"ApplicationInfo validation failed:{Environment.NewLine} - {string.Join($"{Environment.NewLine} - ", problems)}");
         }
     }
 
     /// <summary>Validates if a version string has a valid format</summary>
     /// <param name="version">The version string to validate</param>
     /// <returns>True if valid version format, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown if version is null</exception>
     private static bool IsValidVersionFormat(string version)
     {
         if (string.IsNullOrWhiteSpace(version))

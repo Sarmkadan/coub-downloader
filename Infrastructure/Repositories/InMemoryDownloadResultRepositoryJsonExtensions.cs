@@ -5,12 +5,13 @@
 // =====================================================================
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using CoubDownloader.Domain.Models;
 
 namespace CoubDownloader.Infrastructure.Repositories;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for InMemoryDownloadResultRepository.
+/// Provides System.Text.Json serialization extensions for <see cref="InMemoryDownloadResultRepository"/>.
 /// </summary>
 public static class InMemoryDownloadResultRepositoryJsonExtensions
 {
@@ -20,16 +21,17 @@ public static class InMemoryDownloadResultRepositoryJsonExtensions
         WriteIndented = false,
         PropertyNameCaseInsensitive = false,
         NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+        ReferenceHandler = ReferenceHandler.IgnoreCycles
     };
 
     /// <summary>
-    /// Serializes the repository to a JSON string.
+    /// Serializes the <see cref="InMemoryDownloadResultRepository"/> to a JSON string.
     /// </summary>
     /// <param name="value">The repository instance to serialize.</param>
     /// <param name="indented">Whether to format the JSON with indentation for readability.</param>
     /// <returns>A JSON string representation of the repository.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static string ToJson(this InMemoryDownloadResultRepository value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -42,11 +44,11 @@ public static class InMemoryDownloadResultRepositoryJsonExtensions
     }
 
     /// <summary>
-    /// Deserializes a JSON string to an InMemoryDownloadResultRepository instance.
+    /// Deserializes a JSON string to an <see cref="InMemoryDownloadResultRepository"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>An InMemoryDownloadResultRepository instance populated from the JSON data, or null if the JSON is empty.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    /// <returns>An <see cref="InMemoryDownloadResultRepository"/> instance populated from the JSON data, or <see langword="null"/> if the JSON is empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static InMemoryDownloadResultRepository? FromJson(string json)
     {
@@ -61,11 +63,12 @@ public static class InMemoryDownloadResultRepositoryJsonExtensions
     }
 
     /// <summary>
-    /// Attempts to deserialize a JSON string to an InMemoryDownloadResultRepository instance.
+    /// Attempts to deserialize a JSON string to an <see cref="InMemoryDownloadResultRepository"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <param name="value">Receives the deserialized repository, or null if deserialization fails.</param>
-    /// <returns>True if deserialization succeeded; otherwise, false.</returns>
+    /// <param name="value">Receives the deserialized repository, or <see langword="null"/> if deserialization fails.</param>
+    /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
     public static bool TryFromJson(string json, out InMemoryDownloadResultRepository? value)
     {
         ArgumentNullException.ThrowIfNull(json);

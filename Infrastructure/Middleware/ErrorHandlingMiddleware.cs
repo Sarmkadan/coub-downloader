@@ -16,8 +16,38 @@ public class ErrorHandlingMiddleware
 
     public ErrorHandlingMiddleware(ILoggingService logger)
     {
-        _logger = logger;
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _handlers = [];
         RegisterDefaultHandlers();
+    }
+
+    /// <summary>Internal validation method to check middleware state.</summary>
+    /// <returns>A list of validation problems (empty if valid).</returns>
+    internal IReadOnlyList<string> ValidateInternal()
+    {
+        var problems = new List<string>();
+
+        // Logger is already validated in constructor, but check for thread safety scenarios
+        if (_logger is null)
+        {
+            problems.Add("Logger service cannot be null");
+        }
+
+        // Validate handlers dictionary is initialized
+        if (_handlers is null)
+        {
+            problems.Add("Handlers dictionary cannot be null");
+        }
+        else
+        {
+            // Validate handlers dictionary is not empty (should have default handlers registered)
+            if (_handlers.Count == 0)
+            {
+                problems.Add("Handlers dictionary must contain at least default error handlers");
+            }
+        }
+
+        return problems.AsReadOnly();
     }
 
     /// <summary>Handle an exception and return a structured error response</summary>

@@ -47,15 +47,15 @@ public static class CoubDownloadServiceJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized service instance, or null if the JSON is null or empty.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static CoubDownloadService? FromJson(string json)
+    public static CoubDownloadService? FromJson(string? json)
     {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
+        ArgumentNullException.ThrowIfNull(json);
 
-        return JsonSerializer.Deserialize<CoubDownloadService>(json, _jsonSerializerOptions);
+        return string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<CoubDownloadService>(json, _jsonSerializerOptions);
     }
 
     /// <summary>
@@ -64,23 +64,9 @@ public static class CoubDownloadServiceJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized service instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
-    public static bool TryFromJson(string json, out CoubDownloadService? value)
-    {
-        value = null;
-
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return false;
-        }
-
-        try
-        {
-            value = JsonSerializer.Deserialize<CoubDownloadService>(json, _jsonSerializerOptions);
-            return value is not null;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
+    public static bool TryFromJson(string? json, out CoubDownloadService? value) =>
+        (value = string.IsNullOrWhiteSpace(json)
+            ? null
+            : JsonSerializer.Deserialize<CoubDownloadService>(json, _jsonSerializerOptions)) is not null;
 }

@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CoubDownloader.Domain.Models;
 
@@ -44,20 +43,17 @@ public static class VideoSectionValidation
             errors.Add("Index must be non-negative");
         }
 
-        // Validate StartTime (should be non-negative based on [Range(0, double.MaxValue)])
+        // Validate StartTime and EndTime consistency
         if (value.StartTime < 0)
         {
             errors.Add("StartTime must be non-negative");
         }
 
-        // Validate EndTime (should be non-negative based on [Range(0, double.MaxValue)])
         if (value.EndTime < 0)
         {
             errors.Add("EndTime must be non-negative");
         }
-
-        // Validate that EndTime is greater than StartTime
-        if (value.EndTime <= value.StartTime)
+        else if (value.EndTime <= value.StartTime)
         {
             errors.Add("EndTime must be greater than StartTime");
         }
@@ -114,8 +110,8 @@ public static class VideoSectionValidation
         }
 
         throw new ArgumentException(
-            $"VideoSection is invalid:{Environment.NewLine}  - {
-                string.Join($"{Environment.NewLine}  - ", errors)
+            $"VideoSection is invalid:{Environment.NewLine} - {
+                string.Join($"{Environment.NewLine} - ", errors)
             }");
     }
 }

@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CoubDownloader.Domain.Models;
 
@@ -141,8 +140,14 @@ public static class CoubVideoValidation
     /// <summary>
     /// Validates a VideoSection instance and returns a list of validation problems.
     /// </summary>
+    /// <param name="section">The section to validate</param>
+    /// <param name="sectionIndex">Index of the section for error reporting</param>
+    /// <returns>An empty list if valid, otherwise a list of error messages</returns>
+    /// <exception cref="ArgumentNullException">Thrown when section is null</exception>
     private static IReadOnlyList<string> ValidateSection(VideoSection section, int sectionIndex)
     {
+        ArgumentNullException.ThrowIfNull(section);
+
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(section.Id))
@@ -175,7 +180,7 @@ public static class CoubVideoValidation
             errors.Add($"Sections[{sectionIndex}].Description cannot exceed 200 characters");
         }
 
-        if (section.TransitionDurationMs < 0 || section.TransitionDurationMs > 5000)
+        if (section.TransitionDurationMs is < 0 or > 5000)
         {
             errors.Add($"Sections[{sectionIndex}].TransitionDurationMs must be between 0 and 5000 milliseconds");
         }
@@ -186,8 +191,13 @@ public static class CoubVideoValidation
     /// <summary>
     /// Validates an AudioTrack instance and returns a list of validation problems.
     /// </summary>
+    /// <param name="audioTrack">The audio track to validate</param>
+    /// <returns>An empty list if valid, otherwise a list of error messages</returns>
+    /// <exception cref="ArgumentNullException">Thrown when audioTrack is null</exception>
     private static IReadOnlyList<string> ValidateAudioTrack(AudioTrack audioTrack)
     {
+        ArgumentNullException.ThrowIfNull(audioTrack);
+
         var errors = new List<string>();
 
         if (string.IsNullOrWhiteSpace(audioTrack.Id))
@@ -205,17 +215,17 @@ public static class CoubVideoValidation
             errors.Add("AudioTrack.Duration must be greater than 0 seconds");
         }
 
-        if (audioTrack.SampleRate < 8000 || audioTrack.SampleRate > 192000)
+        if (audioTrack.SampleRate is < 8000 or > 192000)
         {
             errors.Add("AudioTrack.SampleRate must be between 8000 and 192000 Hz");
         }
 
-        if (audioTrack.Channels < 1 || audioTrack.Channels > 8)
+        if (audioTrack.Channels is < 1 or > 8)
         {
             errors.Add("AudioTrack.Channels must be between 1 and 8");
         }
 
-        if (audioTrack.Bitrate < 16 || audioTrack.Bitrate > 320)
+        if (audioTrack.Bitrate is < 16 or > 320)
         {
             errors.Add("AudioTrack.Bitrate must be between 16 and 320 kbps");
         }
@@ -229,22 +239,22 @@ public static class CoubVideoValidation
             errors.Add("AudioTrack.Codec cannot exceed 50 characters");
         }
 
-        if (audioTrack.LoopCount < 1 || audioTrack.LoopCount > 1000)
+        if (audioTrack.LoopCount is < 1 or > 1000)
         {
             errors.Add("AudioTrack.LoopCount must be between 1 and 1000");
         }
 
-        if (audioTrack.FadeInMs < 0 || audioTrack.FadeInMs > 5000)
+        if (audioTrack.FadeInMs is < 0 or > 5000)
         {
             errors.Add("AudioTrack.FadeInMs must be between 0 and 5000 milliseconds");
         }
 
-        if (audioTrack.FadeOutMs < 0 || audioTrack.FadeOutMs > 5000)
+        if (audioTrack.FadeOutMs is < 0 or > 5000)
         {
             errors.Add("AudioTrack.FadeOutMs must be between 0 and 5000 milliseconds");
         }
 
-        if (audioTrack.VolumeLevel < 0.0 || audioTrack.VolumeLevel > 2.0)
+        if (audioTrack.VolumeLevel is < 0.0 or > 2.0)
         {
             errors.Add("AudioTrack.VolumeLevel must be between 0.0 and 2.0");
         }
@@ -289,8 +299,9 @@ public static class CoubVideoValidation
     /// <exception cref="ArgumentNullException">Thrown when audioTrack is null</exception>
     public static IReadOnlyList<string> Validate(this AudioTrack? audioTrack)
     {
-        ArgumentNullException.ThrowIfNull(audioTrack);
-        return ValidateAudioTrack(audioTrack);
+        return audioTrack is null
+            ? throw new ArgumentNullException(nameof(audioTrack))
+            : ValidateAudioTrack(audioTrack);
     }
 
     /// <summary>
@@ -312,7 +323,11 @@ public static class CoubVideoValidation
     /// <exception cref="ArgumentException">Thrown when audioTrack is invalid with detailed error messages</exception>
     public static void EnsureValid(this AudioTrack? audioTrack)
     {
-        ArgumentNullException.ThrowIfNull(audioTrack);
+        if (audioTrack is null)
+        {
+            throw new ArgumentNullException(nameof(audioTrack));
+        }
+
         var errors = ValidateAudioTrack(audioTrack);
         if (errors.Count > 0)
         {
@@ -320,5 +335,4 @@ public static class CoubVideoValidation
                 $"AudioTrack is invalid:{Environment.NewLine}{string.Join(Environment.NewLine, errors)}");
         }
     }
-
 }

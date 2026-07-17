@@ -1160,6 +1160,65 @@ public class NetworkOperationsDemo
 }
 ```
 
+## WebhookManagerExtensions
+
+The `WebhookManagerExtensions` class provides extension methods for the `WebhookManager` that add convenient functionality for managing webhook subscriptions. It includes methods for subscribing multiple URLs at once, finding active subscriptions, checking subscription status, counting failures, and grouping subscriptions by event type. These extensions simplify common webhook management operations and provide additional query capabilities beyond the base `WebhookManager` functionality.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CoubDownloader.Infrastructure.Integration;
+using CoubDownloader.Domain.Enums;
+
+public class WebhookManagerDemo
+{
+    public void ManageWebhookSubscriptions()
+    {
+        // Create webhook manager instance
+        var webhookManager = new WebhookManager();
+        
+        // SubscribeMultiple - Subscribe multiple URLs to the same event type
+        var webhookUrls = new List<string>
+        {
+            "https://webhook.site/123-abc",
+            "https://webhook.site/456-def",
+            "https://webhook.site/789-ghi"
+        };
+        
+        webhookManager.SubscribeMultiple(webhookUrls, WebhookEventType.VideoDownloaded, "my-secret-key");
+        
+        // GetActiveSubscription - Get the first active subscription for an event type
+        var activeSubscription = webhookManager.GetActiveSubscription(WebhookEventType.VideoDownloaded);
+        Console.WriteLine($"Active subscription found: {activeSubscription?.Url}");
+        
+        // GetSubscriptionsBy - Find subscriptions matching a predicate
+        var failedSubscriptions = webhookManager.GetSubscriptionsBy(s => s.FailureCount > 0);
+        Console.WriteLine($"Found {failedSubscriptions.Count} subscriptions with failures");
+        
+        // HasActiveSubscriptions - Check if any active subscriptions exist
+        var hasActive = webhookManager.HasActiveSubscriptions(WebhookEventType.VideoDownloaded);
+        Console.WriteLine($"Has active subscriptions: {hasActive}");
+        
+        // GetTotalFailureCount - Get total failure count across all subscriptions
+        var totalFailures = webhookManager.GetTotalFailureCount();
+        Console.WriteLine($"Total failures: {totalFailures}");
+        
+        // GetOldestActiveSubscription - Find the oldest active subscription
+        var oldestActive = webhookManager.GetOldestActiveSubscription();
+        Console.WriteLine($"Oldest active subscription created at: {oldestActive?.CreatedAt}");
+        
+        // GroupByEventType - Group subscriptions by event type
+        var subscriptionsByEvent = webhookManager.GroupByEventType();
+        foreach (var kvp in subscriptionsByEvent)
+        {
+            Console.WriteLine($"Event {kvp.Key}: {kvp.Value.Count} active subscriptions");
+        }
+    }
+}
+```
+
 ## CoubDownloadService
 
 The `CoubDownloadService` is the core service for downloading and extracting data from Coub videos. It provides functionality to fetch video metadata, extract video source URLs, download videos, and verify downloads. The service integrates with the Coub API client and video repository to provide a complete download pipeline with proper error handling and progress reporting.

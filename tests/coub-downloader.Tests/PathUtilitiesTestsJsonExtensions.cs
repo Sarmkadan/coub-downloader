@@ -4,7 +4,7 @@ using System.Text.Json;
 namespace CoubDownloader.Tests;
 
 /// <summary>
-/// Provides System.Text.Json serialization extensions for <see cref="PathUtilitiesTests"/>.
+/// Provides System.Text.Json serialization extensions for test data serialization.
 /// </summary>
 public static class PathUtilitiesTestsJsonExtensions
 {
@@ -30,7 +30,6 @@ public static class PathUtilitiesTestsJsonExtensions
     public static string ToJson(this PathUtilitiesTests value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
-
         return JsonSerializer.Serialize(value, indented ? _jsonOptionsIndented : _jsonOptions);
     }
 
@@ -39,10 +38,13 @@ public static class PathUtilitiesTestsJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized <see cref="PathUtilitiesTests"/> instance, or <see langword="null"/> if the JSON represents a null value.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="json"/> is empty or consists only of white-space characters.</exception>
     /// <exception cref="JsonException">The JSON is invalid or cannot be deserialized to <see cref="PathUtilitiesTests"/>.</exception>
     public static PathUtilitiesTests? FromJson(string json)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentNullException.ThrowIfNull(json);
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
         return JsonSerializer.Deserialize<PathUtilitiesTests>(json, _jsonOptions);
     }
@@ -53,9 +55,10 @@ public static class PathUtilitiesTestsJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized value if successful, otherwise <see langword="null"/>.</param>
     /// <returns><see langword="true"/> if deserialization succeeds; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/>.</exception>
     public static bool TryFromJson(string json, out PathUtilitiesTests? value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(json);
+        ArgumentNullException.ThrowIfNull(json);
 
         try
         {

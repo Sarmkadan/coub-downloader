@@ -18,29 +18,31 @@ namespace CoubDownloader.Presentation.Formatters;
 public static class JsonFormatterValidation
 {
     /// <summary>
+    /// Ensures that the class cannot be inherited.
+    /// </summary>
+    static JsonFormatterValidation() { }
+
+    /// <summary>
     /// Validates a <see cref="JsonFormatter"/> instance and its configuration.
     /// </summary>
-    /// <param name="value">The formatter instance to validate</param>
-    /// <returns>A list of human-readable validation problems; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
+    /// <param name="value">The formatter instance to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this JsonFormatter value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
-        var problems = new List<string>();
-
         // JsonFormatter itself has no state to validate
         // The validation is for the parameters passed to its methods
-
-        return problems.AsReadOnly();
+        return Array.Empty<string>();
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="JsonFormatter.FormatVideo(CoubVideo)"/>
+    /// Validates parameters for <see cref="JsonFormatter.FormatVideo(CoubVideo)"/>.
     /// </summary>
-    /// <param name="video">The video to validate</param>
-    /// <returns>A list of human-readable validation problems; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="video"/> is null</exception>
+    /// <param name="video">The video to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="video"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this CoubVideo video)
     {
         ArgumentNullException.ThrowIfNull(video);
@@ -95,11 +97,11 @@ public static class JsonFormatterValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="JsonFormatter.FormatVideos(IEnumerable{CoubVideo})"/>
+    /// Validates parameters for <see cref="JsonFormatter.FormatVideos(IEnumerable{CoubVideo})"/>.
     /// </summary>
-    /// <param name="videos">The videos to validate</param>
-    /// <returns>A list of human-readable validation problems; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="videos"/> is null</exception>
+    /// <param name="videos">The videos to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="videos"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this IEnumerable<CoubVideo> videos)
     {
         ArgumentNullException.ThrowIfNull(videos);
@@ -130,11 +132,11 @@ public static class JsonFormatterValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="JsonFormatter.FormatBatchJob(BatchJob)"/>
+    /// Validates parameters for <see cref="JsonFormatter.FormatBatchJob(BatchJob)"/>.
     /// </summary>
-    /// <param name="batch">The batch job to validate</param>
-    /// <returns>A list of human-readable validation problems; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="batch"/> is null</exception>
+    /// <param name="batch">The batch job to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="batch"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this BatchJob batch)
     {
         ArgumentNullException.ThrowIfNull(batch);
@@ -189,11 +191,11 @@ public static class JsonFormatterValidation
     }
 
     /// <summary>
-    /// Validates parameters for <see cref="JsonFormatter.FormatSettings(ConversionSettings)"/>
+    /// Validates parameters for <see cref="JsonFormatter.FormatSettings(ConversionSettings)"/>.
     /// </summary>
-    /// <param name="settings">The conversion settings to validate</param>
-    /// <returns>A list of human-readable validation problems; empty if valid</returns>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="settings"/> is null</exception>
+    /// <param name="settings">The conversion settings to validate.</param>
+    /// <returns>A list of human-readable validation problems; empty if valid.</returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="settings"/> is <see langword="null"/>.</exception>
     public static IReadOnlyList<string> Validate(this ConversionSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -274,59 +276,44 @@ public static class JsonFormatterValidation
     /// <summary>
     /// Checks if a <see cref="JsonFormatter"/> instance is valid.
     /// </summary>
-    /// <param name="value">The formatter instance to check</param>
-    /// <returns>True if valid; otherwise false</returns>
-    public static bool IsValid(this JsonFormatter value)
-    {
-        return value.Validate().Count == 0;
-    }
+    /// <param name="value">The formatter instance to check.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    public static bool IsValid(this JsonFormatter value) => value.Validate().Count == 0;
 
     /// <summary>
     /// Checks if a <see cref="CoubVideo"/> instance is valid for formatting.
     /// </summary>
-    /// <param name="video">The video to check</param>
-    /// <returns>True if valid; otherwise false</returns>
-    public static bool IsValid(this CoubVideo video)
-    {
-        return video.Validate().Count == 0;
-    }
+    /// <param name="video">The video to check.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    public static bool IsValid(this CoubVideo video) => video.Validate().Count == 0;
 
     /// <summary>
     /// Checks if an enumerable of <see cref="CoubVideo"/> instances is valid for formatting.
     /// </summary>
-    /// <param name="videos">The videos to check</param>
-    /// <returns>True if valid; otherwise false</returns>
-    public static bool IsValid(this IEnumerable<CoubVideo> videos)
-    {
-        return videos.Validate().Count == 0;
-    }
+    /// <param name="videos">The videos to check.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    public static bool IsValid(this IEnumerable<CoubVideo> videos) => videos.Validate().Count == 0;
 
     /// <summary>
     /// Checks if a <see cref="BatchJob"/> instance is valid for formatting.
     /// </summary>
-    /// <param name="batch">The batch job to check</param>
-    /// <returns>True if valid; otherwise false</returns>
-    public static bool IsValid(this BatchJob batch)
-    {
-        return batch.Validate().Count == 0;
-    }
+    /// <param name="batch">The batch job to check.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    public static bool IsValid(this BatchJob batch) => batch.Validate().Count == 0;
 
     /// <summary>
     /// Checks if a <see cref="ConversionSettings"/> instance is valid for formatting.
     /// </summary>
-    /// <param name="settings">The conversion settings to check</param>
-    /// <returns>True if valid; otherwise false</returns>
-    public static bool IsValid(this ConversionSettings settings)
-    {
-        return settings.Validate().Count == 0;
-    }
+    /// <param name="settings">The conversion settings to check.</param>
+    /// <returns>True if valid; otherwise false.</returns>
+    public static bool IsValid(this ConversionSettings settings) => settings.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that a <see cref="JsonFormatter"/> instance is valid, throwing an exception if not.
     /// </summary>
-    /// <param name="value">The formatter instance to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is null</exception>
-    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems</exception>
+    /// <param name="value">The formatter instance to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="value"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this JsonFormatter value)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -344,9 +331,9 @@ public static class JsonFormatterValidation
     /// Ensures that a <see cref="CoubVideo"/> instance is valid for formatting,
     /// throwing an exception if not.
     /// </summary>
-    /// <param name="video">The video to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="video"/> is null</exception>
-    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems</exception>
+    /// <param name="video">The video to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="video"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this CoubVideo video)
     {
         ArgumentNullException.ThrowIfNull(video);
@@ -364,9 +351,9 @@ public static class JsonFormatterValidation
     /// Ensures that an enumerable of <see cref="CoubVideo"/> instances is valid for formatting,
     /// throwing an exception if not.
     /// </summary>
-    /// <param name="videos">The videos to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="videos"/> is null</exception>
-    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems</exception>
+    /// <param name="videos">The videos to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="videos"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this IEnumerable<CoubVideo> videos)
     {
         ArgumentNullException.ThrowIfNull(videos);
@@ -384,9 +371,9 @@ public static class JsonFormatterValidation
     /// Ensures that a <see cref="BatchJob"/> instance is valid for formatting,
     /// throwing an exception if not.
     /// </summary>
-    /// <param name="batch">The batch job to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="batch"/> is null</exception>
-    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems</exception>
+    /// <param name="batch">The batch job to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="batch"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this BatchJob batch)
     {
         ArgumentNullException.ThrowIfNull(batch);
@@ -404,9 +391,9 @@ public static class JsonFormatterValidation
     /// Ensures that a <see cref="ConversionSettings"/> instance is valid for formatting,
     /// throwing an exception if not.
     /// </summary>
-    /// <param name="settings">The conversion settings to validate</param>
-    /// <exception cref="ArgumentNullException">Thrown if <paramref name="settings"/> is null</exception>
-    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems</exception>
+    /// <param name="settings">The conversion settings to validate.</param>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="settings"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown if validation fails, containing the list of problems.</exception>
     public static void EnsureValid(this ConversionSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);

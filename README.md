@@ -1160,6 +1160,88 @@ public class NetworkOperationsDemo
 }
 ```
 
+## CoubVideoValidation
+
+The `CoubVideoValidation` class provides validation helpers for `CoubVideo` instances and related models. It includes methods for validating CoubVideo objects, audio tracks, and video sections, returning lists of error messages or throwing exceptions when invalid data is encountered. This validation ensures robust error handling for video metadata and content validation.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CoubDownloader.Domain.Models;
+
+public class CoubVideoValidationDemo
+{
+    public void ValidateCoubVideo()
+    {
+        // Create a valid CoubVideo instance
+        var validVideo = new CoubVideo
+        {
+            Id = "x7f3h2k9",
+            Title = "Funny Cat Jump",
+            Url = "https://coub.com/view/x7f3h2k9",
+            Duration = 15,
+            Width = 1280,
+            Height = 720,
+            CreatorName = "cat_lover",
+            ViewCount = 1250,
+            HasAudio = true,
+            Description = "A cat jumping from the couch",
+            UploadedDate = DateTime.UtcNow.AddDays(-7),
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Sections = new List<VideoSection>
+            {
+                new VideoSection
+                {
+                    Id = "sec1",
+                    VideoId = "x7f3h2k9",
+                    Index = 0,
+                    StartTime = 0,
+                    EndTime = 15,
+                    Description = "Main jump sequence"
+                }
+            }
+        };
+
+        // Validate using Validate() - returns list of errors
+        var validationErrors = validVideo.Validate();
+        Console.WriteLine(validationErrors.Count == 0 ? "Video is valid" : "Validation issues found");
+
+        // Validate using IsValid() - returns boolean
+        var isValid = validVideo.IsValid();
+        Console.WriteLine(isValid ? "Video is valid" : "Video is invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            validVideo.EnsureValid();
+            Console.WriteLine("Video passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+
+        // Validate an invalid video
+        var invalidVideo = new CoubVideo
+        {
+            Id = "", // Empty ID - invalid
+            Title = "", // Empty title - invalid
+            Url = "not-a-url" // Invalid URL format
+        };
+
+        var invalidErrors = invalidVideo.Validate();
+        Console.WriteLine($"Invalid video has {invalidErrors.Count} validation errors:");
+        foreach (var error in invalidErrors)
+        {
+            Console.WriteLine($"- {error}");
+        }
+    }
+}
+```
+
 ## ExportServiceValidation
 
 The `ExportServiceValidation` class provides validation helpers for `ExportService` operations and related models. It includes methods for validating ExportService instances, batch jobs, download results, conversion settings, and various report generation parameters. The validation methods return lists of error messages or throw exceptions when invalid data is encountered, ensuring robust error handling for export operations.

@@ -50,9 +50,12 @@ public static class CoubVideoExtensionsJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
     /// <returns>A deserialized <see cref="CoubVideoProcessingExtensions"/> instance, or null if JSON is empty or whitespace</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     /// <exception cref="JsonException">Thrown when JSON is invalid or cannot be deserialized</exception>
     public static CoubVideoProcessingExtensions? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
@@ -65,24 +68,27 @@ public static class CoubVideoExtensionsJsonExtensions
     /// Attempts to deserialize a JSON string to a <see cref="CoubVideoProcessingExtensions"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize</param>
-    /// <param name="value">Output parameter containing the deserialized value, or null on failure</param>
+    /// <param name="value">Output parameter containing the deserialized value if successful, otherwise null</param>
     /// <returns>True if deserialization succeeded, false otherwise</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     public static bool TryFromJson(string json, out CoubVideoProcessingExtensions? value)
     {
-        value = null;
+        ArgumentNullException.ThrowIfNull(json);
 
         if (string.IsNullOrWhiteSpace(json))
         {
+            value = null;
             return false;
         }
 
         try
         {
             value = JsonSerializer.Deserialize<CoubVideoProcessingExtensions>(json, _jsonSerializerOptions);
-            return true;
+            return value is not null;
         }
         catch (JsonException)
         {
+            value = null;
             return false;
         }
     }

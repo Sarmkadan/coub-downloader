@@ -779,6 +779,179 @@ public class JsonFormatterDemo
 }
 ```
 
+## JsonFormatterValidation
+
+The `JsonFormatterValidation` class provides validation helpers for the `JsonFormatter` class to ensure that parameters passed to its formatting methods are valid before serialization. It includes extension methods for validating `JsonFormatter`, `CoubVideo`, `IEnumerable<CoubVideo>`, `BatchJob`, and `ConversionSettings` instances. The validation methods return lists of error messages or throw exceptions when invalid data is encountered, ensuring robust error handling for JSON formatting operations.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Collections.Generic;
+using CoubDownloader.Presentation.Formatters;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Domain.Enums;
+
+public class JsonFormatterValidationDemo
+{
+    public void ValidateFormattingParameters()
+    {
+        // Create a valid JsonFormatter instance
+        var jsonFormatter = new JsonFormatter();
+
+        // Validate JsonFormatter instance
+        var formatterProblems = jsonFormatter.Validate();
+        Console.WriteLine(formatterProblems.Count == 0 ? "JsonFormatter is valid" : "Validation issues found");
+
+        // Validate using IsValid() - returns boolean
+        var isFormatterValid = jsonFormatter.IsValid();
+        Console.WriteLine(isFormatterValid ? "JsonFormatter is valid" : "JsonFormatter is invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            jsonFormatter.EnsureValid();
+            Console.WriteLine("JsonFormatter passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+
+        // Create a valid CoubVideo instance
+        var validVideo = new CoubVideo
+        {
+            Id = "x7f3h2k9",
+            Title = "Funny Cat Jump",
+            Url = "https://coub.com/view/x7f3h2k9",
+            Duration = 15,
+            Width = 1280,
+            Height = 720,
+            CreatorName = "cat_lover",
+            ViewCount = 1250,
+            HasAudio = true,
+            Description = "A cat jumping from the couch",
+            UploadedDate = DateTime.UtcNow.AddDays(-7)
+        };
+
+        // Validate CoubVideo using Validate() - returns list of errors
+        var videoErrors = validVideo.Validate();
+        Console.WriteLine(videoErrors.Count == 0 ? "Video is valid" : "Validation issues found");
+
+        // Validate using IsValid() - returns boolean
+        var isVideoValid = validVideo.IsValid();
+        Console.WriteLine(isVideoValid ? "Video is valid" : "Video is invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            validVideo.EnsureValid();
+            Console.WriteLine("Video passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+
+        // Create a collection of valid videos
+        var videos = new List<CoubVideo>
+        {
+            new CoubVideo { Id = "abc123", Title = "Dancing Dog", Url = "https://coub.com/view/abc123", Duration = 10, Width = 1920, Height = 1080, CreatorName = "dog_lover", ViewCount = 890, HasAudio = true },
+            new CoubVideo { Id = "def456", Title = "Epic Fail", Url = "https://coub.com/view/def456", Duration = 8, Width = 1280, Height = 720, CreatorName = "fail_archive", ViewCount = 2450, HasAudio = false }
+        };
+
+        // Validate video collection
+        var videosErrors = videos.Validate();
+        Console.WriteLine(videosErrors.Count == 0 ? "Video collection is valid" : "Collection validation issues");
+
+        // Validate using IsValid() - returns boolean
+        var isVideosValid = videos.IsValid();
+        Console.WriteLine(isVideosValid ? "Video collection is valid" : "Video collection is invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            videos.EnsureValid();
+            Console.WriteLine("Video collection passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+
+        // Create a valid BatchJob instance
+        var batchJob = new BatchJob
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = "Weekend Download Batch",
+            OutputDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "CoubDownloads"),
+            State = ProcessingState.Completed,
+            TotalTasks = 15,
+            MaxParallelTasks = 4,
+            CreatedAt = DateTime.UtcNow.AddDays(-1),
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        // Validate BatchJob
+        var batchErrors = batchJob.Validate();
+        Console.WriteLine(batchErrors.Count == 0 ? "BatchJob is valid" : "BatchJob validation issues");
+
+        // Validate using IsValid() - returns boolean
+        var isBatchValid = batchJob.IsValid();
+        Console.WriteLine(isBatchValid ? "BatchJob is valid" : "BatchJob is invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            batchJob.EnsureValid();
+            Console.WriteLine("BatchJob passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+
+        // Create valid ConversionSettings instance
+        var settings = new ConversionSettings
+        {
+            Id = Guid.NewGuid().ToString(),
+            Format = VideoFormat.MP4,
+            Quality = VideoQuality.High,
+            VideoBitrate = 5000,
+            AudioBitrate = 192,
+            FrameRate = 30,
+            Width = 1920,
+            Height = 1080,
+            PreserveAspectRatio = true,
+            VideoCodec = "h264",
+            AudioCodec = "aac",
+            EnableHardwareAcceleration = true,
+            ThreadCount = Environment.ProcessorCount,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Validate ConversionSettings
+        var settingsErrors = settings.Validate();
+        Console.WriteLine(settingsErrors.Count == 0 ? "ConversionSettings are valid" : "ConversionSettings validation failed");
+
+        // Validate using IsValid() - returns boolean
+        var isSettingsValid = settings.IsValid();
+        Console.WriteLine(isSettingsValid ? "ConversionSettings are valid" : "ConversionSettings are invalid");
+
+        // Validate using EnsureValid() - throws on invalid (no return value)
+        try
+        {
+            settings.EnsureValid();
+            Console.WriteLine("ConversionSettings passed validation successfully");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"Validation failed: {ex.Message}");
+        }
+    }
+}
+```
+
 ## MemoryCacheServiceTests
 
 The `MemoryCacheServiceTests` class provides a comprehensive suite of xUnit tests that verify the behavior of the `MemoryCacheService` class. It tests basic cache operations including setting and retrieving values, handling missing keys, removing entries, clearing the cache, tracking cache statistics, and handling expiration scenarios. The tests also cover complex type serialization/deserialization and remote cache synchronization.

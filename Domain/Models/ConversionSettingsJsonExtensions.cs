@@ -45,16 +45,13 @@ public static class ConversionSettingsJsonExtensions
     /// Deserializes a JSON string to a <see cref="ConversionSettings"/> instance.
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
-    /// <returns>The deserialized <see cref="ConversionSettings"/> instance, or null if the JSON is null or empty.</returns>
+    /// <returns>The deserialized <see cref="ConversionSettings"/> instance.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
-    public static ConversionSettings? FromJson(string json)
+    public static ConversionSettings FromJson(string json)
     {
-        if (string.IsNullOrEmpty(json))
-        {
-            return null;
-        }
-
-        return JsonSerializer.Deserialize<ConversionSettings>(json, _jsonOptions);
+        ArgumentNullException.ThrowIfNull(json);
+        return JsonSerializer.Deserialize<ConversionSettings>(json, _jsonOptions) ?? throw new JsonException("Deserialization returned null");
     }
 
     /// <summary>
@@ -64,22 +61,5 @@ public static class ConversionSettingsJsonExtensions
     /// <param name="value">Receives the deserialized <see cref="ConversionSettings"/> instance if successful.</param>
     /// <returns>True if deserialization succeeded; otherwise, false.</returns>
     public static bool TryFromJson(string json, out ConversionSettings? value)
-    {
-        value = null;
-
-        if (string.IsNullOrEmpty(json))
-        {
-            return false;
-        }
-
-        try
-        {
-            value = JsonSerializer.Deserialize<ConversionSettings>(json, _jsonOptions);
-            return true;
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
-    }
+        => (value = string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<ConversionSettings>(json, _jsonOptions)) is not null;
 }

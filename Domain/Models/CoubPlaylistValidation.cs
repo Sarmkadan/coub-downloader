@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 
 namespace CoubDownloader.Domain.Models;
 
@@ -21,7 +20,7 @@ public static class CoubPlaylistValidation
     /// <param name="value">The playlist to validate.</param>
     /// <returns>An empty list if valid; otherwise, a list of validation error messages.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static IReadOnlyList<string> Validate(this CoubPlaylist? value)
+public static IReadOnlyList<string> Validate(this CoubPlaylist? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 
@@ -119,9 +118,7 @@ public static class CoubPlaylistValidation
             {
                 errors.Add("FetchedAt must be in UTC timezone when set.");
             }
-
-            // FetchedAt should not be in the future
-            if (value.FetchedAt.Value > DateTime.UtcNow.AddMinutes(5))
+            else if (value.FetchedAt.Value > DateTime.UtcNow.AddMinutes(5))
             {
                 errors.Add("FetchedAt cannot be in the future.");
             }
@@ -136,10 +133,8 @@ public static class CoubPlaylistValidation
     /// <param name="value">The playlist to check.</param>
     /// <returns><see langword="true"/> if valid; otherwise, <see langword="false"/>.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
-    public static bool IsValid(this CoubPlaylist? value)
-    {
-        return value?.Validate().Count == 0;
-    }
+public static bool IsValid(this CoubPlaylist? value)
+        => value is not null && value.Validate().Count == 0;
 
     /// <summary>
     /// Ensures that the playlist is valid, throwing an <see cref="ArgumentException"/>
@@ -148,7 +143,7 @@ public static class CoubPlaylistValidation
     /// <param name="value">The playlist to validate.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when the playlist has validation errors.</exception>
-    public static void EnsureValid(this CoubPlaylist? value)
+public static void EnsureValid(this CoubPlaylist? value)
     {
         ArgumentNullException.ThrowIfNull(value);
 

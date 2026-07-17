@@ -2,7 +2,7 @@
 // =============================================================================
 // Author: Vladyslav Zaiets | https://sarmkadan.com
 // CTO & Software Architect
-// =============================================================================
+// =====================================================================
 
 using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Models;
@@ -26,9 +26,16 @@ public static class InMemoryDownloadTaskRepositoryValidation
 
         var problems = new List<string>();
 
-        // Validate that the repository's internal state is consistent
-        // Since this is an in-memory repository, we primarily validate the data it contains
-        // rather than the repository itself having invalid state
+        // In-memory repositories don't have persistent state to validate,
+        // but we can verify the internal dictionary isn't corrupted
+        try
+        {
+            _ = value.GetAllAsync().Result;
+        }
+        catch (Exception ex)
+        {
+            problems.Add($"Repository internal state is corrupted: {ex.Message}");
+        }
 
         return problems.AsReadOnly();
     }
@@ -39,18 +46,7 @@ public static class InMemoryDownloadTaskRepositoryValidation
     /// <param name="value">The repository instance to validate</param>
     /// <returns>True if valid; false otherwise</returns>
     /// <exception cref="ArgumentNullException">Thrown if value is null</exception>
-    public static bool IsValid(this InMemoryDownloadTaskRepository value)
-    {
-        try
-        {
-            _ = Validate(value);
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
-    }
+    public static bool IsValid(this InMemoryDownloadTaskRepository value) => Validate(value).Count == 0;
 
     /// <summary>
     /// Validates the repository instance and throws an <see cref="ArgumentException"/>
@@ -214,15 +210,8 @@ public static class InMemoryDownloadTaskRepositoryValidation
     /// <exception cref="ArgumentNullException">Thrown if entity is null</exception>
     public static bool IsValid(this DownloadTask entity)
     {
-        try
-        {
-            _ = Validate(entity);
-            return true;
-        }
-        catch (ArgumentException)
-        {
-            return false;
-        }
+        ArgumentNullException.ThrowIfNull(entity);
+        return Validate(entity).Count == 0;
     }
 
     /// <summary>

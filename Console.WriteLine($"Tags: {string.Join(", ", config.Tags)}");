@@ -1,0 +1,9 @@
+
+## Notes
+
+* **Validation** – The `IsValid` property should be checked before a configuration is used. Typical validation rules include non‑empty `VideoId`, positive `VideoBitrate` and `AudioBitrate`, and non‑negative `TargetWidth`/`TargetHeight`. The type itself does not enforce these rules.
+* **Thread safety** – Instances are plain data objects. If a configuration is shared across threads, ensure that it is not mutated concurrently. Prefer creating a new instance for each job or use immutable patterns.
+* **Nullability** – `ProfileName` is nullable; callers should handle the case where no profile is specified.
+* **DateTime** – `CreatedAt` and `UpdatedAt` are expected to be in UTC. The application should convert to local time only for display purposes.
+* **Tags** – The list is mutable; adding or removing tags after the configuration has been submitted may lead to inconsistent job metadata. Treat the list as read‑only once the job is queued.
+

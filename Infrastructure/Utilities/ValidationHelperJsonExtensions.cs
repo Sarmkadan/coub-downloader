@@ -54,10 +54,13 @@ public static class ValidationHelperJsonExtensions
 
     /// <summary>Deserialize JSON string to validation helper type information</summary>
     /// <param name="json">JSON string to deserialize</param>
-    /// <returns>A simple object with type information, or <see langword="null"/> if JSON is empty or whitespace</returns>
+    /// <returns>A simple object with type information, or <see langword="null"/> if <paramref name="json"/> is empty or whitespace</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/></exception>
     /// <exception cref="JsonException">Thrown when JSON is malformed or cannot be deserialized</exception>
     public static object? FromJson(string json)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         if (string.IsNullOrWhiteSpace(json))
         {
             return null;
@@ -70,8 +73,11 @@ public static class ValidationHelperJsonExtensions
     /// <param name="json">JSON string to deserialize</param>
     /// <param name="value">Receives the deserialized object if successful</param>
     /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/></returns>
+    /// <exception cref="ArgumentNullException"><paramref name="json"/> is <see langword="null"/></exception>
     public static bool TryFromJson(string json, out object? value)
     {
+        ArgumentNullException.ThrowIfNull(json);
+
         value = null;
 
         if (string.IsNullOrWhiteSpace(json))

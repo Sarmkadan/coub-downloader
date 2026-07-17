@@ -11,6 +11,9 @@ using System.Text.Json.Serialization.Metadata;
 namespace CoubDownloader.Application.Startup;
 
 /// <summary>System.Text.Json serialization extensions for ApplicationStartup</summary>
+/// <remarks>
+/// All members are thread-safe and can be used concurrently from multiple threads.
+/// </remarks>
 public static class ApplicationStartupJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
@@ -24,7 +27,7 @@ public static class ApplicationStartupJsonExtensions
     /// <param name="value">The ApplicationStartup instance to serialize</param>
     /// <param name="indented">Whether to format the JSON with indentation</param>
     /// <returns>JSON string representation</returns>
-    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is null</exception>
     public static string ToJson(this ApplicationStartup value, bool indented = false)
     {
         ArgumentNullException.ThrowIfNull(value);
@@ -38,8 +41,8 @@ public static class ApplicationStartupJsonExtensions
 
     /// <summary>Deserialize ApplicationStartup from JSON string</summary>
     /// <param name="json">JSON string to deserialize</param>
-    /// <returns>Deserialized ApplicationStartup instance, or null if JSON is empty</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null</exception>
+    /// <returns>Deserialized ApplicationStartup instance, or null if JSON is empty or whitespace</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     /// <exception cref="JsonException">Thrown when JSON is invalid or cannot be deserialized</exception>
     public static ApplicationStartup? FromJson(string json)
     {
@@ -57,7 +60,7 @@ public static class ApplicationStartupJsonExtensions
     /// <param name="json">JSON string to deserialize</param>
     /// <param name="value">Output parameter for deserialized value</param>
     /// <returns>True if deserialization succeeded; false otherwise</returns>
-    /// <exception cref="ArgumentNullException">Thrown when json is null</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is null</exception>
     public static bool TryFromJson(string json, out ApplicationStartup? value)
     {
         ArgumentNullException.ThrowIfNull(json);

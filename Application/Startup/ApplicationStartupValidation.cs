@@ -2,7 +2,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 
 namespace CoubDownloader.Application.Startup;
@@ -25,64 +24,64 @@ public static class ApplicationStartupValidation
         var errors = new List<string>();
 
         // Validate LoggingDirectory
-        if (string.IsNullOrWhiteSpace(value.LoggingDirectory))
-        {
-            errors.Add("Logging directory path cannot be null or empty.");
-        }
-        else if (!Path.IsPathRooted(value.LoggingDirectory) && value.LoggingDirectory.Contains(".."))
-        {
-            errors.Add("Logging directory path cannot contain relative path traversal (..).");
-        }
-        else if (value.LoggingDirectory.Length > 260)
-        {
-            errors.Add("Logging directory path cannot exceed 260 characters.");
-        }
+        ValidatePath(value.LoggingDirectory, nameof(value.LoggingDirectory), errors, allowRelative: true);
 
         // Validate DownloadDirectory
-        if (string.IsNullOrWhiteSpace(value.DownloadDirectory))
-        {
-            errors.Add("Download directory path cannot be null or empty.");
-        }
-        else if (!Path.IsPathRooted(value.DownloadDirectory) && value.DownloadDirectory.Contains(".."))
-        {
-            errors.Add("Download directory path cannot contain relative path traversal (..).");
-        }
-        else if (value.DownloadDirectory.Length > 260)
-        {
-            errors.Add("Download directory path cannot exceed 260 characters.");
-        }
+        ValidatePath(value.DownloadDirectory, nameof(value.DownloadDirectory), errors, allowRelative: true);
 
         // Validate ConfigFilePath
-        if (string.IsNullOrWhiteSpace(value.ConfigFilePath))
+        ValidatePath(value.ConfigFilePath, nameof(value.ConfigFilePath), errors, allowRelative: false);
+
+        if (!string.IsNullOrWhiteSpace(value.ConfigFilePath))
         {
-            errors.Add("Configuration file path cannot be null or empty.");
-        }
-        else if (value.ConfigFilePath.Length > 260)
-        {
-            errors.Add("Configuration file path cannot exceed 260 characters.");
-        }
-        else if (!Path.HasExtension(value.ConfigFilePath))
-        {
-            errors.Add("Configuration file path must have a file extension.");
-        }
-        else if (!value.ConfigFilePath.EndsWith(".json", StringComparison.OrdinalIgnoreCase) &&
-                 !value.ConfigFilePath.EndsWith(".xml", StringComparison.OrdinalIgnoreCase) &&
-                 !value.ConfigFilePath.EndsWith(".config", StringComparison.OrdinalIgnoreCase))
-        {
-            errors.Add("Configuration file path should have a common configuration file extension (.json, .xml, .config).");
+            ValidateConfigFileExtension(value.ConfigFilePath, errors);
         }
 
         // Validate FFmpegPath
-        if (string.IsNullOrWhiteSpace(value.FFmpegPath))
-        {
-            errors.Add("FFmpeg path cannot be null or empty.");
-        }
-        else if (value.FFmpegPath.Length > 260)
-        {
-            errors.Add("FFmpeg path cannot exceed 260 characters.");
-        }
+        ValidatePath(value.FFmpegPath, nameof(value.FFmpegPath), errors, allowRelative: false);
 
         return errors.AsReadOnly();
+    }
+
+    private static void ValidatePath(string? path, string propertyName, List<string> errors, bool allowRelative)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            errors.Add($"{propertyName} cannot be null or empty.");
+            return;
+        }
+
+        if (path.Length > 260)
+        {
+            errors.Add($"{propertyName} cannot exceed 260 characters.");
+        }
+
+        if (!allowRelative && !Path.IsPathRooted(path))
+        {
+            errors.Add($"{propertyName} must be an absolute path.");
+        }
+
+        if (path.Contains(".."))
+        {
+            errors.Add($"{propertyName} cannot contain relative path traversal (..).");
+        }
+    }
+
+    private static void ValidateConfigFileExtension(string configFilePath, List<string> errors)
+    {
+        if (!Path.HasExtension(configFilePath))
+        {
+            errors.Add("Configuration file path must have a file extension.");
+            return;
+        }
+
+        var extension = Path.GetExtension(configFilePath);
+        if (!string.Equals(extension, ".json", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(extension, ".xml", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(extension, ".config", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add("Configuration file path should have a common configuration file extension (.json, .xml, .config).");
+        }
     }
 
     /// <summary>
@@ -90,8 +89,10 @@ public static class ApplicationStartupValidation
     /// </summary>
     /// <param name="value">The configuration to check</param>
     /// <returns>True if valid; otherwise, false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when value is null</exception>
     public static bool IsValid(this StartupConfiguration value)
     {
+        ArgumentNullException.ThrowIfNull(value);
         return value.Validate().Count == 0;
     }
 

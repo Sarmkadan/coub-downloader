@@ -6,7 +6,7 @@ namespace CoubDownloader.Examples;
 /// <summary>
 /// Provides System.Text.Json serialization extensions for <see cref="IntegrationExample"/>.
 /// </summary>
-public static class IntegrationExampleJsonExtensions
+public static sealed class IntegrationExampleJsonExtensions
 {
     private static readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web)
     {
@@ -38,6 +38,8 @@ public static class IntegrationExampleJsonExtensions
     /// </summary>
     /// <param name="json">The JSON string to deserialize.</param>
     /// <returns>The deserialized instance, or <see langword="null"/> if the JSON is empty or whitespace.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     /// <exception cref="JsonException">Thrown when the JSON is invalid or cannot be deserialized.</exception>
     public static IntegrationExample? FromJson(string json)
     {
@@ -52,6 +54,8 @@ public static class IntegrationExampleJsonExtensions
     /// <param name="json">The JSON string to deserialize.</param>
     /// <param name="value">Receives the deserialized instance if successful.</param>
     /// <returns><see langword="true"/> if deserialization succeeded; otherwise, <see langword="false"/>.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="json"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="json"/> is empty or whitespace.</exception>
     public static bool TryFromJson(string json, out IntegrationExample? value)
     {
         ArgumentException.ThrowIfNullOrEmpty(json);

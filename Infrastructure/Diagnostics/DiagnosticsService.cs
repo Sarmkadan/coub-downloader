@@ -7,6 +7,7 @@
 using CoubDownloader.Infrastructure.Middleware;
 using CoubDownloader.Infrastructure.Statistics;
 using CoubDownloader.Infrastructure.Utilities;
+using CoubDownloader.Infrastructure.Caching;
 
 namespace CoubDownloader.Infrastructure.Diagnostics;
 
@@ -15,12 +16,14 @@ public class DiagnosticsService
 {
     private readonly ILoggingService _logger;
     private readonly PerformanceMonitor _performanceMonitor;
+    private readonly ICacheService? _cacheService;
     private DateTime _startTime = DateTime.UtcNow;
 
-    public DiagnosticsService(ILoggingService logger, PerformanceMonitor performanceMonitor)
+    public DiagnosticsService(ILoggingService logger, PerformanceMonitor performanceMonitor, ICacheService? cacheService = null)
     {
         _logger = logger;
         _performanceMonitor = performanceMonitor;
+        _cacheService = cacheService;
     }
 
     /// <summary>Perform comprehensive health check</summary>
@@ -33,7 +36,8 @@ public class DiagnosticsService
             AppInfo = VersionHelper.GetApplicationInfo(),
             RuntimeStats = GetRuntimeStatistics(),
             PerformanceMetrics = _performanceMonitor.GetAllMetrics(),
-            IsHealthy = true
+            IsHealthy = true,
+            CacheStats = _cacheService?.GetStatistics()
         };
 
         // Check memory pressure
@@ -90,6 +94,16 @@ public class DiagnosticsService
         sb.AppendLine($"║ - GC Collections (Gen0): {report.RuntimeStats.Gen0Collections,-36} ║");
         sb.AppendLine($"║ - GC Collections (Gen1): {report.RuntimeStats.Gen1Collections,-36} ║");
         sb.AppendLine($"║ - GC Collections (Gen2): {report.RuntimeStats.Gen2Collections,-36} ║");
+
+        if (report.CacheStats != null)
+        {
+            sb.AppendLine("║ CACHE STATISTICS:");
+            sb.AppendLine($"║ - Total Entries: {report.CacheStats.TotalEntries,-34} ║");
+            sb.AppendLine($"║ - Hits: {report.CacheStats.Hits,-44} ║");
+            sb.AppendLine($"║ - Misses: {report.CacheStats.Misses,-42} ║");
+            sb.AppendLine($"║ - Evictions: {report.CacheStats.Evictions,-38} ║");
+            sb.AppendLine($"║ - Hit Rate: {report.CacheStats.HitRate:P2,-38} ║");
+        }
 
         if (report.Warnings.Count > 0)
         {
@@ -173,6 +187,7 @@ public class DiagnosticsReport
     public List<string> Warnings { get; set; } = [];
     public bool FFmpegAvailable { get; set; }
     public bool IsHealthy { get; set; }
+    public CacheStatistics? CacheStats { get; set; }
 }
 
 /// <summary>Runtime statistics data</summary>

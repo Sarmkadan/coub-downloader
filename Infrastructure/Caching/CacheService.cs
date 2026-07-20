@@ -36,6 +36,7 @@ public class MemoryCacheService : ICacheService
 
     private int _hits;
     private int _misses;
+    private int _evictions; // Number of entries removed due to expiration or explicit removal
 
     /// <summary>Initialize cache with default TTL</summary>
     public MemoryCacheService(int defaultTtlSeconds = 3600)
@@ -70,6 +71,7 @@ public class MemoryCacheService : ICacheService
                 {
                     _cache.Remove(key);
                     _misses++;
+                    _evictions++;
                     value = default;
                     return false;
                 }
@@ -96,7 +98,10 @@ public class MemoryCacheService : ICacheService
     {
         lock (_lockObj)
         {
-            _cache.Remove(key);
+            if (_cache.Remove(key))
+            {
+                _evictions++;
+            }
         }
     }
 
@@ -105,6 +110,7 @@ public class MemoryCacheService : ICacheService
         lock (_lockObj)
         {
             _cache.Clear();
+            // Clearing does not count as evictions for the purpose of statistics
         }
     }
 
@@ -118,6 +124,7 @@ public class MemoryCacheService : ICacheService
                 TotalEntries = _cache.Count,
                 Hits = _hits,
                 Misses = _misses,
+                Evictions = _evictions,
                 HitRate = total > 0 ? (double)_hits / total : 0,
                 Size = _cache.Values.Sum(e => EstimateSize(e.Value))
             };
@@ -132,7 +139,10 @@ public class MemoryCacheService : ICacheService
             .ToList();
 
         foreach (var key in expiredKeys)
+        {
             _cache.Remove(key);
+            _evictions++;
+        }
     }
 
     private long EstimateSize(object? obj)
@@ -149,6 +159,7 @@ public class CacheStatistics
     public int TotalEntries { get; set; }
     public int Hits { get; set; }
     public int Misses { get; set; }
+    public int Evictions { get; set; }
     public double HitRate { get; set; }
     public long Size { get; set; }
 }

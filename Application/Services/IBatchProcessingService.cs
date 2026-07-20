@@ -9,6 +9,18 @@ using CoubDownloader.Domain.Models;
 namespace CoubDownloader.Application.Services;
 
 /// <summary>
+/// Progress reporting interface for batch processing
+/// </summary>
+public interface IBatchProgress<T>
+{
+    /// <summary>
+    /// Reports progress update
+    /// </summary>
+    /// <param name="value">Progress value</param>
+    void Report(T value);
+}
+
+/// <summary>
 /// Service for batch job management and processing.
 /// </summary>
 public interface IBatchProcessingService
@@ -37,7 +49,7 @@ public interface IBatchProcessingService
     /// <param name="batchJobId">The ID of the batch job.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The updated <see cref="BatchJob"/>.</returns>
-    Task<BatchJob> StartBatchAsync(string batchJobId, CancellationToken cancellationToken = default);
+    Task<BatchJob> StartBatchAsync(string batchJobId, IProgress<BatchProgress>? progress = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Cancels a batch job.

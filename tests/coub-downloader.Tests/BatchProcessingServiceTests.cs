@@ -183,7 +183,7 @@ public class BatchProcessingServiceTests
         _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         // Act
-        var result = await _sut.StartBatchAsync(batchId);
+        var result = await _sut.StartBatchAsync(batchId, null);
 
         // Assert
         result.Should().NotBeNull();
@@ -243,7 +243,7 @@ public class BatchProcessingServiceTests
         _mockTaskRepository.Setup(repo => repo.UpdateAsync(It.IsAny<DownloadTask>())).ReturnsAsync((DownloadTask t) => t);
 
         // Act
-        var result = await _sut.StartBatchAsync(batchId);
+        var result = await _sut.StartBatchAsync(batchId, null);
 
         // Assert
         result.Should().NotBeNull();
@@ -267,7 +267,7 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Setup(repo => repo.GetByIdAsync(batchId)).ReturnsAsync((BatchJob)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _sut.StartBatchAsync(batchId));
+        await Assert.ThrowsAsync<ResourceNotFoundException>(() => _sut.StartBatchAsync(batchId, null));
     }
 
 /// <summary>
@@ -291,7 +291,7 @@ public class BatchProcessingServiceTests
         _mockBatchRepository.Setup(repo => repo.GetByIdAsync(batchId)).ReturnsAsync(batch);
 
         // Act & Assert
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.StartBatchAsync(batchId));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _sut.StartBatchAsync(batchId, null));
     }
 
 /// <summary>
@@ -332,7 +332,7 @@ public class BatchProcessingServiceTests
             });
 
         // Act & Assert
-        await Assert.ThrowsAsync<OperationCanceledException>(() => _sut.StartBatchAsync(batchId, cts.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => _sut.StartBatchAsync(batchId, null, cts.Token));
 
         // Ensure task and batch are updated as cancelled
         batch.State.Should().Be(ProcessingState.Cancelled); // Final state after cancellation

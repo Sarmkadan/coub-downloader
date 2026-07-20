@@ -115,7 +115,7 @@ public class BatchProcessingService : IBatchProcessingService
         }
     }
 
-    public async Task<BatchJob> StartBatchAsync(string batchJobId, CancellationToken cancellationToken = default)
+    public async Task<BatchJob> StartBatchAsync(string batchJobId, IProgress<BatchProgress>? progress = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
 
@@ -132,14 +132,25 @@ public class BatchProcessingService : IBatchProcessingService
             batch.StartedAt = DateTime.UtcNow;
             await _batchRepository.UpdateAsync(batch);
 
+            // Report initial progress
+            progress?.Report(new BatchProgress
+            {
+                Total = batch.TotalTasks,
+                Completed = 0,
+                Failed = 0,
+                CurrentItem = 0,
+                CurrentTaskUrl = null
+            });
+
             // Process tasks with parallelization limit
             var pendingTasks = batch.Tasks.Where(t => t.State == ProcessingState.Pending).ToList();
             var semaphore = new SemaphoreSlim(batch.MaxParallelTasks);
             var processingTasks = new List<Task>();
 
-            foreach (var task in pendingTasks)
+            for (int i = 0; i < pendingTasks.Count; i++)
             {
-                processingTasks.Add(ProcessTaskAsync(task, batch, semaphore, cancellationToken));
+                var task = pendingTasks[i];
+                processingTasks.Add(ProcessTaskAsync(task, batch, semaphore, i, pendingTasks.Count, progress, cancellationToken));
             }
 
             await Task.WhenAll(processingTasks);
@@ -148,6 +159,16 @@ public class BatchProcessingService : IBatchProcessingService
             batch.State = batch.FailedTasks == 0 ? ProcessingState.Completed : ProcessingState.Failed;
             batch.CompletedAt = DateTime.UtcNow;
             await _batchRepository.UpdateAsync(batch);
+
+            // Report final progress
+            progress?.Report(new BatchProgress
+            {
+                Total = batch.TotalTasks,
+                Completed = batch.CompletedTasks,
+                Failed = batch.FailedTasks,
+                CurrentItem = batch.TotalTasks,
+                CurrentTaskUrl = null
+            });
 
             return batch;
         }
@@ -305,6 +326,9 @@ public class BatchProcessingService : IBatchProcessingService
         DownloadTask task,
         BatchJob batch,
         SemaphoreSlim semaphore,
+        int taskIndex,
+        int totalTasks,
+        IProgress<BatchProgress>? progress,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(task);
@@ -318,6 +342,16 @@ public class BatchProcessingService : IBatchProcessingService
 
             await _taskRepository.UpdateStateAsync(task.Id, ProcessingState.Downloading);
 
+            // Report task started progress
+            progress?.Report(new BatchProgress
+            {
+                Total = totalTasks,
+                Completed = batch.CompletedTasks,
+                Failed = batch.FailedTasks,
+                CurrentItem = taskIndex,
+                CurrentTaskUrl = task.Url
+            });
+
             var video = await _downloadService.DownloadVideoAsync(task.Url, cancellationToken);
 
             task.State = ProcessingState.Completed;
@@ -326,10 +360,19 @@ public class BatchProcessingService : IBatchProcessingService
 
             await _taskRepository.UpdateAsync(task);
 
-            var completed = batch.Tasks.Count(t => t.State == ProcessingState.Completed);
-            var failed = batch.Tasks.Count(t => t.State == ProcessingState.Failed);
+            // Update batch progress
+            batch.CompletedTasks++;
+            await _batchRepository.UpdateProgressAsync(batch.Id, batch.CompletedTasks, batch.FailedTasks);
 
-            await _batchRepository.UpdateProgressAsync(batch.Id, completed, failed);
+            // Report task completed progress
+            progress?.Report(new BatchProgress
+            {
+                Total = totalTasks,
+                Completed = batch.CompletedTasks,
+                Failed = batch.FailedTasks,
+                CurrentItem = taskIndex + 1,
+                CurrentTaskUrl = task.Url
+            });
         }
         catch (OperationCanceledException)
         {
@@ -348,6 +391,16 @@ public class BatchProcessingService : IBatchProcessingService
             await _taskRepository.UpdateAsync(task);
             await _batchRepository.UpdateAsync(batch);
 
+            // Report task failed progress
+            progress?.Report(new BatchProgress
+            {
+                Total = totalTasks,
+                Completed = batch.CompletedTasks,
+                Failed = batch.FailedTasks,
+                CurrentItem = taskIndex + 1,
+                CurrentTaskUrl = task.Url
+            });
+
             if (!batch.ContinueOnError)
                 throw new BatchProcessingException(batch.Id, batch.FailedTasks, $"Batch job failed: {ex.Message}")
                 {
@@ -364,6 +417,16 @@ public class BatchProcessingService : IBatchProcessingService
 
             await _taskRepository.UpdateAsync(task);
             await _batchRepository.UpdateAsync(batch);
+
+            // Report task failed progress
+            progress?.Report(new BatchProgress
+            {
+                Total = totalTasks,
+                Completed = batch.CompletedTasks,
+                Failed = batch.FailedTasks,
+                CurrentItem = taskIndex + 1,
+                CurrentTaskUrl = task.Url
+            });
 
             if (!batch.ContinueOnError)
                 throw new BatchProcessingException(batch.Id, batch.FailedTasks, $"Batch job failed: {ex.Message}")

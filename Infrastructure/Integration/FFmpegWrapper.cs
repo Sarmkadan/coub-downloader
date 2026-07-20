@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
@@ -27,12 +28,14 @@ public class FFmpegWrapper : IFFmpegWrapper
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
     private readonly ILoggingService _logger;
+    private readonly TimeSpan _executionTimeout;
 
-    public FFmpegWrapper(string ffmpegPath = "ffmpeg", string ffprobePath = "ffprobe", ILoggingService? logger = null)
+    public FFmpegWrapper(string ffmpegPath = "ffmpeg", string ffprobePath = "ffprobe", ILoggingService? logger = null, TimeSpan? executionTimeout = null)
     {
         _ffmpegPath = ffmpegPath;
         _ffprobePath = ffprobePath;
         _logger = logger ?? new MemoryLoggingService();
+        _executionTimeout = executionTimeout ?? TimeSpan.FromMinutes(10);
     }
 
     /// <summary>Check if FFmpeg is available</summary>
@@ -69,7 +72,7 @@ public class FFmpegWrapper : IFFmpegWrapper
     /// <summary>Execute FFmpeg command</summary>
     public virtual async Task<FFmpegResult> ExecuteAsync(string[] arguments, TimeSpan? timeout = null)
     {
-        var processTimeout = timeout ?? TimeSpan.FromMinutes(10);
+        var processTimeout = timeout ?? _executionTimeout;
 
         try
         {
@@ -107,11 +110,7 @@ public class FFmpegWrapper : IFFmpegWrapper
                     // Process exited between the timeout and the kill.
                 }
 
-                return new FFmpegResult
-                {
-                    Success = false,
-                    Error = "FFmpeg operation timed out"
-                };
+                throw new TimeoutException($"FFmpeg operation timed out after {processTimeout.TotalSeconds} seconds");
             }
 
             var output = await outputTask;
@@ -185,7 +184,7 @@ public class FFmpegWrapper : IFFmpegWrapper
         IProgress<int> progress,
         TimeSpan? timeout = null)
     {
-        var processTimeout = timeout ?? TimeSpan.FromMinutes(10);
+        var processTimeout = timeout ?? _executionTimeout;
 
         try
         {
@@ -247,7 +246,7 @@ public class FFmpegWrapper : IFFmpegWrapper
                     // Process exited between the timeout and the kill.
                 }
 
-                return new FFmpegResult { Success = false, Error = "FFmpeg operation timed out" };
+                throw new TimeoutException($"FFmpeg operation timed out after {processTimeout.TotalSeconds} seconds");
             }
 
             var error = await errorTask;

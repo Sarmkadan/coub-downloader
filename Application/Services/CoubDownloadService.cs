@@ -179,62 +179,107 @@ public class CoubDownloadService : ICoubDownloadService
             if (!string.IsNullOrEmpty(directory))
                 Directory.CreateDirectory(directory);
 
-            using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
-
-            if (response.StatusCode == HttpStatusCode.NotFound)
-                throw new VideoDownloadException("Video not found on server", sourceUrl, (int)HttpStatusCode.NotFound);
-
-            if (response.StatusCode == HttpStatusCode.Forbidden)
-                throw new VideoDownloadException("Access forbidden to video", sourceUrl, (int)HttpStatusCode.Forbidden);
-
-            if (response.StatusCode == HttpStatusCode.TooManyRequests)
-                throw new VideoDownloadException("Rate limit exceeded", sourceUrl, (int)HttpStatusCode.TooManyRequests);
-
-            response.EnsureSuccessStatusCode();
-
-            var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-            var bytesDownloaded = 0L;
-
-            await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-            await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
-
-            var buffer = new byte[ApplicationConstants.DownloadChunkSize];
-            int bytesRead;
-
-            while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+            // Use retry logic for the network operations
+            return await RetryTransientOperationAsync(async () =>
             {
-                await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                bytesDownloaded += bytesRead;
+                using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
-                if (progress is not null && totalBytes > 0)
-                    progress.Report((int)(bytesDownloaded * 100 / totalBytes));
-            }
+                if (response.StatusCode == HttpStatusCode.NotFound)
+                    throw new VideoDownloadException("Video not found on server", sourceUrl, (int)HttpStatusCode.NotFound);
 
-            return outputPath;
+                if (response.StatusCode == HttpStatusCode.Forbidden)
+                    throw new VideoDownloadException("Access forbidden to video", sourceUrl, (int)HttpStatusCode.Forbidden);
+
+                if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                    throw new VideoDownloadException("Rate limit exceeded", sourceUrl, (int)HttpStatusCode.TooManyRequests);
+
+                response.EnsureSuccessStatusCode();
+
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                var bytesDownloaded = 0L;
+
+                await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
+
+                var buffer = new byte[ApplicationConstants.DownloadChunkSize];
+                int bytesRead;
+
+                while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
+                {
+                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                    bytesDownloaded += bytesRead;
+
+                    if (progress is not null && totalBytes > 0)
+                        progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+                }
+
+                return outputPath;
+            }, "Download video file", sourceUrl);
         }
         catch (CoubDownloaderException)
         {
             throw;
         }
-        catch (HttpRequestException ex)
-        {
-            throw new NetworkException("HTTP request to video source failed", sourceUrl, ex);
-        }
-        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-        {
-            throw new NetworkException("Video download timed out", sourceUrl, ex) { IsTimeout = true };
-        }
-        catch (IOException ex)
-        {
-            throw new FileOperationException("Failed to write video file", outputPath, FileOperationType.Write, ex);
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            throw new FileOperationException("Access denied when writing video file", outputPath, FileOperationType.Write, ex);
-        }
         catch (Exception ex)
         {
             throw new VideoDownloadException("Failed to download video file", sourceUrl, ex);
         }
+    }
+
+    private async Task<T> RetryTransientOperationAsync<T>(Func<Task<T>> operation, string operationName, string url, int maxAttempts = 3, int initialDelayMs = 1000)
+    {
+        int attempt = 0;
+        Exception? lastException = null;
+
+        while (attempt < maxAttempts)
+        {
+            attempt++;
+            try
+            {
+                return await operation();
+            }
+            catch (HttpRequestException ex) when (IsTransientHttpError(ex.StatusCode))
+            {
+                lastException = ex;
+                if (attempt < maxAttempts)
+                {
+                    var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
+                    await Task.Delay(delayMs, CancellationToken.None);
+                }
+            }
+            catch (IOException ex)
+            {
+                lastException = ex;
+                if (attempt < maxAttempts)
+                {
+                    var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
+                    await Task.Delay(delayMs, CancellationToken.None);
+                }
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                lastException = ex;
+                if (attempt < maxAttempts)
+                {
+                    var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
+                    await Task.Delay(delayMs, CancellationToken.None);
+                }
+            }
+        }
+
+        throw new NetworkException($"{operationName} failed after {maxAttempts} attempts", url, lastException ?? new Exception("Unknown error"));
+    }
+
+    private bool IsTransientHttpError(HttpStatusCode? statusCode)
+    {
+        if (!statusCode.HasValue)
+            return false;
+
+        return statusCode.Value == HttpStatusCode.RequestTimeout
+            || statusCode.Value == HttpStatusCode.TooManyRequests
+            || statusCode.Value == HttpStatusCode.ServiceUnavailable
+            || statusCode.Value == HttpStatusCode.GatewayTimeout
+            || statusCode.Value == HttpStatusCode.InternalServerError
+            || statusCode.Value == HttpStatusCode.BadGateway;
     }
 }

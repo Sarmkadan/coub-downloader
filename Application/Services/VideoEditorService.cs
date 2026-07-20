@@ -119,6 +119,61 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
         }
     }
 
+    /// <summary>
+    /// Trim video using start position and duration (more convenient API)
+    /// </summary>
+    /// <param name="inputPath">Path to input video file</param>
+    /// <param name="outputPath">Path to output video file</param>
+    /// <param name="start">Start position in the video</param>
+    /// <param name="duration">Duration of the trimmed segment</param>
+    /// <param name="mode">Trim mode (keyframe-aligned or precise)</param>
+    /// <param name="progress">Optional progress reporter</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Video edit result with duration information</returns>
+    public async Task<VideoEditResult> TrimAsync(
+        string inputPath,
+        string outputPath,
+        TimeSpan start,
+        TimeSpan duration,
+        TrimMode mode = TrimMode.KeyframeAligned,
+        IProgress<int>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+
+        try
+        {
+            if (!File.Exists(inputPath))
+                throw new FileOperationException("Input video not found", inputPath, FileOperationType.Read);
+
+            if (start < TimeSpan.Zero)
+                throw new ValidationException("Start time must be non-negative", nameof(start), start);
+
+            if (duration <= TimeSpan.Zero)
+                throw new ValidationException("Duration must be positive", nameof(duration), duration);
+
+            var endTime = start + duration;
+            EnsureOutputDirectory(outputPath);
+            progress?.Report(5);
+
+            logger.LogInfo(
+                $"Trimming '{Path.GetFileName(inputPath)}' [{start:g} → {endTime:g}] duration={duration:g} mode={mode}",
+                LogCategory);
+
+            var result = await TrimVideoAsync(inputPath, outputPath, start, endTime, mode, progress, cancellationToken);
+            return result;
+        }
+        catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is not FileOperationException and not ProcessExecutionException and not ValidationException)
+        {
+            throw new VideoConversionException("Failed to trim video", inputPath, outputPath, ex);
+        }
+    }
+
     /// <inheritdoc/>
     public async Task<VideoEditResult> MergeVideosAsync(
         IReadOnlyList<string> inputPaths,
@@ -442,8 +497,7 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
                     break;
 
                 case EffectsOperation effects:
-                    await ApplyEffectsAsync(
-                        inputPath, outputPath, effects.Effects, progress, cancellationToken);
+                    await ApplyEffectsAsync(inputPath, outputPath, effects.Effects, progress, cancellationToken);
                     break;
 
                 case MergeOperation merge:
@@ -605,7 +659,6 @@ public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService log
 
     private static void TryDeleteFile(string path)
     {
-        try { File.Delete(path); }
-        catch { /* best-effort cleanup */ }
+        try { File.Delete(path); } catch { /* best-effort cleanup */ }
     }
 }

@@ -4,6 +4,14 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Buffers;
+using System.Security.Cryptography;
+
 namespace CoubDownloader.Infrastructure.Utilities;
 
 /// <summary>File system and path utilities</summary>
@@ -148,6 +156,50 @@ public static class FileUtilities
             if (!File.Exists(newPath))
                 return newPath;
             counter++;
+        }
+    }
+
+    /// <summary>
+    /// Compute a checksum/hash of a file using an incremental hash algorithm.
+    /// The method rents a buffer from <see cref="ArrayPool{T}"/> to avoid large allocations.
+    /// </summary>
+    /// <param name="filePath">Path to the file to hash.</param>
+    /// <param name="algorithm">Hash algorithm to use (default SHA256).</param>
+    /// <returns>Hexadecimal string representation of the hash.</returns>
+    public static string ComputeFileHash(string filePath, HashAlgorithmName? algorithm = null)
+    {
+        var hashAlgorithm = algorithm ?? HashAlgorithmName.SHA256;
+
+        // Use IncrementalHash for streaming hashing
+        using var incrementalHash = IncrementalHash.CreateHash(hashAlgorithm);
+
+        // Rent a buffer from the shared pool (64KB is a good compromise)
+        const int bufferSize = 64 * 1024;
+        var buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        try
+        {
+            using var stream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize,
+                useAsync: false);
+
+            int bytesRead;
+            while ((bytesRead = stream.Read(buffer, 0, bufferSize)) > 0)
+            {
+                incrementalHash.AppendData(buffer, 0, bytesRead);
+            }
+
+            var hashBytes = incrementalHash.GetHashAndReset();
+            // Convert to lower‑case hex string
+            return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        }
+        finally
+        {
+            // Return the buffer to the pool
+            ArrayPool<byte>.Shared.Return(buffer);
         }
     }
 }

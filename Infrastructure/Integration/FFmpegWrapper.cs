@@ -88,10 +88,8 @@ public class FFmpegWrapper : IFFmpegWrapper
             foreach (var arg in arguments)
                 psi.ArgumentList.Add(arg);
 
-            using var process = Process.Start(psi);
-
-            if (process is null)
-                return new FFmpegResult { Success = false, Error = "Failed to start FFmpeg process" };
+            using var process = new Process { StartInfo = psi };
+            process.Start();
 
             var outputTask = process.StandardOutput.ReadToEndAsync();
             var errorTask = process.StandardError.ReadToEndAsync();
@@ -110,9 +108,12 @@ public class FFmpegWrapper : IFFmpegWrapper
                     // Process exited between the timeout and the kill.
                 }
 
+                // Wait for pipes to close
+                await Task.WhenAny(Task.WhenAll(outputTask, errorTask), Task.Delay(1000));
                 throw new TimeoutException($"FFmpeg operation timed out after {processTimeout.TotalSeconds} seconds");
             }
 
+            await Task.WhenAll(outputTask, errorTask);
             var output = await outputTask;
             var error = await errorTask;
             var success = process.ExitCode == 0;
@@ -200,13 +201,11 @@ public class FFmpegWrapper : IFFmpegWrapper
             foreach (var arg in arguments)
                 psi.ArgumentList.Add(arg);
 
-            using var process = Process.Start(psi);
-
-            if (process is null)
-                return new FFmpegResult { Success = false, Error = "Failed to start FFmpeg process" };
+            using var process = new Process { StartInfo = psi };
+            process.Start();
 
             using var timeoutCts = new CancellationTokenSource(processTimeout);
-            var errorTask = process.StandardError.ReadToEndAsync(timeoutCts.Token);
+            var errorTask = process.StandardError.ReadToEndAsync();
             var output = new StringBuilder();
 
             try

@@ -113,8 +113,19 @@ public class WebhookManager
 
             if (!response.IsSuccessStatusCode)
             {
+                // Read response body for detailed logging
+                string responseBody = string.Empty;
+                try
+                {
+                    responseBody = await response.Content.ReadAsStringAsync();
+                }
+                catch (Exception readEx)
+                {
+                    _logger.LogError($"Failed to read webhook response body for {subscription.Url}", readEx, "Webhooks");
+                }
+
                 _logger.LogWarning(
-                    $"Webhook delivery failed: {subscription.Url} (HTTP {response.StatusCode})",
+                    $"Webhook delivery failed: {subscription.Url} (HTTP {response.StatusCode}) Body: {responseBody}",
                     "Webhooks");
 
                 // Increment failure count

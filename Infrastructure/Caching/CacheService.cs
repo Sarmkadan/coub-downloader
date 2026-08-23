@@ -7,6 +7,7 @@
 namespace CoubDownloader.Infrastructure.Caching;
 
 /// <summary>In-memory caching service with TTL support</summary>
+/// <summary>Interface for caching operations with TTL support</summary>
 public interface ICacheService
 {
     void Set<T>(string key, T value, TimeSpan? ttl = null);
@@ -18,6 +19,7 @@ public interface ICacheService
 }
 
 /// <summary>In-memory cache implementation with time-based expiration</summary>
+/// <summary>Implementation of in-memory cache with time-based entry expiration and statistics tracking</summary>
 public class MemoryCacheService : ICacheService
 {
     private class CacheEntry
@@ -154,6 +156,7 @@ public class MemoryCacheService : ICacheService
 }
 
 /// <summary>Cache statistics for monitoring</summary>
+/// <summary>Statistics and metrics collected from cache operations</summary>
 public class CacheStatistics
 {
     public int TotalEntries { get; set; }
@@ -165,6 +168,7 @@ public class CacheStatistics
 }
 
 /// <summary>Distributed cache adapter for multi-instance scenarios</summary>
+/// <summary>Adapter for distributed caching scenarios, synchronizing with multiple cache instances</summary>
 public class DistributedCacheAdapter : ICacheService
 {
     private readonly ICacheService _localCache;

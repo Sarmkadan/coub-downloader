@@ -12,7 +12,13 @@ using CoubDownloader.Infrastructure.Middleware;
 namespace CoubDownloader.Infrastructure.Integration;
 
 /// <summary>HTTP client for Coub API integration</summary>
-public interface ICoubApiClient
+/// <summary>HTTP client for Coub API integration</summary>
+/// <summary>Gets video info asynchronously</summary>
+Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default);
+/// <summary>Verifies video exists asynchronously</summary>
+Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default);
+/// <summary>Searches videos asynchronously</summary>
+Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
 {
     Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default);
     Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default);

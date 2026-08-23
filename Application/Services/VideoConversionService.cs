@@ -29,7 +29,10 @@ public partial class VideoConversionService : IVideoConversionService
     private readonly string _ffmpegPath;
     private readonly string _ffprobePath;
 
-    public VideoConversionService()
+    /// <summary>
+/// Initializes a new instance of the <see cref="VideoConversionService"/> class.
+/// </summary>
+public VideoConversionService()
     {
         _ffmpegPath = ResolveExecutable(ApplicationConstants.FFmpegExecutable);
         _ffprobePath = ResolveExecutable(ApplicationConstants.FFprobeExecutable);

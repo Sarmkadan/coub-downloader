@@ -11,6 +11,9 @@ namespace CoubDownloader.Application.Services;
 /// <summary>
 /// Service for video format conversion using FFmpeg.
 /// </summary>
+/// <summary>
+/// Defines a service for video format conversion and processing using FFmpeg.
+/// </summary>
 public interface IVideoConversionService
 {
     /// <summary>

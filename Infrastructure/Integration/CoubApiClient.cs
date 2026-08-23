@@ -12,16 +12,25 @@ using CoubDownloader.Infrastructure.Middleware;
 namespace CoubDownloader.Infrastructure.Integration;
 
 /// <summary>HTTP client for Coub API integration</summary>
-/// <summary>HTTP client for Coub API integration</summary>
-/// <summary>Gets video info asynchronously</summary>
-Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default);
-/// <summary>Verifies video exists asynchronously</summary>
-Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default);
-/// <summary>Searches videos asynchronously</summary>
-Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
+public interface ICoubApiClient
 {
+    /// <summary>Gets video info asynchronously</summary>
+    /// <param name="url">The URL of the video</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The video information, or null if not found</returns>
     Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default);
+
+    /// <summary>Verifies video exists asynchronously</summary>
+    /// <param name="url">The URL of the video</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if the video exists, otherwise false</returns>
     Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default);
+
+    /// <summary>Searches videos asynchronously</summary>
+    /// <param name="query">The search query</param>
+    /// <param name="limit">Maximum number of results to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>A list of matching video information</returns>
     Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default);
 }
 
@@ -36,6 +45,10 @@ public class CoubApiClient : ICoubApiClient
     private const string BaseUrl = "https://coub.com/api/v2";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
 
+    /// <summary>Initializes a new instance of the <see cref="CoubApiClient"/> class</summary>
+    /// <param name="httpClient">The HTTP client to use for requests</param>
+    /// <param name="logger">The logging service</param>
+    /// <param name="cache">The cache service</param>
     public CoubApiClient(HttpClient httpClient, ILoggingService logger, ICacheService cache)
     {
         _httpClient = httpClient;
@@ -44,6 +57,10 @@ public class CoubApiClient : ICoubApiClient
         _rateLimiter = new RateLimitingService(maxRequestsPerWindow: 30);
     }
 
+    /// <summary>Gets video info asynchronously</summary>
+    /// <param name="url">The URL of the video</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The video information, or null if not found</returns>
     public async Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -97,6 +114,10 @@ public class CoubApiClient : ICoubApiClient
         }
     }
 
+    /// <summary>Verifies video exists asynchronously</summary>
+    /// <param name="url">The URL of the video</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>True if the video exists, otherwise false</returns>
     public async Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(url))
@@ -114,6 +135,11 @@ public class CoubApiClient : ICoubApiClient
         return exists;
     }
 
+    /// <summary>Searches videos asynchronously</summary>
+    /// <param name="query">The search query</param>
+    /// <param name="limit">Maximum number of results to return</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>A list of matching video information</returns>
     public async Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -171,11 +197,18 @@ public class CoubApiClient : ICoubApiClient
 /// <summary>Coub video information from API</summary>
 public class CoubVideoInfo
 {
+    /// <summary>Gets or sets the video ID</summary>
     public string Id { get; set; } = "";
+    /// <summary>Gets or sets the video title</summary>
     public string Title { get; set; } = "";
+    /// <summary>Gets or sets the video description</summary>
     public string? Description { get; set; }
+    /// <summary>Gets or sets the view count</summary>
     public int ViewCount { get; set; }
+    /// <summary>Gets or sets the duration in seconds</summary>
     public double Duration { get; set; }
+    /// <summary>Gets or sets the channel URL</summary>
     public string? ChannelUrl { get; set; }
+    /// <summary>Gets or sets a value indicating whether the video has audio</summary>
     public bool HasAudio { get; set; }
 }

@@ -8,6 +8,8 @@ using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure.Repositories;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace CoubDownloader.Application.Services;
 
@@ -19,11 +21,13 @@ public class BatchProcessingService : IBatchProcessingService
     private readonly IBatchJobRepository _batchRepository;
     private readonly IDownloadTaskRepository _taskRepository;
     private readonly ICoubDownloadService _downloadService;
+    private readonly ILogger<BatchProcessingService> _logger;
 
     public BatchProcessingService(
         IBatchJobRepository batchRepository,
         IDownloadTaskRepository taskRepository,
-        ICoubDownloadService downloadService)
+        ICoubDownloadService downloadService,
+        ILogger<BatchProcessingService>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(batchRepository);
         ArgumentNullException.ThrowIfNull(taskRepository);
@@ -32,6 +36,7 @@ public class BatchProcessingService : IBatchProcessingService
         _batchRepository = batchRepository;
         _taskRepository = taskRepository;
         _downloadService = downloadService;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<BatchProcessingService>.Instance;
     }
 
     public async Task<BatchJob> CreateBatchJobAsync(
@@ -132,6 +137,8 @@ public class BatchProcessingService : IBatchProcessingService
             batch.StartedAt = DateTime.UtcNow;
             await _batchRepository.UpdateAsync(batch);
 
+            _logger.LogInformation("Starting batch processing for batch {BatchId} with {TaskCount} tasks", batch.Id, batch.TotalTasks);
+
             // Report initial progress
             progress?.Report(new BatchProgress
             {
@@ -159,6 +166,9 @@ public class BatchProcessingService : IBatchProcessingService
             batch.State = batch.FailedTasks == 0 ? ProcessingState.Completed : ProcessingState.Failed;
             batch.CompletedAt = DateTime.UtcNow;
             await _batchRepository.UpdateAsync(batch);
+
+            _logger.LogInformation("Batch processing completed for batch {BatchId}: {Succeeded} succeeded, {Failed} failed",
+                batch.Id, batch.CompletedTasks, batch.FailedTasks);
 
             // Report final progress
             progress?.Report(new BatchProgress
@@ -339,8 +349,12 @@ public class BatchProcessingService : IBatchProcessingService
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            var stopwatch = Stopwatch.StartNew();
 
             await _taskRepository.UpdateStateAsync(task.Id, ProcessingState.Downloading);
+
+            _logger.LogInformation("Starting processing of task {TaskIndex}/{TotalTasks} for video {VideoId} in batch {BatchId}",
+                taskIndex + 1, totalTasks, task.Id, batch.Id);
 
             // Report task started progress
             progress?.Report(new BatchProgress
@@ -363,6 +377,9 @@ public class BatchProcessingService : IBatchProcessingService
             // Update batch progress
             batch.CompletedTasks++;
             await _batchRepository.UpdateProgressAsync(batch.Id, batch.CompletedTasks, batch.FailedTasks);
+
+            _logger.LogInformation("Successfully processed task {TaskIndex}/{TotalTasks} for video {VideoId} in batch {BatchId} in {ElapsedMs}ms",
+                taskIndex + 1, totalTasks, task.Id, batch.Id, (long)stopwatch.Elapsed.TotalMilliseconds);
 
             // Report task completed progress
             progress?.Report(new BatchProgress
@@ -391,6 +408,9 @@ public class BatchProcessingService : IBatchProcessingService
             await _taskRepository.UpdateAsync(task);
             await _batchRepository.UpdateAsync(batch);
 
+            _logger.LogError(ex, "Failed to process task {TaskIndex}/{TotalTasks} for video {VideoId} in batch {BatchId}",
+                taskIndex + 1, totalTasks, task.Id, batch.Id);
+
             // Report task failed progress
             progress?.Report(new BatchProgress
             {
@@ -417,6 +437,9 @@ public class BatchProcessingService : IBatchProcessingService
 
             await _taskRepository.UpdateAsync(task);
             await _batchRepository.UpdateAsync(batch);
+
+            _logger.LogError(ex, "Failed to process task {TaskIndex}/{TotalTasks} for video {VideoId} in batch {BatchId}",
+                taskIndex + 1, totalTasks, task.Id, batch.Id);
 
             // Report task failed progress
             progress?.Report(new BatchProgress

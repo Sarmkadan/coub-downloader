@@ -23,6 +23,12 @@ public static class ApplicationConstants
     /// <summary>Coub API base URL</summary>
     public const string CoubApiBaseUrl = "https://coub.com/api/v2";
 
+    /// <summary>Coub website base URL used to build public-facing links</summary>
+    public const string CoubWebsiteBaseUrl = "https://coub.com";
+
+    /// <summary>Relative path segment used to build a public Coub view URL</summary>
+    public const string CoubViewPath = "/view/";
+
     /// <summary>Default output directory name</summary>
     public const string DefaultOutputDirectory = "CoubDownloads";
 
@@ -49,6 +55,18 @@ public static class ApplicationConstants
 
     /// <summary>Delay between retry attempts in milliseconds</summary>
     public const int RetryDelayMs = 5000;
+
+    /// <summary>Initial delay for short retry operations in milliseconds</summary>
+    public const int InitialRetryDelayMs = 100;
+
+    /// <summary>Initial delay for transient download retries in milliseconds</summary>
+    public const int InitialDownloadRetryDelayMs = 1000;
+
+    /// <summary>Default timeout for an individual retried operation in milliseconds</summary>
+    public const int RetryOperationTimeoutMs = 5000;
+
+    /// <summary>Timeout for Coub API client requests in seconds</summary>
+    public const int CoubApiTimeoutSeconds = 15;
 
     /// <summary>FFmpeg executable name</summary>
     public const string FFmpegExecutable = "ffmpeg";
@@ -91,6 +109,9 @@ public static class VideoProcessingConstants
 
     /// <summary>MP4 file extension</summary>
     public const string MP4Extension = ".mp4";
+
+    /// <summary>MP3 file extension</summary>
+    public const string MP3Extension = ".mp3";
 
     /// <summary>WebM file extension</summary>
     public const string WebMExtension = ".webm";
@@ -169,4 +190,7 @@ public static class FileSystemConstants
 
     /// <summary>Maximum file name length</summary>
     public const int MaxFileNameLength = 255;
+
+    /// <summary>Default buffer size for file input and output operations in bytes (64 KiB)</summary>
+    public const int DefaultIoBufferSizeBytes = 65_536;
 }

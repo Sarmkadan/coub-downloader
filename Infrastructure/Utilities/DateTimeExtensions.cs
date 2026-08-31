@@ -10,18 +10,25 @@ namespace CoubDownloader.Infrastructure.Utilities;
 public static class DateTimeExtensions
 {
     /// <summary>Get human-readable time difference</summary>
-    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="dateTime"/> is in the future.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="dateTime"/> is more than five seconds in the future.</exception>
     public static string GetRelativeTime(this DateTime dateTime)
     {
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(dateTime, DateTime.UtcNow, nameof(dateTime));
+        var utcDateTime = dateTime.Kind == DateTimeKind.Local
+            ? dateTime.ToUniversalTime()
+            : DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+        var utcNow = DateTime.UtcNow;
+        var timeSpan = utcNow - utcDateTime;
 
-        var timeSpan = DateTime.UtcNow - dateTime;
+        if (timeSpan < TimeSpan.FromSeconds(-5))
+        {
+            throw new ArgumentOutOfRangeException(nameof(dateTime), "DateTime cannot be more than five seconds in the future.");
+        }
 
         return timeSpan.TotalSeconds < 60 ? "just now"
             : timeSpan.TotalMinutes <60 ? $"{(int)timeSpan.TotalMinutes}m ago"
             : timeSpan.TotalHours <24 ? $"{(int)timeSpan.TotalHours}h ago"
             : timeSpan.TotalDays <7 ? $"{(int)timeSpan.TotalDays}d ago"
-            : $"{dateTime:MMM d, yyyy}";
+            : $"{utcDateTime:MMM d, yyyy}";
     }
 
     /// <summary>Format duration as HH:MM:SS</summary>
@@ -32,7 +39,7 @@ public static class DateTimeExtensions
         {
             throw new ArgumentOutOfRangeException(nameof(duration), "Duration cannot be negative.");
         }
-        return duration.ToString(@"hh\:mm\:ss");
+        return $"{(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
     }
 
     /// <summary>Check if date is within range</summary>

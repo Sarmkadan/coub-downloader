@@ -28,15 +28,19 @@ public class CoubDownloadService : ICoubDownloadService
         _httpClient = httpClient;
         _videoRepository = videoRepository;
         _coubApiClient = coubApiClient;
-        _httpClient.Timeout = TimeSpan.FromMilliseconds(ApplicationConstants.HttpRequestTimeoutMs);
-        _httpClient.DefaultRequestHeaders.Add("User-Agent", ApplicationConstants.DefaultUserAgent);
+
+        if (_httpClient.Timeout == TimeSpan.FromSeconds(100))
+            _httpClient.Timeout = TimeSpan.FromMilliseconds(ApplicationConstants.HttpRequestTimeoutMs);
+
+        if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", ApplicationConstants.DefaultUserAgent);
     }
 
     public async Task<CoubVideo> DownloadVideoAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        try
+        return await ExecuteWithErrorMappingAsync(async () =>
         {
             // Fetch metadata from Coub API
             var video = await FetchMetadataAsync(coubUrl, cancellationToken);
@@ -47,31 +51,14 @@ public class CoubDownloadService : ICoubDownloadService
             // Save video metadata to repository
             var savedVideo = await _videoRepository.CreateAsync(video);
             return savedVideo;
-        }
-        catch (CoubDownloaderException)
-        {
-            // Re-throw our custom exceptions
-            throw;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
-        }
-        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-        {
-            throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
-        }
-        catch (Exception ex)
-        {
-            throw new VideoDownloadException("Failed to download video", coubUrl, ex);
-        }
+        }, coubUrl, ex => new VideoDownloadException("Failed to download video", coubUrl, ex));
     }
 
     public async Task<CoubVideo> FetchMetadataAsync(string coubUrl, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(coubUrl);
 
-        try
+        return await ExecuteWithErrorMappingAsync(async () =>
         {
             var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
 
@@ -93,23 +80,7 @@ public class CoubDownloadService : ICoubDownloadService
             };
 
             return video;
-        }
-        catch (CoubDownloaderException)
-        {
-            throw;
-        }
-        catch (HttpRequestException ex)
-        {
-            throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
-        }
-        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-        {
-            throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
-        }
-        catch (Exception ex)
-        {
-            throw new MetadataExtractionException("Failed to extract video metadata", coubUrl, ex);
-        }
+        }, coubUrl, ex => new MetadataExtractionException("Failed to extract video metadata", coubUrl, ex));
     }
 
     public async Task<string> ExtractVideoSourceAsync(string coubUrl, CancellationToken cancellationToken = default)
@@ -125,10 +96,6 @@ public class CoubDownloadService : ICoubDownloadService
 
             return $"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm";
         }
-        catch (CoubDownloaderException)
-        {
-            throw;
-        }
         catch (HttpRequestException ex)
         {
             throw new NetworkException("HTTP request to Coub API failed", coubUrl, ex);
@@ -137,7 +104,7 @@ public class CoubDownloadService : ICoubDownloadService
         {
             throw new NetworkException("Request to Coub API timed out", coubUrl, ex) { IsTimeout = true };
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not CoubDownloaderException)
         {
             throw new MetadataExtractionException("Failed to extract video source URL", coubUrl, ex);
         }
@@ -216,13 +183,32 @@ public class CoubDownloadService : ICoubDownloadService
                 return outputPath;
             }, "Download video file", sourceUrl);
         }
-        catch (CoubDownloaderException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not CoubDownloaderException)
         {
             throw new VideoDownloadException("Failed to download video file", sourceUrl, ex);
+        }
+    }
+
+    private static async Task<T> ExecuteWithErrorMappingAsync<T>(
+        Func<Task<T>> operation,
+        string url,
+        Func<Exception, CoubDownloaderException> createFallbackException)
+    {
+        try
+        {
+            return await operation();
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new NetworkException("HTTP request to Coub API failed", url, ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            throw new NetworkException("Request to Coub API timed out", url, ex) { IsTimeout = true };
+        }
+        catch (Exception ex) when (ex is not CoubDownloaderException)
+        {
+            throw createFallbackException(ex);
         }
     }
 

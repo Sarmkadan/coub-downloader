@@ -11,6 +11,7 @@ using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Repositories;
+using CoubDownloader.Infrastructure.Utilities;
 
 namespace CoubDownloader.Application.Services;
 
@@ -60,7 +61,10 @@ public class CoubDownloadService : ICoubDownloadService
 
         return await ExecuteWithErrorMappingAsync(async () =>
         {
-            var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
+            var videoInfo = await RetryHelper.ExecuteWithRetryAsync(
+                () => _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken),
+                maxRetries: 3,
+                shouldRetry: (ex, _) => IsRetryableNetworkException(ex));
 
             if (videoInfo == null)
                 throw new MetadataExtractionException("Failed to fetch video metadata", coubUrl);
@@ -89,7 +93,10 @@ public class CoubDownloadService : ICoubDownloadService
 
         try
         {
-            var videoInfo = await _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken);
+            var videoInfo = await RetryHelper.ExecuteWithRetryAsync(
+                () => _coubApiClient.GetVideoInfoAsync(coubUrl, cancellationToken),
+                maxRetries: 3,
+                shouldRetry: (ex, _) => IsRetryableNetworkException(ex));
 
             if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
                 throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);
@@ -267,5 +274,11 @@ public class CoubDownloadService : ICoubDownloadService
             || statusCode.Value == HttpStatusCode.GatewayTimeout
             || statusCode.Value == HttpStatusCode.InternalServerError
             || statusCode.Value == HttpStatusCode.BadGateway;
+    }
+
+    private static bool IsRetryableNetworkException(Exception exception)
+    {
+        return exception is HttpRequestException
+            || exception is TaskCanceledException { InnerException: TimeoutException };
     }
 }

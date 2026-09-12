@@ -45,6 +45,8 @@ public class BatchProcessingService : IBatchProcessingService
         ConversionSettings? sharedSettings = null,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(outputDirectory);
         ArgumentException.ThrowIfNullOrWhiteSpace(name);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
 
@@ -80,6 +82,7 @@ public class BatchProcessingService : IBatchProcessingService
         IEnumerable<DownloadTask> tasks,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(batchJobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
         ArgumentNullException.ThrowIfNull(tasks);
 
@@ -122,6 +125,7 @@ public class BatchProcessingService : IBatchProcessingService
 
     public async Task<BatchJob> StartBatchAsync(string batchJobId, IProgress<BatchProgress>? progress = null, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(batchJobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
 
         try
@@ -200,6 +204,7 @@ public class BatchProcessingService : IBatchProcessingService
 
     public async Task CancelBatchAsync(string batchJobId, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(batchJobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
 
         try
@@ -237,6 +242,7 @@ public class BatchProcessingService : IBatchProcessingService
 
     public async Task<BatchJob> GetBatchStatusAsync(string batchJobId, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(batchJobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
 
         try
@@ -302,6 +308,7 @@ public class BatchProcessingService : IBatchProcessingService
 
     public async Task<bool> DeleteBatchAsync(string batchJobId, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(batchJobId);
         ArgumentException.ThrowIfNullOrWhiteSpace(batchJobId);
 
         try

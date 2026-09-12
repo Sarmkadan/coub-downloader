@@ -426,6 +426,7 @@ public record MediaInfo
 /// </summary>
 internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
 {
+    /// <inheritdoc />
     public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Number)
@@ -440,6 +441,7 @@ internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
         return null;
     }
 
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options)
     {
         if (value.HasValue)
@@ -455,6 +457,7 @@ internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
 /// </summary>
 internal sealed class FfprobeLongConverter : JsonConverter<long?>
 {
+    /// <inheritdoc />
     public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Number)
@@ -469,6 +472,7 @@ internal sealed class FfprobeLongConverter : JsonConverter<long?>
         return null;
     }
 
+    /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
     {
         if (value.HasValue)

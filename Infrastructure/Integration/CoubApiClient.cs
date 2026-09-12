@@ -51,6 +51,10 @@ public class CoubApiClient : ICoubApiClient
     /// <param name="cache">The cache service</param>
     public CoubApiClient(HttpClient httpClient, ILoggingService logger, ICacheService cache)
     {
+        ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(cache);
+
         _httpClient = httpClient;
         _logger = logger;
         _cache = cache;
@@ -63,6 +67,8 @@ public class CoubApiClient : ICoubApiClient
     /// <returns>The video information, or null if not found</returns>
     public async Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(url);
+
         if (string.IsNullOrWhiteSpace(url))
             return null;
 
@@ -120,6 +126,8 @@ public class CoubApiClient : ICoubApiClient
     /// <returns>True if the video exists, otherwise false</returns>
     public async Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(url);
+
         if (string.IsNullOrWhiteSpace(url))
             return false;
 
@@ -142,6 +150,8 @@ public class CoubApiClient : ICoubApiClient
     /// <returns>A list of matching video information</returns>
     public async Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(query);
+
         if (string.IsNullOrWhiteSpace(query))
             return [];
 

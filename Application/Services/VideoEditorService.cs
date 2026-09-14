@@ -23,9 +23,20 @@ namespace CoubDownloader.Application.Services;
 /// <see cref="ApplySessionAsync"/>, piping each step's output into the next.
 /// Temporary intermediate files are always cleaned up on completion or cancellation.
 /// </remarks>
-public sealed class VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService logger) : IVideoEditorService
+public sealed class VideoEditorService : IVideoEditorService
 {
     private const string LogCategory = nameof(VideoEditorService);
+
+    private readonly FFmpegWrapper ffmpeg;
+    private readonly ILoggingService logger;
+
+    public VideoEditorService(FFmpegWrapper ffmpeg, ILoggingService logger)
+    {
+        ArgumentNullException.ThrowIfNull(ffmpeg);
+        ArgumentNullException.ThrowIfNull(logger);
+        this.ffmpeg = ffmpeg;
+        this.logger = logger;
+    }
 
     /// <inheritdoc/>
     public Task<VideoEditSession> CreateSessionAsync(

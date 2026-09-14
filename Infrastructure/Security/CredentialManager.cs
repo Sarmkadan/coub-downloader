@@ -26,6 +26,9 @@ public class InMemoryCredentialManager : ICredentialManager
 
     public void StoreApiKey(string service, string apiKey)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(apiKey);
+
         lock (_lockObj)
         {
             _credentials[service.ToLowerInvariant()] = apiKey;
@@ -34,6 +37,8 @@ public class InMemoryCredentialManager : ICredentialManager
 
     public string? GetApiKey(string service)
     {
+        ArgumentNullException.ThrowIfNull(service);
+
         lock (_lockObj)
         {
             return _credentials.TryGetValue(service.ToLowerInvariant(), out var key) ? key : null;
@@ -42,6 +47,8 @@ public class InMemoryCredentialManager : ICredentialManager
 
     public void DeleteApiKey(string service)
     {
+        ArgumentNullException.ThrowIfNull(service);
+
         lock (_lockObj)
         {
             _credentials.Remove(service.ToLowerInvariant());
@@ -50,6 +57,9 @@ public class InMemoryCredentialManager : ICredentialManager
 
     public bool ValidateApiKey(string service, string apiKey)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(apiKey);
+
         var stored = GetApiKey(service);
         return !string.IsNullOrEmpty(stored) && stored == apiKey;
     }
@@ -65,6 +75,8 @@ public class EncryptedCredentialManager : ICredentialManager
 
     public EncryptedCredentialManager(string storePath = "./credentials.enc", string? encryptionKey = null)
     {
+        ArgumentNullException.ThrowIfNull(storePath);
+
         _storePath = storePath;
 
         // Use provided key or derive from machine key
@@ -75,6 +87,9 @@ public class EncryptedCredentialManager : ICredentialManager
 
     public void StoreApiKey(string service, string apiKey)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(apiKey);
+
         lock (_lockObj)
         {
             var encrypted = EncryptString(apiKey);
@@ -85,6 +100,8 @@ public class EncryptedCredentialManager : ICredentialManager
 
     public string? GetApiKey(string service)
     {
+        ArgumentNullException.ThrowIfNull(service);
+
         lock (_lockObj)
         {
             if (_cache.TryGetValue(service.ToLowerInvariant(), out var encrypted))
@@ -105,6 +122,8 @@ public class EncryptedCredentialManager : ICredentialManager
 
     public void DeleteApiKey(string service)
     {
+        ArgumentNullException.ThrowIfNull(service);
+
         lock (_lockObj)
         {
             _cache.Remove(service.ToLowerInvariant());
@@ -114,6 +133,9 @@ public class EncryptedCredentialManager : ICredentialManager
 
     public bool ValidateApiKey(string service, string apiKey)
     {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(apiKey);
+
         var stored = GetApiKey(service);
         return !string.IsNullOrEmpty(stored) && stored == apiKey;
     }
@@ -204,6 +226,8 @@ public class RequestContextAccessor
 
     public void SetContext(RequestContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         _context.Value = context;
     }
 

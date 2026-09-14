@@ -18,6 +18,9 @@ public class WebhookManager
     private readonly List<WebhookSubscription> _subscriptions = [];
     private readonly object _lockObj = new();
 
+    /// <summary>Initializes a new instance of the <see cref="WebhookManager"/> class</summary>
+    /// <param name="httpClient">The HTTP client used to deliver webhook payloads</param>
+    /// <param name="logger">The logging service used to record webhook activity</param>
     public WebhookManager(HttpClient httpClient, ILoggingService logger)
     {
         _httpClient = httpClient;
@@ -156,25 +159,41 @@ public class WebhookManager
 /// <summary>Webhook subscription information</summary>
 public class WebhookSubscription
 {
+    /// <summary>Gets or sets the unique identifier of the subscription</summary>
     public string Id { get; set; } = "";
+    /// <summary>Gets or sets the destination URL for webhook delivery</summary>
     public string Url { get; set; } = "";
+    /// <summary>Gets or sets the event type this subscription listens for</summary>
     public WebhookEventType EventType { get; set; }
+    /// <summary>Gets or sets the optional secret used to sign webhook payloads</summary>
     public string? Secret { get; set; }
+    /// <summary>Gets or sets the timestamp when the subscription was created</summary>
     public DateTime CreatedAt { get; set; }
+    /// <summary>Gets or sets the timestamp of the last successful delivery</summary>
     public DateTime? LastSuccessAt { get; set; }
+    /// <summary>Gets or sets the number of consecutive delivery failures</summary>
     public int FailureCount { get; set; }
+    /// <summary>Gets or sets a value indicating whether the subscription is active</summary>
     public bool IsActive { get; set; }
 }
 
 /// <summary>Webhook event types</summary>
 public enum WebhookEventType
 {
+    /// <summary>Raised when a video download begins</summary>
     VideoDownloadStarted,
+    /// <summary>Raised when a video download completes</summary>
     VideoDownloadCompleted,
+    /// <summary>Raised when a video download fails</summary>
     VideoDownloadFailed,
+    /// <summary>Raised when a video conversion begins</summary>
     ConversionStarted,
+    /// <summary>Raised when a video conversion completes</summary>
     ConversionCompleted,
+    /// <summary>Raised when a video conversion fails</summary>
     ConversionFailed,
+    /// <summary>Raised when a batch job is created</summary>
     BatchJobCreated,
+    /// <summary>Raised when a batch job completes</summary>
     BatchJobCompleted
 }

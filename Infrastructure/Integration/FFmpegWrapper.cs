@@ -23,6 +23,48 @@ public class FFmpegWrapper : IFFmpegWrapper
         public const string FFprobeCategory = "FFprobe";
         public const string PipePrefix = "pipe:";
         public const string UnknownVersion = "Unknown";
+
+        // FFmpeg arguments
+        public const string VersionCheckArgument = "-version";
+        public const string InputArgument = "-i";
+        public const string VideoCodecArgument = "-c:v";
+        public const string AudioCodecArgument = "-c:a";
+        public const string VideoBitrateArgument = "-b:v";
+        public const string AudioBitrateArgument = "-b:a";
+        public const string FrameRateArgument = "-r";
+        public const string VideoFilterArgument = "-vf";
+        public const string ScaleFilterPrefix = "scale=";
+        public const string HardwareAccelerationArgument = "-hwaccel";
+        public const string HardwareAccelerationAuto = "auto";
+        public const string ProgressArgument = "-progress";
+        public const string OverwriteArgument = "-y";
+        public const string StreamLoopArgument = "-stream_loop";
+        public const string StreamLoopInfinite = "-1";
+        public const string DurationArgument = "-t";
+        public const string MapArgument = "-map";
+        public const string QualityArgument = "-q:a";
+        public const string FormatArgument = "-f";
+        public const string SafeArgument = "-safe";
+        public const string CopyCodecArgument = "copy";
+        public const string CodecArgument = "-c";
+
+        // Progress parsing
+        public const string OutTimeUsPrefix = "out_time_us=";
+        public const string OutTimeMsPrefix = "out_time_ms=";
+
+        // Timeouts
+        public static readonly TimeSpan VersionCheckTimeout = TimeSpan.FromSeconds(5);
+        public static readonly TimeSpan DefaultExecutionTimeout = TimeSpan.FromMinutes(10);
+        public static readonly TimeSpan TimeoutCheckDelay = TimeSpan.FromMilliseconds(1000);
+
+        // Conversion factors
+        public const long MicrosecondsPerSecond = 1_000_000L;
+        public const int MinProgressPercent = 0;
+        public const int MaxProgressPercent = 100;
+
+        // Formatting
+        public const string BitrateKiloSuffix = "k";
+        public const string FrameRateFormat = "F2";
     }
 
     private readonly string _ffmpegPath;
@@ -37,7 +79,7 @@ public class FFmpegWrapper : IFFmpegWrapper
         _ffmpegPath = ffmpegPath;
         _ffprobePath = ffprobePath;
         _logger = logger ?? new MemoryLoggingService();
-        _executionTimeout = executionTimeout ?? TimeSpan.FromMinutes(10);
+        _executionTimeout = executionTimeout ?? FFmpegConstants.DefaultExecutionTimeout;
     }
 
     /// <summary>Check if FFmpeg is available</summary>
@@ -45,7 +87,7 @@ public class FFmpegWrapper : IFFmpegWrapper
     {
         try
         {
-            var result = await ExecuteAsync(new[] { "-version" }, TimeSpan.FromSeconds(5));
+            var result = await ExecuteAsync(new[] { FFmpegConstants.VersionCheckArgument }, FFmpegConstants.VersionCheckTimeout);
             return result.Success;
         }
         catch
@@ -59,7 +101,7 @@ public class FFmpegWrapper : IFFmpegWrapper
     {
         try
         {
-            var result = await ExecuteAsync(new[] { "-version" }, TimeSpan.FromSeconds(5));
+            var result = await ExecuteAsync(new[] { FFmpegConstants.VersionCheckArgument }, FFmpegConstants.VersionCheckTimeout);
             if (!result.Success) return FFmpegConstants.UnknownVersion;
 
             var lines = result.Output.Split(Environment.NewLine);
@@ -112,7 +154,7 @@ public class FFmpegWrapper : IFFmpegWrapper
                 }
 
                 // Wait for pipes to close
-                await Task.WhenAny(Task.WhenAll(outputTask, errorTask), Task.Delay(1000));
+                await Task.WhenAny(Task.WhenAll(outputTask, errorTask), Task.Delay(FFmpegConstants.TimeoutCheckDelay));
                 throw new TimeoutException($"FFmpeg operation timed out after {processTimeout.TotalSeconds} seconds");
             }
 
@@ -156,21 +198,21 @@ public class FFmpegWrapper : IFFmpegWrapper
         ArgumentNullException.ThrowIfNull(parameters);
         var args = new List<string>
         {
-            "-i", inputFile,
-            "-c:v", parameters.VideoCodec,
-            "-c:a", parameters.AudioCodec,
-            "-b:v", $"{parameters.VideoBitrate}k",
-            "-b:a", $"{parameters.AudioBitrate}k",
-            "-r", parameters.FrameRate.ToString()
+            FFmpegConstants.InputArgument, inputFile,
+            FFmpegConstants.VideoCodecArgument, parameters.VideoCodec,
+            FFmpegConstants.AudioCodecArgument, parameters.AudioCodec,
+            FFmpegConstants.VideoBitrateArgument, $"{parameters.VideoBitrate}{FFmpegConstants.BitrateKiloSuffix}",
+            FFmpegConstants.AudioBitrateArgument, $"{parameters.AudioBitrate}{FFmpegConstants.BitrateKiloSuffix}",
+            FFmpegConstants.FrameRateArgument, parameters.FrameRate.ToString()
         };
 
         if (parameters.Width > 0 && parameters.Height > 0)
-            args.AddRange(new[] { "-vf", $"scale={parameters.Width}:{parameters.Height}" });
+            args.AddRange(new[] { FFmpegConstants.VideoFilterArgument, $"{FFmpegConstants.ScaleFilterPrefix}{parameters.Width}:{parameters.Height}" });
 
         if (parameters.UseHardwareAcceleration)
-            args.InsertRange(0, new[] { "-hwaccel", "auto" });
+            args.InsertRange(0, new[] { FFmpegConstants.HardwareAccelerationArgument, FFmpegConstants.HardwareAccelerationAuto });
 
-        args.AddRange(new[] { "-progress", "pipe:1", "-y", outputFile });
+        args.AddRange(new[] { FFmpegConstants.ProgressArgument, $"{FFmpegConstants.PipePrefix}1", FFmpegConstants.OverwriteArgument, outputFile });
 
         if (progress is null)
             return await ExecuteAsync(args.ToArray());
@@ -223,17 +265,17 @@ public class FFmpegWrapper : IFFmpegWrapper
 
                     // FFmpeg reports position as "out_time_us=<microseconds>"
                     // (older builds emit the same microsecond value as "out_time_ms=").
-                    var valueStart = line.StartsWith("out_time_us=", StringComparison.Ordinal)
-                        ? "out_time_us=".Length
-                        : line.StartsWith("out_time_ms=", StringComparison.Ordinal)
-                            ? "out_time_ms=".Length
+                    var valueStart = line.StartsWith(FFmpegConstants.OutTimeUsPrefix, StringComparison.Ordinal)
+                        ? FFmpegConstants.OutTimeUsPrefix.Length
+                        : line.StartsWith(FFmpegConstants.OutTimeMsPrefix, StringComparison.Ordinal)
+                            ? FFmpegConstants.OutTimeMsPrefix.Length
                             : -1;
 
                     if (valueStart > 0
                         && totalDurationSeconds > 0
                         && long.TryParse(line.AsSpan(valueStart), NumberStyles.Integer, CultureInfo.InvariantCulture, out var microseconds))
                     {
-                        var percent = (int)Math.Clamp(microseconds / 1_000_000.0 / totalDurationSeconds * 100.0, 0, 100);
+                        var percent = (int)Math.Clamp(microseconds / FFmpegConstants.MicrosecondsPerSecond / totalDurationSeconds * 100.0, FFmpegConstants.MinProgressPercent, FFmpegConstants.MaxProgressPercent);
                         progress.Report(percent);
                     }
                 }
@@ -258,7 +300,7 @@ public class FFmpegWrapper : IFFmpegWrapper
             var success = process.ExitCode == 0;
 
             if (success)
-                progress.Report(100);
+                progress.Report(FFmpegConstants.MaxProgressPercent);
 
             _logger.LogDebug(
                 $"FFmpeg command: {string.Join(" ", arguments)} - Exit code: {process.ExitCode}",
@@ -290,10 +332,10 @@ public class FFmpegWrapper : IFFmpegWrapper
         ArgumentNullException.ThrowIfNull(outputFile);
         var args = new[]
         {
-            "-i", inputFile,
-            "-q:a", "0",
-            "-map", "a",
-            "-y", outputFile
+            FFmpegConstants.InputArgument, inputFile,
+            FFmpegConstants.QualityArgument, "0",
+            FFmpegConstants.MapArgument, "a",
+            FFmpegConstants.OverwriteArgument, outputFile
         };
 
         return await ExecuteAsync(args);
@@ -317,11 +359,11 @@ public class FFmpegWrapper : IFFmpegWrapper
 
             var args = new[]
             {
-                "-f", "concat",
-                "-safe", "0",
-                "-i", concatFile,
-                "-c", "copy",
-                "-y", outputFile
+                FFmpegConstants.FormatArgument, "concat",
+                FFmpegConstants.SafeArgument, "0",
+                FFmpegConstants.InputArgument, concatFile,
+                FFmpegConstants.CodecArgument, FFmpegConstants.CopyCodecArgument,
+                FFmpegConstants.OverwriteArgument, outputFile
             };
 
             return await ExecuteAsync(args);
@@ -342,11 +384,11 @@ public class FFmpegWrapper : IFFmpegWrapper
         ArgumentNullException.ThrowIfNull(outputFile);
         var args = new[]
         {
-            "-stream_loop", "-1",
-            "-i", audioFile,
-            "-t", targetDuration.ToString("F2", CultureInfo.InvariantCulture),
-            "-c:a", "aac",
-            "-y", outputFile
+            FFmpegConstants.StreamLoopArgument, FFmpegConstants.StreamLoopInfinite,
+            FFmpegConstants.InputArgument, audioFile,
+            FFmpegConstants.DurationArgument, targetDuration.ToString(FFmpegConstants.FrameRateFormat, CultureInfo.InvariantCulture),
+            FFmpegConstants.AudioCodecArgument, "aac",
+            FFmpegConstants.OverwriteArgument, outputFile
         };
 
         return await ExecuteAsync(args);

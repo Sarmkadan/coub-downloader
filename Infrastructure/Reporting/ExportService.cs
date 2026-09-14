@@ -18,6 +18,8 @@ public class ExportService
     private readonly CsvFormatter _csvFormatter;
     private readonly ILoggingService _logger;
 
+    /// <summary>Initializes a new instance of the <see cref="ExportService"/> class</summary>
+    /// <param name="logger">The logging service used to report export operations</param>
     public ExportService(ILoggingService logger)
     {
         _logger = logger;
@@ -234,9 +236,13 @@ public class ExportService
 /// <summary>Export format types</summary>
 public enum ExportFormat
 {
+    /// <summary>JavaScript Object Notation format</summary>
     Json,
+    /// <summary>Comma-Separated Values format</summary>
     Csv,
+    /// <summary>eXtensible Markup Language format</summary>
     Xml,
+    /// <summary>HyperText Markup Language format</summary>
     Html
 }
 
@@ -245,12 +251,20 @@ public class ReportBuilder
 {
     private readonly List<string> _sections = [];
 
+    /// <summary>Adds a section to the report</summary>
+    /// <param name="title">The section title</param>
+    /// <param name="content">The section content</param>
+    /// <returns>The report builder instance for method chaining</returns>
     public ReportBuilder AddSection(string title, string content)
     {
         _sections.Add($"## {title}\n{content}");
         return this;
     }
 
+    /// <summary>Adds a table section to the report</summary>
+    /// <param name="title">The table title</param>
+    /// <param name="data">The dictionary containing key-value pairs for the table</param>
+    /// <returns>The report builder instance for method chaining</returns>
     public ReportBuilder AddTable(string title, Dictionary<string, string> data)
     {
         var table = $"## {title}\n\n";
@@ -264,6 +278,8 @@ public class ReportBuilder
         return this;
     }
 
+    /// <summary>Builds the final report string</summary>
+    /// <returns>The complete report as a string</returns>
     public string Build()
     {
         return string.Join("\n\n", _sections);

@@ -24,6 +24,7 @@ public class AudioProcessingService : IAudioProcessingService
 
     public AudioProcessingService(IFFmpegWrapper ffmpegWrapper)
     {
+        ArgumentNullException.ThrowIfNull(ffmpegWrapper);
         _ffmpegWrapper = ffmpegWrapper;
     }
 

@@ -48,7 +48,7 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
     /// <inheritdoc/>
     public async Task<CoubPlaylist> FetchPlaylistAsync(string playlistUrl, int? maxPages = null, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(playlistUrl);
+        ArgumentNullException.ThrowIfNull(playlistUrl);
 
         try
         {
@@ -163,8 +163,8 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         int? maxPages = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(playlistUrl);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        ArgumentNullException.ThrowIfNull(playlistUrl);
+        ArgumentNullException.ThrowIfNull(outputDirectory);
 
         try
         {
@@ -195,7 +195,7 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(playlist);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        ArgumentNullException.ThrowIfNull(outputDirectory);
 
         try
         {

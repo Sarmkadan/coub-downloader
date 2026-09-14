@@ -4001,3 +4001,91 @@ public class VideoEditSessionDemo
     }
 }
 ```
+
+
+## CoubApiClient
+
+The `CoubApiClient` class implements the `ICoubApiClient` interface to interact with the Coub API for retrieving video information, verifying video existence, and searching for videos. It includes caching and rate limiting to optimize API usage.
+
+### Public Methods
+
+- `Task<CoubVideoInfo?> GetVideoInfoAsync(string url, CancellationToken cancellationToken = default)`
+  Retrieves detailed information about a specific Coub video by its URL.
+
+- `Task<bool> VerifyVideoExistsAsync(string url, CancellationToken cancellationToken = default)`
+  Checks whether a Coub video exists at the given URL.
+
+- `Task<List<CoubVideoInfo>> SearchVideosAsync(string query, int limit = 10, CancellationToken cancellationToken = default)`
+  Searches for Coub videos matching the query, returning up to `limit` results.
+
+### Usage Example
+
+```csharp
+using System;
+using System.Threading.Tasks;
+using CoubDownloader.Infrastructure.Integration;
+using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Middleware;
+
+public class CoubApiClientDemo
+{
+    public async Task RunCoubApiClientExample()
+    {
+        // Setup dependencies (in practice, use dependency injection)
+        var httpClient = new HttpClient();
+        var logger = new ConsoleLogger(); // Implement ILoggingService
+        var cache = new MemoryCacheService(); // Implement ICacheService
+
+        var apiClient = new CoubApiClient(httpClient, logger, cache);
+
+        // Example 1: Get video info
+        var videoInfo = await apiClient.GetVideoInfoAsync("https://coub.com/view/x7f3h2k9");
+        if (videoInfo != null)
+        {
+            Console.WriteLine($"Video Title: {videoInfo.Title}");
+            Console.WriteLine($"Duration: {videoInfo.Duration}s");
+        }
+
+        // Example 2: Verify video exists
+        bool exists = await apiClient.VerifyVideoExistsAsync("https://coub.com/view/x7f3h2k9");
+        Console.WriteLine($"Video exists: {exists}");
+
+        // Example 3: Search for videos
+        var searchResults = await apiClient.SearchVideosAsync("funny cats", 5);
+        Console.WriteLine($"Found {searchResults.Count} videos:");
+        foreach (var video in searchResults)
+        {
+            Console.WriteLine($"- {video.Title}");
+        }
+    }
+}
+
+// Example implementations of ILoggingService and ICacheService for demo purposes
+public class ConsoleLogger : ILoggingService
+{
+    public void LogInfo(string message, string source) => Console.WriteLine($"[INFO] {source}: {message}");
+    public void LogWarning(string message, string source) => Console.WriteLine($"[WARN] {source}: {message}");
+    public void LogError(string message, Exception? ex, string source) => Console.WriteLine($"[ERROR] {source}: {message}");
+    public void LogDebug(string message, string source) => Console.WriteLine($"[DEBUG] {source}: {message}");
+}
+
+public class MemoryCacheService : ICacheService
+{
+    private readonly Dictionary<string, object> _cache = new();
+    public bool TryGet<T>(string key, out T? value)
+    {
+        if (_cache.TryGetValue(key, out var obj) && obj is T t)
+        {
+            value = t;
+            return true;
+        }
+        value = default;
+        return false;
+    }
+    public void Set<T>(string key, T value, TimeSpan ttl)
+    {
+        _cache[key] = value;
+        // Note: In a real implementation, you would handle expiration.
+    }
+}
+```

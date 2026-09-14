@@ -45,8 +45,8 @@ public VideoConversionService()
         IProgress<int>? progress = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(inputPath);
+        ArgumentNullException.ThrowIfNull(outputPath);
         ArgumentNullException.ThrowIfNull(settings);
 
         try
@@ -84,7 +84,7 @@ public VideoConversionService()
 
     public async Task<VideoMetadata> GetVideoMetadataAsync(string filePath, CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        ArgumentNullException.ThrowIfNull(filePath);
 
         try
         {
@@ -185,9 +185,9 @@ public VideoConversionService()
         ConversionSettings settings,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(videoPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(audioPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(videoPath);
+        ArgumentNullException.ThrowIfNull(audioPath);
+        ArgumentNullException.ThrowIfNull(outputPath);
         ArgumentNullException.ThrowIfNull(settings);
 
         try
@@ -289,8 +289,8 @@ public VideoConversionService()
         int height,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(inputPath);
+        ArgumentNullException.ThrowIfNull(outputPath);
 
         try
         {
@@ -328,8 +328,8 @@ public VideoConversionService()
     /// <summary>Build FFmpeg command line arguments for conversion</summary>
     private static string BuildConversionCommand(string inputPath, string outputPath, ConversionSettings settings)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(inputPath);
+        ArgumentNullException.ThrowIfNull(outputPath);
         ArgumentNullException.ThrowIfNull(settings);
 
         try
@@ -506,8 +506,8 @@ public VideoConversionService()
         string outputPath,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(inputPath);
-        ArgumentException.ThrowIfNullOrWhiteSpace(outputPath);
+        ArgumentNullException.ThrowIfNull(inputPath);
+        ArgumentNullException.ThrowIfNull(outputPath);
 
         try
         {
@@ -578,7 +578,7 @@ public VideoConversionService()
     /// <summary>Resolve executable path from PATH environment variable</summary>
     private static string ResolveExecutable(string executableName)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(executableName);
+        ArgumentNullException.ThrowIfNull(executableName);
 
         try
         {

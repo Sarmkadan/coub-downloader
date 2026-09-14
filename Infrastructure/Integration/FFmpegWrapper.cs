@@ -32,6 +32,8 @@ public class FFmpegWrapper : IFFmpegWrapper
 
     public FFmpegWrapper(string ffmpegPath = "ffmpeg", string ffprobePath = "ffprobe", ILoggingService? logger = null, TimeSpan? executionTimeout = null)
     {
+        ArgumentNullException.ThrowIfNull(ffmpegPath);
+        ArgumentNullException.ThrowIfNull(ffprobePath);
         _ffmpegPath = ffmpegPath;
         _ffprobePath = ffprobePath;
         _logger = logger ?? new MemoryLoggingService();
@@ -72,6 +74,7 @@ public class FFmpegWrapper : IFFmpegWrapper
     /// <summary>Execute FFmpeg command</summary>
     public virtual async Task<FFmpegResult> ExecuteAsync(string[] arguments, TimeSpan? timeout = null)
     {
+        ArgumentNullException.ThrowIfNull(arguments);
         var processTimeout = timeout ?? _executionTimeout;
 
         try
@@ -148,6 +151,9 @@ public class FFmpegWrapper : IFFmpegWrapper
         ConversionParameters parameters,
         IProgress<int>? progress = null)
     {
+        ArgumentNullException.ThrowIfNull(inputFile);
+        ArgumentNullException.ThrowIfNull(outputFile);
+        ArgumentNullException.ThrowIfNull(parameters);
         var args = new List<string>
         {
             "-i", inputFile,
@@ -280,6 +286,8 @@ public class FFmpegWrapper : IFFmpegWrapper
     /// <summary>Extract audio from video</summary>
     public virtual async Task<FFmpegResult> ExtractAudioAsync(string inputFile, string outputFile)
     {
+        ArgumentNullException.ThrowIfNull(inputFile);
+        ArgumentNullException.ThrowIfNull(outputFile);
         var args = new[]
         {
             "-i", inputFile,
@@ -296,6 +304,8 @@ public class FFmpegWrapper : IFFmpegWrapper
         List<string> inputFiles,
         string outputFile)
     {
+        ArgumentNullException.ThrowIfNull(inputFiles);
+        ArgumentNullException.ThrowIfNull(outputFile);
         var concatFile = Path.GetTempFileName();
 
         try
@@ -328,6 +338,8 @@ public class FFmpegWrapper : IFFmpegWrapper
         double targetDuration,
         string outputFile)
     {
+        ArgumentNullException.ThrowIfNull(audioFile);
+        ArgumentNullException.ThrowIfNull(outputFile);
         var args = new[]
         {
             "-stream_loop", "-1",
@@ -343,6 +355,7 @@ public class FFmpegWrapper : IFFmpegWrapper
     /// <summary>Get media information using ffprobe</summary>
     public virtual async Task<MediaInfo?> GetMediaInfoAsync(string filePath)
     {
+        ArgumentNullException.ThrowIfNull(filePath);
         try
         {
             var psi = new ProcessStartInfo

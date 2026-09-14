@@ -86,11 +86,21 @@ public class DownloadStage : IPipelineStage<string, DownloadTask>
 
     public string Name => "Download";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DownloadStage"/> class.
+    /// </summary>
+    /// <param name="downloadService">The download service to use for downloading videos.</param>
     public DownloadStage(ICoubDownloadService downloadService)
     {
         _downloadService = downloadService;
     }
 
+    /// <summary>
+    /// Executes the download stage asynchronously.
+    /// </summary>
+    /// <param name="url">The URL to download.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A download task representing the downloaded video.</returns>
     public async Task<DownloadTask> ExecuteAsync(string url, CancellationToken cancellationToken = default)
     {
         var task = new DownloadTask
@@ -112,6 +122,12 @@ public class ValidationStage : IPipelineStage<DownloadTask, DownloadTask>
 {
     public string Name => "Validate";
 
+    /// <summary>
+    /// Executes the validation stage asynchronously.
+    /// </summary>
+    /// <param name="task">The download task to validate.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The validated download task.</returns>
     public Task<DownloadTask> ExecuteAsync(DownloadTask task, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(task.Url))
@@ -131,11 +147,21 @@ public class ConversionStage : IPipelineStage<DownloadTask, ConversionResult>
 
     public string Name => "Convert";
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ConversionStage"/> class.
+    /// </summary>
+    /// <param name="conversionService">The video conversion service to use.</param>
     public ConversionStage(IVideoConversionService conversionService)
     {
         _conversionService = conversionService;
     }
 
+    /// <summary>
+    /// Executes the conversion stage asynchronously.
+    /// </summary>
+    /// <param name="task">The download task containing video to convert.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The conversion result.</returns>
     public async Task<ConversionResult> ExecuteAsync(DownloadTask task, CancellationToken cancellationToken = default)
     {
         var settings = new ConversionSettings { Format = task.Format, Quality = task.Quality };
@@ -164,6 +190,12 @@ public class CleanupStage : IPipelineStage<ConversionResult, ConversionResult>
 {
     public string Name => "Cleanup";
 
+    /// <summary>
+    /// Executes the cleanup stage asynchronously.
+    /// </summary>
+    /// <param name="result">The conversion result to clean up after.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>The cleaned-up conversion result.</returns>
     public Task<ConversionResult> ExecuteAsync(ConversionResult result, CancellationToken cancellationToken = default)
     {
         // Remove temporary files
@@ -174,9 +206,24 @@ public class CleanupStage : IPipelineStage<ConversionResult, ConversionResult>
 /// <summary>Conversion result</summary>
 public class ConversionResult
 {
+    /// <summary>
+    /// Gets or sets the task identifier.
+    /// </summary>
     public string TaskId { get; set; } = "";
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the conversion was successful.
+    /// </summary>
     public bool Success { get; set; }
+
+    /// <summary>
+    /// Gets or sets the output path of the converted file.
+    /// </summary>
     public string? OutputPath { get; set; }
+
+    /// <summary>
+    /// Gets or sets the error message if conversion failed.
+    /// </summary>
     public string? Error { get; set; }
 }
 
@@ -186,36 +233,62 @@ public class PipelineBuilder
     private readonly ConversionPipeline _pipeline;
     private readonly ILoggingService _logger;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PipelineBuilder"/> class.
+    /// </summary>
+    /// <param name="logger">The logging service to use.</param>
     public PipelineBuilder(ILoggingService logger)
     {
         _logger = logger;
         _pipeline = new ConversionPipeline(logger);
     }
 
+    /// <summary>
+    /// Adds a download stage to the pipeline.
+    /// </summary>
+    /// <param name="downloadService">The download service to use.</param>
+    /// <returns>The pipeline builder for chaining.</returns>
     public PipelineBuilder WithDownload(ICoubDownloadService downloadService)
     {
         _pipeline.AddStage(new DownloadStage(downloadService));
         return this;
     }
 
+    /// <summary>
+    /// Adds a validation stage to the pipeline.
+    /// </summary>
+    /// <returns>The pipeline builder for chaining.</returns>
     public PipelineBuilder WithValidation()
     {
         _pipeline.AddStage(new ValidationStage());
         return this;
     }
 
+    /// <summary>
+    /// Adds a conversion stage to the pipeline.
+    /// </summary>
+    /// <param name="conversionService">The video conversion service to use.</param>
+    /// <returns>The pipeline builder for chaining.</returns>
     public PipelineBuilder WithConversion(IVideoConversionService conversionService)
     {
         _pipeline.AddStage(new ConversionStage(conversionService));
         return this;
     }
 
+    /// <summary>
+    /// Adds a cleanup stage to the pipeline.
+    /// </summary>
+    /// <returns>The pipeline builder for chaining.</returns>
     public PipelineBuilder WithCleanup()
     {
         _pipeline.AddStage(new CleanupStage());
         return this;
     }
 
+    /// <summary>
+    /// Builds the conversion pipeline.
+    /// </summary>
+    /// <returns>The configured conversion pipeline.</returns>
     public ConversionPipeline Build()
     {
         return _pipeline;

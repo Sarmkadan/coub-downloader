@@ -45,6 +45,15 @@ public class CoubApiClient : ICoubApiClient
     private const string BaseUrl = "https://coub.com/api/v2";
     private static readonly TimeSpan CacheTtl = TimeSpan.FromHours(1);
 
+    private const string VideoInfoKeyPrefix = "video_info_";
+    private const string VideoExistsKeyPrefix = "video_exists_";
+    private const string SearchKeyPrefix = "search_";
+    private const string SearchEndpoint = "/search/coubs";
+    private const string RateLimitKeyCoubApi = "coub_api";
+    private const string RateLimitKeyCoubSearch = "coub_search";
+    private static readonly TimeSpan VideoExistsCacheTtl = TimeSpan.FromHours(24);
+    private const int RateLimitMaxRequestsPerWindow = 30;
+
     /// <summary>Initializes a new instance of the <see cref="CoubApiClient"/> class</summary>
     /// <param name="httpClient">The HTTP client to use for requests</param>
     /// <param name="logger">The logging service</param>
@@ -58,7 +67,7 @@ public class CoubApiClient : ICoubApiClient
         _httpClient = httpClient;
         _logger = logger;
         _cache = cache;
-        _rateLimiter = new RateLimitingService(maxRequestsPerWindow: 30);
+        _rateLimiter = new RateLimitingService(maxRequestsPerWindow: RateLimitMaxRequestsPerWindow);
     }
 
     /// <summary>Gets video info asynchronously</summary>
@@ -72,7 +81,7 @@ public class CoubApiClient : ICoubApiClient
         if (string.IsNullOrWhiteSpace(url))
             return null;
 
-        var cacheKey = $"video_info_{url}";
+        var cacheKey = $"{VideoInfoKeyPrefix}{url}";
 
         if (_cache.TryGet(cacheKey, out CoubVideoInfo? cached))
         {
@@ -80,7 +89,7 @@ public class CoubApiClient : ICoubApiClient
             return cached;
         }
 
-        if (!_rateLimiter.IsAllowed("coub_api"))
+        if (!_rateLimiter.IsAllowed(RateLimitKeyCoubApi))
         {
             _logger.LogWarning("Rate limit exceeded for Coub API", "CoubApiClient");
             return null;
@@ -131,7 +140,7 @@ public class CoubApiClient : ICoubApiClient
         if (string.IsNullOrWhiteSpace(url))
             return false;
 
-        var cacheKey = $"video_exists_{url}";
+        var cacheKey = $"{VideoExistsKeyPrefix}{url}";
 
         if (_cache.TryGet(cacheKey, out bool cached))
             return cached;
@@ -139,7 +148,7 @@ public class CoubApiClient : ICoubApiClient
         var info = await GetVideoInfoAsync(url, cancellationToken);
         var exists = info is not null;
 
-        _cache.Set(cacheKey, exists, TimeSpan.FromHours(24));
+        _cache.Set(cacheKey, exists, VideoExistsCacheTtl);
         return exists;
     }
 
@@ -155,19 +164,19 @@ public class CoubApiClient : ICoubApiClient
         if (string.IsNullOrWhiteSpace(query))
             return [];
 
-        var cacheKey = $"search_{query}_{limit}".ToLowerInvariant();
+        var cacheKey = $"{SearchKeyPrefix}{query}_{limit}".ToLowerInvariant();
 
         if (_cache.TryGet(cacheKey, out List<CoubVideoInfo>? cached))
             return cached ?? [];
 
-        if (!_rateLimiter.IsAllowed("coub_search"))
+        if (!_rateLimiter.IsAllowed(RateLimitKeyCoubSearch))
             return [];
 
         try
         {
             var encodedQuery = Uri.EscapeDataString(query);
             var response = await _httpClient.GetAsync(
-                $"{BaseUrl}/search/coubs?q={encodedQuery}&limit={limit}", cancellationToken);
+                $"{BaseUrl}{SearchEndpoint}?q={encodedQuery}&limit={limit}", cancellationToken);
 
             response.EnsureSuccessStatusCode();
 

@@ -190,8 +190,14 @@ public class CoubApiClientTests
     /// Tests that <see cref="CoubApiClient.GetVideoInfoAsync"/> returns null for various invalid URL formats without making API calls.
     /// </summary>
     /// <param name="url">The invalid URL to test. Can be null, empty, whitespace, or malformed.</param>
+    [Fact]
+    public async Task GetVideoInfoAsync_NullUrl_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        await FluentActions.Awaiting(() => _sut.GetVideoInfoAsync(null!)).Should().ThrowAsync<ArgumentNullException>();
+    }
+
     [Theory]
-    [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
     [InlineData("invalid-url")]

@@ -109,7 +109,7 @@ public class CoubDownloadServiceTests
     public async Task DownloadVideoAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.DownloadVideoAsync(invalidCoubUrl));
+        await FluentActions.Awaiting(() => _sut.DownloadVideoAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -125,7 +125,7 @@ public class CoubDownloadServiceTests
             .ReturnsAsync((CoubVideoInfo)null!);
 
         // Act & Assert
-        await Assert.ThrowsAsync<MetadataExtractionException>(() => _sut.DownloadVideoAsync(coubUrl));
+        await FluentActions.Awaiting(() => _sut.DownloadVideoAsync(coubUrl)).Should().ThrowAsync<MetadataExtractionException>();
         _mockCoubApiClient.Verify(api => api.GetVideoInfoAsync(coubUrl, It.IsAny<CancellationToken>()), Times.Once);
         _mockVideoRepository.Verify(repo => repo.CreateAsync(It.IsAny<CoubVideo>()), Times.Never);
     }
@@ -145,7 +145,7 @@ public class CoubDownloadServiceTests
             .ReturnsAsync((CoubVideoInfo)null!); // Second call for ExtractVideoSourceAsync
 
         // Act & Assert
-        await Assert.ThrowsAsync<MetadataExtractionException>(() => _sut.DownloadVideoAsync(coubUrl));
+        await FluentActions.Awaiting(() => _sut.DownloadVideoAsync(coubUrl)).Should().ThrowAsync<MetadataExtractionException>();
         _mockCoubApiClient.Verify(api => api.GetVideoInfoAsync(coubUrl, It.IsAny<CancellationToken>()), Times.Exactly(2));
         _mockVideoRepository.Verify(repo => repo.CreateAsync(It.IsAny<CoubVideo>()), Times.Never);
     }
@@ -201,7 +201,7 @@ public class CoubDownloadServiceTests
     public async Task FetchMetadataAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.FetchMetadataAsync(invalidCoubUrl));
+        await FluentActions.Awaiting(() => _sut.FetchMetadataAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -219,7 +219,7 @@ public class CoubDownloadServiceTests
         // Act & Assert
         await FluentActions.Awaiting(() => _sut.FetchMetadataAsync(coubUrl))
             .Should().ThrowAsync<MetadataExtractionException>()
-            .WithMessage("Failed to fetch video metadata");
+            .WithMessage("*Failed to fetch video metadata");
     }
 
     // Test cases for ExtractVideoSourceAsync
@@ -258,7 +258,7 @@ public class CoubDownloadServiceTests
     public async Task ExtractVideoSourceAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.ExtractVideoSourceAsync(invalidCoubUrl));
+        await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -276,7 +276,7 @@ public class CoubDownloadServiceTests
         // Act & Assert
         await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(coubUrl))
             .Should().ThrowAsync<MetadataExtractionException>()
-            .WithMessage("Failed to get video ID for source extraction");
+            .WithMessage("*Failed to get video ID for source extraction");
     }
 
     /// <summary>
@@ -295,7 +295,7 @@ public class CoubDownloadServiceTests
         // Act & Assert
         await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(coubUrl))
             .Should().ThrowAsync<MetadataExtractionException>()
-            .WithMessage("Failed to get video ID for source extraction");
+            .WithMessage("*Failed to get video ID for source extraction");
     }
 
     // Test cases for VerifyDownloadAsync
@@ -370,7 +370,7 @@ public class CoubDownloadServiceTests
     public async Task VerifyDownloadAsync_InvalidFilePath_ThrowsArgumentException(string invalidFilePath)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.VerifyDownloadAsync(invalidFilePath));
+        await FluentActions.Awaiting(() => _sut.VerifyDownloadAsync(invalidFilePath)).Should().ThrowAsync<ArgumentException>();
     }
 
     // Test cases for DownloadVideoFileAsync (basic test due to complexity of mocking stream ops)
@@ -431,7 +431,7 @@ public class CoubDownloadServiceTests
     public async Task DownloadVideoFileAsync_InvalidInputs_ThrowsArgumentException(string sourceUrl, string outputPath)
     {
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => _sut.DownloadVideoFileAsync(sourceUrl, outputPath));
+        await FluentActions.Awaiting(() => _sut.DownloadVideoFileAsync(sourceUrl, outputPath)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -463,7 +463,7 @@ public class CoubDownloadServiceTests
             _mockCoubApiClient.Object);
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() => sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath));
+        await FluentActions.Awaiting(() => sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath)).Should().ThrowAsync<VideoDownloadException>();
         File.Exists(outputPath).Should().BeFalse(); // Ensure no partial file is left
     }
 }

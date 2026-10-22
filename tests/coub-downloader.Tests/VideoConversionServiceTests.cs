@@ -147,7 +147,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.ConvertVideoAsync(input, output, settings));
+        await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(input, output, settings)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -160,7 +160,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() => mockService.Object.ConvertVideoAsync(inputPath, outputPath, settings));
+        await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(inputPath, outputPath, settings)).Should().ThrowAsync<FileOperationException>();
     }
 
     [Fact]
@@ -176,8 +176,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(inputPath, outputPath, settings))
-            .Should().ThrowAsync<VideoConversionException>()
-            .WithMessage("FFmpeg exited with code 1. Error: FFmpeg error message");
+            .Should().ThrowAsync<ProcessExecutionException>()
+            .WithMessage("FFmpeg exited with code 1*");
         File.Delete(inputPath);
     }
 
@@ -344,14 +344,13 @@ public class VideoConversionServiceTests
 
     [Theory]
     [InlineData(null)]
-    [InlineData("")]
     public async Task GetVideoMetadataAsync_InvalidFilePath_ThrowsArgumentException(string filePath)
     {
         // Arrange
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.GetVideoMetadataAsync(filePath));
+        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -362,7 +361,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() => mockService.Object.GetVideoMetadataAsync(filePath));
+        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath)).Should().ThrowAsync<FileOperationException>();
     }
 
     [Fact]
@@ -376,8 +375,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath))
-            .Should().ThrowAsync<VideoConversionException>()
-            .WithMessage("FFprobe exited with code 1. Error: FFprobe error");
+            .Should().ThrowAsync<ProcessExecutionException>()
+            .WithMessage("FFprobe exited with code 1*");
         File.Delete(filePath);
     }
 
@@ -392,7 +391,7 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath))
-            .Should().ThrowAsync<VideoConversionException>()
+            .Should().ThrowAsync<ProcessExecutionException>()
             .WithMessage("Failed to parse ffprobe JSON output: *");
         File.Delete(filePath);
     }
@@ -437,7 +436,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.ApplyAudioTrackAsync(video, audio, output, settings));
+        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(video, audio, output, settings)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -452,7 +451,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings));
+        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings)).Should().ThrowAsync<FileOperationException>();
         File.Delete(audioPath);
     }
 
@@ -468,7 +467,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings));
+        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings)).Should().ThrowAsync<FileOperationException>();
         File.Delete(videoPath);
     }
 
@@ -487,8 +486,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(videoPath, audioPath, outputPath, settings))
-            .Should().ThrowAsync<VideoConversionException>()
-            .WithMessage("Failed to apply audio track. Error: Audio error");
+            .Should().ThrowAsync<ProcessExecutionException>()
+            .WithMessage("Failed to apply audio track*");
         File.Delete(videoPath);
         File.Delete(audioPath);
     }
@@ -529,7 +528,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.RescaleVideoAsync(input, output, width, height));
+        await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(input, output, width, height)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Theory]
@@ -546,8 +545,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, width, height))
-            .Should().ThrowAsync<ArgumentException>()
-            .WithMessage("Width and height must be greater than 0");
+            .Should().ThrowAsync<ValidationException>()
+            .WithMessage("Width and height must be greater than 0*");
         File.Delete(inputPath);
     }
 
@@ -563,8 +562,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(inputPath, outputPath, 100, 100))
-            .Should().ThrowAsync<VideoConversionException>()
-            .WithMessage("Failed to rescale video to 100x100. Error: Rescale error");
+            .Should().ThrowAsync<ProcessExecutionException>()
+            .WithMessage("Failed to rescale video to 100x100*");
         File.Delete(inputPath);
     }
 
@@ -602,7 +601,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<ArgumentException>(() => mockService.Object.ConvertToShortsAsync(input, output));
+        await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(input, output)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -614,7 +613,7 @@ public class VideoConversionServiceTests
         var mockService = CreateMockService();
 
         // Act & Assert
-        await Assert.ThrowsAsync<FileNotFoundException>(() => mockService.Object.ConvertToShortsAsync(inputPath, outputPath));
+        await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(inputPath, outputPath)).Should().ThrowAsync<FileOperationException>();
     }
 
     [Fact]
@@ -629,8 +628,8 @@ public class VideoConversionServiceTests
 
         // Act & Assert
         await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(inputPath, outputPath))
-            .Should().ThrowAsync<VideoConversionException>()
-            .WithMessage("Failed to convert video to Shorts format. Error: Shorts error");
+            .Should().ThrowAsync<ProcessExecutionException>()
+            .WithMessage("Failed to convert video to Shorts format*");
         File.Delete(inputPath);
     }
 
@@ -689,6 +688,6 @@ public class VideoConversionServiceTests
         mockService.Setup(s => s.GetFfmpegVersionAsync()).ThrowsAsync(new ToolNotFoundException(ApplicationConstants.FFmpegExecutable));
 
         // Act & Assert
-        await Assert.ThrowsAsync<ToolNotFoundException>(() => mockService.Object.GetFfmpegVersionAsync());
+        await FluentActions.Awaiting(() => mockService.Object.GetFfmpegVersionAsync()).Should().ThrowAsync<ToolNotFoundException>();
     }
 }

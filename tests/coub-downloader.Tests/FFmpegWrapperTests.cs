@@ -49,7 +49,7 @@ public class FFmpegWrapperTests
     // Helper to create a mock of FFmpegWrapper to control ExecuteAsync
     private Mock<FFmpegWrapper> CreateMockFFmpegWrapper()
     {
-        return new Mock<FFmpegWrapper>(_dummyFfmpegPath, _dummyFfprobePath, _mockLogger.Object) { CallBase = true };
+        return new Mock<FFmpegWrapper>(_dummyFfmpegPath, _dummyFfprobePath, _mockLogger.Object, (TimeSpan?)null) { CallBase = true };
     }
 
     // Test cases for IsAvailableAsync
@@ -303,55 +303,38 @@ public class FFmpegWrapperTests
 
     // Test cases for GetMediaInfoAsync - JSON parsing
     [Fact]
-    public async Task GetMediaInfoAsync_ValidFfprobeOutput_ReturnsMediaInfo()
+    public void MediaInfo_ValidFormatJson_DeserializesNumericStrings()
     {
         // Arrange
-        var ffprobeOutput = @"{
-            ""format"": {
-                ""duration"": ""123.45"",
-                ""size"": ""1024000"",
-                ""bit_rate"": ""6000000""
-            }
+        // The "format" section of ffprobe output: numeric fields are serialized as JSON strings.
+        // Deserialization is checked on MediaInfo directly; GetMediaInfoAsync itself needs a real ffprobe process.
+        var formatJson = @"{
+            ""duration"": ""123.45"",
+            ""size"": ""1024000"",
+            ""bit_rate"": ""6000000""
         }";
 
-        // Since GetMediaInfoAsync directly calls Process.Start for ffprobe,
-        // we can't easily mock this method's internal `Process` creation with basic Moq.
-        // A more advanced mocking framework or refactoring of FFmpegWrapper would be needed.
-        // For now, we will test the JSON deserialization aspect by having a mock of FFmpegWrapper
-        // that overrides GetMediaInfoAsync to return a predefined MediaInfo.
-        // This is not ideal, as it doesn't test the actual Process.Start part.
-
-        var mockFFmpegWrapper = CreateMockFFmpegWrapper(); // CallBase is true by default
-        mockFFmpegWrapper.Setup(x => x.GetMediaInfoAsync(It.IsAny<string>()))
-                         .ReturnsAsync(JsonSerializer.Deserialize<FFmpegWrapper.MediaInfoWrapper>(ffprobeOutput)?.Format);
-
-        var filePath = "dummy.mp4";
-
         // Act
-        var result = await mockFFmpegWrapper.Object.GetMediaInfoAsync(filePath);
+        var result = JsonSerializer.Deserialize<MediaInfo>(formatJson);
 
         // Assert
         result.Should().NotBeNull();
-        result.DurationInSeconds.Should().Be(123.45);
+        result!.DurationInSeconds.Should().Be(123.45);
         result.Size.Should().Be(1024000);
         result.BitRate.Should().Be(6000000);
     }
 
     [Fact]
-    public async Task GetMediaInfoAsync_InvalidFfprobeOutput_ReturnsNullAndLogsError()
+    public async Task GetMediaInfoAsync_FfprobeCannotStart_ReturnsNullAndLogsError()
     {
         // Arrange
-        var invalidFfprobeOutput = "THIS IS NOT JSON";
-
-        // Same mocking strategy as above for GetMediaInfoAsync
-        var mockFFmpegWrapper = CreateMockFFmpegWrapper();
-        mockFFmpegWrapper.Setup(x => x.GetMediaInfoAsync(It.IsAny<string>()))
-                         .ThrowsAsync(new Exception("Simulated JSON parsing error")); // Simulate deserialization failure
-
+        // Point ffprobe at a binary that does not exist so Process.Start throws,
+        // which is the real code path that logs "Failed to get media info".
+        var sut = new FFmpegWrapper(_dummyFfmpegPath, "/nonexistent/ffprobe-does-not-exist", _mockLogger.Object);
         var filePath = "dummy.mp4";
 
         // Act
-        var result = await mockFFmpegWrapper.Object.GetMediaInfoAsync(filePath);
+        var result = await sut.GetMediaInfoAsync(filePath);
 
         // Assert
         result.Should().BeNull();
@@ -368,10 +351,11 @@ public class FFmpegWrapperTests
         // Arrange
         // This test will actually execute a process.
         // This is more of an integration test for the FFmpegWrapper's ability to run external processes.
-        var args = new[] { "echo", "hello world" };
+        var sut = new FFmpegWrapper("echo", _dummyFfprobePath, _mockLogger.Object);
+        var args = new[] { "hello world" };
 
         // Act
-        var result = await _sut.ExecuteAsync(args);
+        var result = await sut.ExecuteAsync(args);
 
         // Assert
         result.Success.Should().BeTrue();
@@ -399,15 +383,16 @@ public class FFmpegWrapperTests
     {
         // Arrange
         // Use a command that runs longer than the timeout
-        var args = new[] { "sleep", "5" }; // Linux/macOS
-        if (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows))
-        {
-            args = new[] { "timeout", "5" }; // Windows
-        }
+        // The binary itself is "sleep" (Linux/macOS) so the process outlives the timeout.
+        var sleepPath = System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(System.Runtime.InteropServices.OSPlatform.Windows)
+            ? "timeout"
+            : "sleep";
+        var sut = new FFmpegWrapper(sleepPath, _dummyFfprobePath, _mockLogger.Object);
+        var args = new[] { "5" };
         var timeout = TimeSpan.FromSeconds(1);
 
         // Act
-        var result = await _sut.ExecuteAsync(args, timeout);
+        var result = await sut.ExecuteAsync(args, timeout);
 
         // Assert
         result.Success.Should().BeFalse();

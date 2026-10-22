@@ -273,9 +273,10 @@ public class IntegrationTests
 		finalBatch.Tasks.Should().AllSatisfy(t => t.State.Should().Be(ProcessingState.Completed));
 		finalBatch.Tasks.Should().AllSatisfy(t => t.OutputPath.Should().NotBeNullOrEmpty());
 
-		// Verify files were "created" by the mocked DownloadVideoFileAsync
-		File.Exists(Path.Combine(outputDir, "batchtest1.mp4")).Should().BeTrue();
-		File.Exists(Path.Combine(outputDir, "batchtest2.mp4")).Should().BeTrue();
+		// BatchProcessingService assigns each task its output path (it does not write files itself;
+		// the download is delegated to ICoubDownloadService.DownloadVideoAsync, which is mocked here)
+		finalBatch.Tasks.Should().Contain(t => t.OutputPath == Path.Combine(outputDir, "batchtest1.mp4"));
+		finalBatch.Tasks.Should().Contain(t => t.OutputPath == Path.Combine(outputDir, "batchtest2.mp4"));
 
 		// Clean up
 		Directory.Delete(outputDir, true);

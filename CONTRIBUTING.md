@@ -1,84 +1,70 @@
 # Contributing
 
-Contributions of all kinds are welcome — bug fixes, new features, documentation improvements, and more.
+Thanks for helping improve CoubDownloader. This guide covers how to build, test and submit changes.
 
-## Requirements
+## Prerequisites
 
-- [.NET SDK 10.0](https://dotnet.microsoft.com/download)
-- [FFmpeg](https://ffmpeg.org/download.html) (required at runtime, not for build/test)
-- Git
+- **.NET SDK 10.0** — `global.json` pins `10.0.100` with `rollForward: latestMinor`, so any installed 10.0.x SDK is picked up. The project targets `net10.0`.
+- **Git**
+- **FFmpeg** — only needed at runtime for conversion and editing features. Not required to build or run the tests.
 
-## Building locally
+Check your SDK with `dotnet --version`.
+
+## Building
+
+The repository root contains both `coub-downloader.sln` and `CoubDownloader.csproj`, so a bare `dotnet build` fails with `MSB1011`. Name the solution explicitly:
 
 ```bash
-# Clone the repository
-git clone https://github.com/sarmkadan/coub-downloader.git
-cd coub-downloader
-
-# Restore dependencies
-dotnet restore
-
-# Build in Debug mode
-dotnet build
-
-# Build in Release mode
-dotnet build --configuration Release
+dotnet restore coub-downloader.sln
+dotnet build coub-downloader.sln --configuration Release
 ```
+
+`make build` runs the same steps against the main project. `make ci` runs clean, restore, build, lint and test in sequence.
 
 ## Running tests
 
+Tests live in `tests/coub-downloader.Tests/` and use xUnit, FluentAssertions and Moq.
+
 ```bash
-# Run all tests
-dotnet test
-
-# Run with detailed output and generate a TRX report
-dotnet test --verbosity normal --logger "trx" --results-directory TestResults
-
-# Run a specific test project
-dotnet test tests/coub-downloader.Tests/coub-downloader.Tests.csproj
+dotnet test coub-downloader.sln --configuration Release
 ```
 
-## Workflow
+To run a subset, add a filter:
 
-1. **Fork** the repository and create a branch from `main`.
-2. **Name your branch** descriptively: `feature/your-feature` or `fix/issue-description`.
-3. **Make your changes** and keep each commit focused on one logical change.
-4. **Run tests** and ensure they all pass before opening a PR.
-5. **Open a Pull Request** against the `main` branch with a clear description of what changed and why.
+```bash
+dotnet test coub-downloader.sln --filter "FullyQualifiedName~CoubApiClientTests"
+```
 
-## Pull request guidelines
-
-- Keep PRs small and focused — one feature or fix per PR.
-- Link related GitHub issues in the PR description using `Closes #<issue>`.
-- Ensure `dotnet build` and `dotnet test` both pass locally.
-- Do not lower test coverage — add tests for new behaviour.
-- Update documentation (README, docs/) if your change affects public behaviour or configuration.
+Benchmarks in `benchmarks/` use BenchmarkDotNet and are not part of the test run.
 
 ## Code style
 
-The project uses `.editorconfig` for consistent formatting. Before submitting, verify formatting:
+- Formatting rules are in `.editorconfig`: 4-space indentation, LF line endings, final newline, no trailing whitespace, braces preferred on all control blocks (reported as a warning), and Allman-style opening braces.
+- `Nullable` is enabled for all projects through `Directory.Build.props`. Write nullable-correct code; do not suppress warnings with `!` unless you have checked the value.
+- Warnings do **not** fail the build (`TreatWarningsAsErrors` is `false`). Still, do not add new warnings in code you touch.
+- Naming: `_camelCase` for private fields, `I` prefix for interfaces (one per service, in the same folder as its implementation).
+- Respect the layering: Presentation → Application → Domain. Infrastructure implements Application/Domain interfaces. Domain must not reference other layers.
+- Use Serilog for logging and `System.Text.Json` for JSON.
+- Run `make format` (or `dotnet format`) before committing if you want to fix formatting automatically. CI does not enforce it.
 
-```bash
-dotnet format --verify-no-changes
-```
+## Branching and pull request workflow
 
-Additional conventions:
+1. Branch from an up-to-date `main`.
+2. Keep each PR small and focused on one change. Split unrelated work into separate PRs.
+3. Add or update tests for behaviour you change.
+4. Make sure `dotnet build` and `dotnet test` pass locally before pushing.
+5. Open the PR against `main`. CI (`.github/workflows/ci.yml` and `build.yml`) builds and tests on pull requests, and it must pass before merge.
+6. In the PR description, explain what changed and why, and list how you tested it. Link related issues with `Closes #<number>`.
 
-- Follow the existing coding patterns in each layer (Domain, Application, Infrastructure, Presentation).
-- Write XML documentation comments (`///`) for all public types and members.
-- Use `_camelCase` for private fields and `PascalCase` for everything else.
-- Prefer dependency injection over static access.
-- **Keep ALL existing author headers** — do not remove them from files.
+Commit messages follow Conventional Commits, as in the existing history (`feat:`, `fix:`, `fix(tests):`, `docs:`, `chore:`).
 
 ## Reporting issues
 
-Use [GitHub Issues](https://github.com/sarmkadan/coub-downloader/issues) to report bugs or request features. For bugs, include:
+Report bugs and feature requests on [GitHub Issues](https://github.com/sarmkadan/coub-downloader/issues). For bugs, include:
 
 - Steps to reproduce
-- Expected vs actual behaviour
-- .NET SDK version (`dotnet --version`)
-- Operating system and FFmpeg version
+- Expected and actual behaviour
+- Output of `dotnet --version`
+- Operating system and FFmpeg version, if the bug involves conversion
 
-## License
-
-By contributing you agree that your contributions will be licensed under the [MIT License](LICENSE).
+For security vulnerabilities, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.

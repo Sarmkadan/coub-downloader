@@ -4,11 +4,11 @@
 // CTO & Software Architect
 // =============================================================================
 
-namespace CoubDownloader.Presentation;
-
 using System.Text;
 using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Models;
+
+namespace CoubDownloader.Presentation;
 
 // Re-export for convenience
 public class TableFormatter : CoubDownloader.Presentation.Formatters.TableFormatter

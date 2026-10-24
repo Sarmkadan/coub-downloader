@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using CoubDownloader.Domain.Constants;
 using CoubDownloader.Domain.Exceptions;
@@ -23,6 +24,8 @@ public class CoubDownloadService : ICoubDownloadService
     private readonly HttpClient _httpClient;
     private readonly ICoubVideoRepository _videoRepository;
     private readonly ICoubApiClient _coubApiClient;
+
+    private const string PartFileExtension = ".part";
 
     public CoubDownloadService(HttpClient httpClient, ICoubVideoRepository videoRepository, ICoubApiClient coubApiClient)
     {
@@ -167,10 +170,22 @@ public class CoubDownloadService : ICoubDownloadService
                 Directory.CreateDirectory(directory);
             }
 
+            // Bytes are written to a .part file and moved into place only after the size check passes.
+            // Each attempt re-reads the .part length, so a retry resumes where the previous one stopped.
+            var partPath = outputPath + PartFileExtension;
+
             // Use retry logic for the network operations
             return await RetryTransientOperationAsync(async () =>
             {
-                using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                var resumeFrom = File.Exists(partPath) ? new FileInfo(partPath).Length : 0L;
+
+                using var request = new HttpRequestMessage(HttpMethod.Get, sourceUrl);
+                if (resumeFrom > 0)
+                {
+                    request.Headers.Range = new RangeHeaderValue(resumeFrom, null);
+                }
+
+                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                 if (response.StatusCode == HttpStatusCode.NotFound)
                 {
@@ -187,28 +202,54 @@ public class CoubDownloadService : ICoubDownloadService
                     throw new VideoDownloadException("Rate limit exceeded", sourceUrl, (int)HttpStatusCode.TooManyRequests);
                 }
 
+                // 206 continues the .part file; a 200 means the server ignored Range, so the file is rewritten
+                var resumed = resumeFrom > 0 && response.StatusCode == HttpStatusCode.PartialContent;
+                if (resumed && response.Content.Headers.ContentRange?.From != resumeFrom)
+                {
+                    File.Delete(partPath);
+                    throw new IOException($"Server resumed at a different offset than {resumeFrom}; restarting download");
+                }
+
+                if (response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable && resumeFrom > 0)
+                {
+                    // The stored partial no longer matches the remote file; start clean on the next attempt
+                    File.Delete(partPath);
+                    throw new IOException($"Range request from byte {resumeFrom} was not satisfiable; restarting download");
+                }
+
                 response.EnsureSuccessStatusCode();
 
-                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
-                var bytesDownloaded = 0L;
+                var expectedBytes = GetExpectedTotalBytes(response);
+                var bytesDownloaded = resumed ? resumeFrom : 0L;
+                var fileMode = resumed ? FileMode.Append : FileMode.Create;
 
-                await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
-                await using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
-
-                var buffer = new byte[ApplicationConstants.DownloadChunkSize];
-                int bytesRead;
-
-                while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
                 {
-                    await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
-                    bytesDownloaded += bytesRead;
+                    await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken);
+                    await using var fileStream = new FileStream(partPath, fileMode, FileAccess.Write, FileShare.None, ApplicationConstants.DownloadChunkSize, useAsync: true);
 
-                    if (progress is not null && totalBytes > 0)
+                    var buffer = new byte[ApplicationConstants.DownloadChunkSize];
+                    int bytesRead;
+
+                    while ((bytesRead = await contentStream.ReadAsync(buffer, cancellationToken)) > 0)
                     {
-                        progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+                        await fileStream.WriteAsync(buffer.AsMemory(0, bytesRead), cancellationToken);
+                        bytesDownloaded += bytesRead;
+
+                        if (progress is not null && expectedBytes > 0)
+                        {
+                            progress.Report((int)(bytesDownloaded * 100 / expectedBytes));
+                        }
                     }
                 }
 
+                var downloadedSize = new FileInfo(partPath).Length;
+                if (expectedBytes > 0 && downloadedSize != expectedBytes)
+                {
+                    File.Delete(partPath);
+                    throw new VideoDownloadException($"Size mismatch: expected {expectedBytes} bytes, got {downloadedSize}", sourceUrl);
+                }
+
+                File.Move(partPath, outputPath, overwrite: true);
                 return outputPath;
             }, "Download video file", sourceUrl);
         }
@@ -298,6 +339,16 @@ public class CoubDownloadService : ICoubDownloadService
             || statusCode.Value == HttpStatusCode.GatewayTimeout
             || statusCode.Value == HttpStatusCode.InternalServerError
             || statusCode.Value == HttpStatusCode.BadGateway;
+    }
+
+    private static long GetExpectedTotalBytes(HttpResponseMessage response)
+    {
+        // For a 206 the Content-Length covers only the requested range, so the full size comes from Content-Range
+        var total = response.StatusCode == HttpStatusCode.PartialContent
+            ? response.Content.Headers.ContentRange?.Length
+            : response.Content.Headers.ContentLength;
+
+        return total ?? -1L;
     }
 
     private static bool IsRetryableNetworkException(Exception exception)

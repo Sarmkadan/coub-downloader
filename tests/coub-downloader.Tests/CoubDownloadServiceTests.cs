@@ -466,4 +466,152 @@ public class CoubDownloadServiceTests
         await FluentActions.Awaiting(() => sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath)).Should().ThrowAsync<VideoDownloadException>();
         File.Exists(outputPath).Should().BeFalse(); // Ensure no partial file is left
     }
+
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync continues an existing .part file with a Range request and verifies the final size.
+    /// </summary>
+    [Fact]
+    public async Task DownloadVideoFileAsync_ExistingPartFile_ResumesWithRangeHeader()
+    {
+        // Arrange
+        var sourceUrl = "http://example.com/video.webm";
+        var outputPath = Path.Combine(Path.GetTempPath(), $"resume_{Guid.NewGuid():N}.webm");
+        var partPath = outputPath + ".part";
+        var fullContent = "0123456789";
+        await File.WriteAllTextAsync(partPath, fullContent[..4]);
+
+        HttpRequestMessage? capturedRequest = null;
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .Callback<HttpRequestMessage, CancellationToken>((request, _) => capturedRequest = request)
+            .ReturnsAsync(() =>
+            {
+                var response = new HttpResponseMessage(HttpStatusCode.PartialContent)
+                {
+                    Content = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(fullContent[4..]))
+                };
+                response.Content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(4, 9, 10);
+                return response;
+            });
+
+        using var httpClient = new HttpClient(mockHttpMessageHandler.Object);
+        var sutWithMockedHttpClient = new CoubDownloadService(
+            httpClient,
+            _mockVideoRepository.Object,
+            _mockCoubApiClient.Object);
+
+        try
+        {
+            // Act
+            var result = await sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath);
+
+            // Assert
+            result.Should().Be(outputPath);
+            capturedRequest!.Headers.Range!.Ranges.Should().ContainSingle()
+                .Which.From.Should().Be(4);
+            (await File.ReadAllTextAsync(outputPath)).Should().Be(fullContent);
+            File.Exists(partPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            File.Delete(partPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync rewrites the .part file when the server ignores the Range header and answers 200.
+    /// </summary>
+    [Fact]
+    public async Task DownloadVideoFileAsync_ServerIgnoresRange_RestartsDownload()
+    {
+        // Arrange
+        var sourceUrl = "http://example.com/video.webm";
+        var outputPath = Path.Combine(Path.GetTempPath(), $"restart_{Guid.NewGuid():N}.webm");
+        var partPath = outputPath + ".part";
+        var fullContent = "0123456789";
+        await File.WriteAllTextAsync(partPath, "stale");
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes(fullContent))
+            });
+
+        using var httpClient = new HttpClient(mockHttpMessageHandler.Object);
+        var sutWithMockedHttpClient = new CoubDownloadService(
+            httpClient,
+            _mockVideoRepository.Object,
+            _mockCoubApiClient.Object);
+
+        try
+        {
+            // Act
+            await sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath);
+
+            // Assert
+            (await File.ReadAllTextAsync(outputPath)).Should().Be(fullContent);
+            File.Exists(partPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            File.Delete(partPath);
+        }
+    }
+
+    /// <summary>
+    /// Tests that DownloadVideoFileAsync fails and discards the download when the received size does not match the advertised size.
+    /// </summary>
+    [Fact]
+    public async Task DownloadVideoFileAsync_SizeMismatch_ThrowsAndDiscardsPartFile()
+    {
+        // Arrange
+        var sourceUrl = "http://example.com/video.webm";
+        var outputPath = Path.Combine(Path.GetTempPath(), $"mismatch_{Guid.NewGuid():N}.webm");
+        var partPath = outputPath + ".part";
+
+        var mockHttpMessageHandler = new Mock<HttpMessageHandler>();
+        mockHttpMessageHandler.Protected()
+            .Setup<Task<HttpResponseMessage>>(
+                "SendAsync",
+                ItExpr.IsAny<HttpRequestMessage>(),
+                ItExpr.IsAny<CancellationToken>())
+            .ReturnsAsync(() => new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes("short"))
+                {
+                    Headers = { ContentLength = 100 }
+                }
+            });
+
+        using var httpClient = new HttpClient(mockHttpMessageHandler.Object);
+        var sutWithMockedHttpClient = new CoubDownloadService(
+            httpClient,
+            _mockVideoRepository.Object,
+            _mockCoubApiClient.Object);
+
+        try
+        {
+            // Act & Assert
+            await FluentActions.Awaiting(() => sutWithMockedHttpClient.DownloadVideoFileAsync(sourceUrl, outputPath))
+                .Should().ThrowAsync<VideoDownloadException>();
+            File.Exists(outputPath).Should().BeFalse();
+            File.Exists(partPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(outputPath);
+            File.Delete(partPath);
+        }
+    }
 }

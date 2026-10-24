@@ -31,10 +31,14 @@ public class CoubDownloadService : ICoubDownloadService
         _coubApiClient = coubApiClient;
 
         if (_httpClient.Timeout == TimeSpan.FromSeconds(100))
+        {
             _httpClient.Timeout = TimeSpan.FromMilliseconds(ApplicationConstants.HttpRequestTimeoutMs);
+        }
 
         if (!_httpClient.DefaultRequestHeaders.Contains("User-Agent"))
+        {
             _httpClient.DefaultRequestHeaders.Add("User-Agent", ApplicationConstants.DefaultUserAgent);
+        }
     }
 
     public async Task<CoubVideo> DownloadVideoAsync(string coubUrl, CancellationToken cancellationToken = default)
@@ -67,7 +71,9 @@ public class CoubDownloadService : ICoubDownloadService
                 shouldRetry: (ex, _) => IsRetryableNetworkException(ex));
 
             if (videoInfo == null)
+            {
                 throw new MetadataExtractionException("Failed to fetch video metadata", coubUrl);
+            }
 
             var video = new CoubVideo
             {
@@ -99,7 +105,9 @@ public class CoubDownloadService : ICoubDownloadService
                 shouldRetry: (ex, _) => IsRetryableNetworkException(ex));
 
             if (videoInfo == null || string.IsNullOrEmpty(videoInfo.Id))
+            {
                 throw new MetadataExtractionException("Failed to get video ID for source extraction", coubUrl);
+            }
 
             return $"https://media-source.coub.com/videos/{videoInfo.Id}/webm/high.webm";
         }
@@ -124,11 +132,15 @@ public class CoubDownloadService : ICoubDownloadService
         try
         {
             if (!File.Exists(filePath))
+            {
                 return false;
+            }
 
             var fileInfo = new FileInfo(filePath);
             if (fileInfo.Length == 0)
+            {
                 return false;
+            }
 
             return true;
         }
@@ -151,7 +163,9 @@ public class CoubDownloadService : ICoubDownloadService
         {
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             // Use retry logic for the network operations
             return await RetryTransientOperationAsync(async () =>
@@ -159,13 +173,19 @@ public class CoubDownloadService : ICoubDownloadService
                 using var response = await _httpClient.GetAsync(sourceUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                 if (response.StatusCode == HttpStatusCode.NotFound)
+                {
                     throw new VideoDownloadException("Video not found on server", sourceUrl, (int)HttpStatusCode.NotFound);
+                }
 
                 if (response.StatusCode == HttpStatusCode.Forbidden)
+                {
                     throw new VideoDownloadException("Access forbidden to video", sourceUrl, (int)HttpStatusCode.Forbidden);
+                }
 
                 if (response.StatusCode == HttpStatusCode.TooManyRequests)
+                {
                     throw new VideoDownloadException("Rate limit exceeded", sourceUrl, (int)HttpStatusCode.TooManyRequests);
+                }
 
                 response.EnsureSuccessStatusCode();
 
@@ -184,7 +204,9 @@ public class CoubDownloadService : ICoubDownloadService
                     bytesDownloaded += bytesRead;
 
                     if (progress is not null && totalBytes > 0)
+                    {
                         progress.Report((int)(bytesDownloaded * 100 / totalBytes));
+                    }
                 }
 
                 return outputPath;
@@ -266,7 +288,9 @@ public class CoubDownloadService : ICoubDownloadService
     private bool IsTransientHttpError(HttpStatusCode? statusCode)
     {
         if (!statusCode.HasValue)
+        {
             return false;
+        }
 
         return statusCode.Value == HttpStatusCode.RequestTimeout
             || statusCode.Value == HttpStatusCode.TooManyRequests

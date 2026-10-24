@@ -1,15 +1,15 @@
-using Xunit;
-using Moq;
-using FluentAssertions;
 using System;
-using System.IO;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Diagnostics; // For ProcessStartInfo
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Middleware;
-using System.Linq;
-using System.Diagnostics; // For ProcessStartInfo
-using System.Text.Json;
+using FluentAssertions;
+using Moq;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -49,7 +49,8 @@ public class FFmpegWrapperTests
     // Helper to create a mock of FFmpegWrapper to control ExecuteAsync
     private Mock<FFmpegWrapper> CreateMockFFmpegWrapper()
     {
-        return new Mock<FFmpegWrapper>(_dummyFfmpegPath, _dummyFfprobePath, _mockLogger.Object, (TimeSpan?)null) { CallBase = true };
+        // 10 minutes matches the constructor's default execution timeout (FFmpegConstants is private)
+        return new Mock<FFmpegWrapper>(_dummyFfmpegPath, _dummyFfprobePath, _mockLogger.Object, TimeSpan.FromMinutes(10)) { CallBase = true };
     }
 
     // Test cases for IsAvailableAsync

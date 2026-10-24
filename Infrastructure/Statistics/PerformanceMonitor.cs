@@ -26,22 +26,32 @@ public class PerformanceMonitor
         lock (_lockObj)
         {
             if (!_metrics.ContainsKey(operationName))
+            {
                 _metrics[operationName] = new OperationMetrics { Name = operationName };
+            }
 
             var metric = _metrics[operationName];
             metric.TotalCount++;
             metric.TotalTimeMs += elapsedMs;
 
             if (success)
+            {
                 metric.SuccessCount++;
+            }
             else
+            {
                 metric.FailureCount++;
+            }
 
             if (elapsedMs > metric.MaxTimeMs)
+            {
                 metric.MaxTimeMs = elapsedMs;
+            }
 
             if (metric.MinTimeMs == 0 || elapsedMs < metric.MinTimeMs)
+            {
                 metric.MinTimeMs = elapsedMs;
+            }
         }
     }
 
@@ -146,7 +156,10 @@ public class OperationTimer : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         _stopwatch.Stop();
         _monitor.RecordOperation(_operationName, _stopwatch.ElapsedMilliseconds, _success);
@@ -196,7 +209,9 @@ public class RuntimeStatistics
 
                 var wallClockMs = (nowUtc - intervalStartUtc).TotalMilliseconds;
                 if (wallClockMs <= 0)
+                {
                     return 0;
+                }
 
                 var cpuMs = (totalProcessorTime - previousProcessorTime).TotalMilliseconds;
                 var usage = cpuMs / (wallClockMs * Environment.ProcessorCount) * 100.0;

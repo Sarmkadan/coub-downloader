@@ -159,7 +159,9 @@ public class ConfigurationManager
             {
                 var directory = Path.GetDirectoryName(_configPath);
                 if (directory is not null && !Directory.Exists(directory))
+                {
                     Directory.CreateDirectory(directory);
+                }
 
                 var options = new JsonSerializerOptions { WriteIndented = true };
                 var json = JsonSerializer.Serialize(config, options);
@@ -178,7 +180,9 @@ public class ConfigurationManager
     private void SaveDefault()
     {
         if (_configuration is not null)
+        {
             Save(_configuration);
+        }
     }
 
     /// <summary>Create default configuration</summary>
@@ -204,7 +208,10 @@ public class ConfigurationManager
 
         foreach (var part in parts)
         {
-            if (current is null) return null;
+            if (current is null)
+            {
+                return null;
+            }
 
             var property = current.GetType().GetProperty(part);
             current = property?.GetValue(current);

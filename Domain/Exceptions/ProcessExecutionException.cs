@@ -38,10 +38,25 @@ public class ProcessExecutionException : CoubDownloaderException
     {
         var baseString = base.ToString();
         var details = new List<string>();
-        if (ProcessName != null) details.Add($"Process: {ProcessName}");
-        if (Arguments != null) details.Add($"Args: {Arguments}");
-        if (ExitCode != 0) details.Add($"Exit Code: {ExitCode}");
-        if (StandardError != null) details.Add($"Error: {StandardError}");
+        if (ProcessName != null)
+        {
+            details.Add($"Process: {ProcessName}");
+        }
+
+        if (Arguments != null)
+        {
+            details.Add($"Args: {Arguments}");
+        }
+
+        if (ExitCode != 0)
+        {
+            details.Add($"Exit Code: {ExitCode}");
+        }
+
+        if (StandardError != null)
+        {
+            details.Add($"Error: {StandardError}");
+        }
 
         if (details.Count > 0)
         {

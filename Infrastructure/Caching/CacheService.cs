@@ -149,8 +149,16 @@ public class MemoryCacheService : ICacheService
 
     private long EstimateSize(object? obj)
     {
-        if (obj is null) return 0;
-        if (obj is string str) return str.Length * 2;
+        if (obj is null)
+        {
+            return 0;
+        }
+
+        if (obj is string str)
+        {
+            return str.Length * 2;
+        }
+
         return 1024; // Rough estimate
     }
 }
@@ -204,7 +212,9 @@ public class DistributedCacheAdapter : ICacheService
     public bool TryGet<T>(string key, out T? value)
     {
         if (_localCache.TryGet(key, out value))
+        {
             return true;
+        }
 
         foreach (var remote in _remoteCaches)
         {

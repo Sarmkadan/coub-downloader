@@ -35,7 +35,9 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
     public Task<DownloadResult> CreateAsync(DownloadResult entity)
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
+        {
             entity.Id = Guid.NewGuid().ToString();
+        }
 
         entity.CompletedAt = DateTime.UtcNow;
 
@@ -52,7 +54,9 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
         lock (_lock)
         {
             if (!_results.ContainsKey(entity.Id))
+            {
                 throw new KeyNotFoundException($"Result with ID {entity.Id} not found");
+            }
 
             _results[entity.Id] = entity;
         }

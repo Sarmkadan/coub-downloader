@@ -1,17 +1,17 @@
-using Xunit;
-using Moq;
-using FluentAssertions;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using CoubDownloader.Application.Services;
-using CoubDownloader.Domain.Models;
 using CoubDownloader.Domain.Enums;
-using CoubDownloader.Infrastructure.Repositories;
 using CoubDownloader.Domain.Exceptions;
-using System.IO;
+using CoubDownloader.Domain.Models;
+using CoubDownloader.Infrastructure.Repositories;
+using FluentAssertions;
+using Moq;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -68,10 +68,10 @@ public class BatchProcessingServiceTests
     [InlineData("name", null)]
     [InlineData("", "output")]
     [InlineData("name", "")]
-    public async Task CreateBatchJobAsync_InvalidInputs_ThrowsArgumentException(string name, string outputDir)
+    public async Task CreateBatchJobAsync_InvalidInputs_ThrowsArgumentException(string? name, string? outputDir)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.CreateBatchJobAsync(name, outputDir)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.CreateBatchJobAsync(name!, outputDir!)).Should().ThrowAsync<ArgumentException>();
     }
 
     // Test cases for AddTasksAsync
@@ -549,9 +549,9 @@ public class BatchProcessingServiceTests
     [Theory]
     [InlineData(null)]
     [InlineData("")]
-    public async Task DeleteBatchAsync_InvalidBatchId_ThrowsArgumentException(string batchId)
+    public async Task DeleteBatchAsync_InvalidBatchId_ThrowsArgumentException(string? batchId)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.DeleteBatchAsync(batchId)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.DeleteBatchAsync(batchId!)).Should().ThrowAsync<ArgumentException>();
     }
 }

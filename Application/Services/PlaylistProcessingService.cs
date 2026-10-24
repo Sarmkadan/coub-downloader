@@ -56,7 +56,9 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
 
             var (slug, type) = ParsePlaylistUrl(playlistUrl);
             if (string.IsNullOrEmpty(slug))
+            {
                 throw new ValidationException("Could not determine channel or tag slug from URL", nameof(playlistUrl), playlistUrl);
+            }
 
             var videoUrls = new List<string>();
 
@@ -65,7 +67,9 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
                 cancellationToken.ThrowIfCancellationRequested();
 
                 if (maxPages.HasValue && page > maxPages.Value)
+                {
                     break;
+                }
 
                 var apiUrl = type == "tag"
                     ? $"{ApplicationConstants.CoubApiBaseUrl}/tags/{Uri.EscapeDataString(slug)}/coubs?page={page}&per_page={PageSize}&order_by=newest"
@@ -117,21 +121,29 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
                 }
 
                 if (!root.TryGetProperty("coubs", out var coubsArray))
+                {
                     break;
+                }
 
                 var pageItems = coubsArray.EnumerateArray().ToList();
                 if (pageItems.Count == 0)
+                {
                     break;
+                }
 
                 foreach (var item in pageItems)
                 {
                     if (item.TryGetProperty("permalink", out var pl) && pl.GetString() is { Length: > 0 } permalink)
+                    {
                         videoUrls.Add($"https://coub.com/view/{permalink}");
+                    }
                 }
 
                 var totalPages = root.TryGetProperty("total_pages", out var tp) ? tp.GetInt32() : 1;
                 if (page >= totalPages)
+                {
                     break;
+                }
             }
 
             _logger.LogInfo($"Playlist '{slug}' fetched — {videoUrls.Count} video(s) discovered", Category);
@@ -200,7 +212,9 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         try
         {
             if (!playlist.IsValid())
+            {
                 throw new ValidationException($"Playlist '{playlist.Id}' is invalid or contains no video URLs", nameof(playlist), playlist);
+            }
 
             var effectiveUrls = playlist.GetEffectiveVideoUrls().ToList();
             _logger.LogInfo($"Queuing {effectiveUrls.Count} video(s) from playlist '{playlist.Title}'", Category);
@@ -258,15 +272,21 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         try
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
                 return (string.Empty, string.Empty);
+            }
 
             var segments = uri.AbsolutePath.Trim('/').Split('/', StringSplitOptions.RemoveEmptyEntries);
 
             if (segments.Length >= 2 && segments[0].Equals("tags", StringComparison.OrdinalIgnoreCase))
+            {
                 return (segments[1], "tag");
+            }
 
             if (segments.Length >= 1 && !string.IsNullOrEmpty(segments[0]))
+            {
                 return (segments[0], "channel");
+            }
 
             return (string.Empty, string.Empty);
         }
@@ -283,7 +303,9 @@ public sealed class PlaylistProcessingService : IPlaylistProcessingService
         try
         {
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+            {
                 return null;
+            }
 
             return uri.AbsolutePath.Trim('/').Split('/').LastOrDefault();
         }

@@ -3,18 +3,13 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>CoubDownloader</RootNamespace>
     <AssemblyName>CoubDownloader</AssemblyName>
     <PackageId>CoubDownloader</PackageId>
     <Version>1.0.0</Version>
-    <Authors>Vladyslav Zaiets</Authors>
     <Description>A C# library for downloading and processing coubs.</Description>
     <PackageTags>coub downloader video audio ffmpeg .net</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/sarmkadan/coub-downloader</PackageProjectUrl>
     <RepositoryUrl>https://github.com/sarmkadan/coub-downloader</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>

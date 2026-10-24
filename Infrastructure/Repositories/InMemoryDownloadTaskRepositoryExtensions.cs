@@ -31,14 +31,18 @@ public static class InMemoryDownloadTaskRepositoryExtensions
         ArgumentNullException.ThrowIfNull(videoIds);
 
         if (!videoIds.Any())
+        {
             return Enumerable.Empty<DownloadTask>();
+        }
 
         var tasks = new List<DownloadTask>();
         foreach (var videoId in videoIds)
         {
             var task = await repository.GetByVideoIdAsync(videoId);
             if (task is not null)
+            {
                 tasks.AddRange(task);
+            }
         }
 
         return tasks;
@@ -60,14 +64,18 @@ public static class InMemoryDownloadTaskRepositoryExtensions
         ArgumentNullException.ThrowIfNull(batchJobIds);
 
         if (!batchJobIds.Any())
+        {
             return Enumerable.Empty<DownloadTask>();
+        }
 
         var tasks = new List<DownloadTask>();
         foreach (var batchJobId in batchJobIds)
         {
             var task = await repository.GetByBatchIdAsync(batchJobId);
             if (task is not null)
+            {
                 tasks.AddRange(task);
+            }
         }
 
         return tasks;
@@ -89,7 +97,9 @@ public static class InMemoryDownloadTaskRepositoryExtensions
         ArgumentNullException.ThrowIfNull(states);
 
         if (!states.Any())
+        {
             return Enumerable.Empty<DownloadTask>();
+        }
 
         var allTasks = await repository.GetAllAsync();
         return allTasks.Where(t => states.Contains(t.State));
@@ -115,7 +125,9 @@ public static class InMemoryDownloadTaskRepositoryExtensions
         ArgumentNullException.ThrowIfNull(taskIds);
 
         if (!taskIds.Any())
+        {
             return 0;
+        }
 
         var updatedCount = 0;
         foreach (var taskId in taskIds)

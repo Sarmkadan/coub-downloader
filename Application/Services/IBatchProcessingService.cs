@@ -47,6 +47,7 @@ public interface IBatchProcessingService
     /// Starts processing a batch job.
     /// </summary>
     /// <param name="batchJobId">The ID of the batch job.</param>
+    /// <param name="progress">Optional progress reporter for the batch.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The updated <see cref="BatchJob"/>.</returns>
     Task<BatchJob> StartBatchAsync(string batchJobId, IProgress<BatchProgress>? progress = null, CancellationToken cancellationToken = default);

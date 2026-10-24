@@ -1,8 +1,8 @@
-using Xunit;
-using FluentAssertions;
+using System;
 using System.IO;
 using CoubDownloader.Infrastructure.Utilities;
-using System;
+using FluentAssertions;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 

@@ -34,7 +34,11 @@ public class BatchProgress
     {
         get
         {
-            if (Total == 0) return 0;
+            if (Total == 0)
+            {
+                return 0;
+            }
+
             return (int)((Completed + Failed) * 100 / Total);
         }
     }
@@ -44,16 +48,23 @@ public class BatchProgress
     {
         get
         {
-            if (Total == 0) return "No tasks";
+            if (Total == 0)
+            {
+                return "No tasks";
+            }
 
             var completedPercent = ProgressPercent;
             var failedPercent = Failed * 100 / Total;
 
             if (completedPercent >= 100)
+            {
                 return "Processing complete";
+            }
 
             if (CurrentTaskUrl != null)
+            {
                 return $"Processing: {CurrentTaskUrl} ({CurrentItemNumber}/{Total}) - {completedPercent}% complete";
+            }
 
             return $"{completedPercent}% complete ({Completed}/{Total} tasks)";
         }

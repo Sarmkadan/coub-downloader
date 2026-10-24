@@ -23,7 +23,9 @@ public class WatermarkService
     public WatermarkService(IFFmpegWrapper ffmpeg)
     {
         if (ffmpeg is null)
+        {
             throw new ArgumentNullException(nameof(ffmpeg));
+        }
 
         _ffmpeg = ffmpeg;
     }
@@ -42,7 +44,9 @@ public class WatermarkService
         CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             throw new OperationCanceledException(cancellationToken);
+        }
 
         var (xExpr, yExpr) = GetOverlayExpressions(position, marginPx);
         var opacityStr = opacity.ToString(CultureInfo.InvariantCulture);
@@ -75,7 +79,9 @@ public class WatermarkService
         CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
+        {
             throw new OperationCanceledException(cancellationToken);
+        }
 
         var (xExpr, yExpr) = GetOverlayExpressions(position, marginPx: 16);
         var escapedText = EscapeDrawText(text);

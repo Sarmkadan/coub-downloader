@@ -92,7 +92,9 @@ public class RateLimitingService
         lock (_lockObj)
         {
             if (_buckets.ContainsKey(identifier))
+            {
                 _buckets.Remove(identifier);
+            }
         }
     }
 
@@ -183,7 +185,9 @@ public class ThrottlingService
         lock (_lockObj)
         {
             if (!_buckets.TryGetValue(identifier, out var bucket))
+            {
                 return _maxTokens;
+            }
 
             var now = DateTime.UtcNow;
             var elapsed = (now - bucket.LastRefillTime).TotalSeconds;

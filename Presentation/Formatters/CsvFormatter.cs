@@ -73,7 +73,11 @@ public class CsvFormatter
 
     private string EscapeCSV(string value)
     {
-        if (string.IsNullOrEmpty(value)) return "";
+        if (string.IsNullOrEmpty(value))
+        {
+            return "";
+        }
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";

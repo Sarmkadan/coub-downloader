@@ -102,7 +102,10 @@ public class FFmpegWrapper : IFFmpegWrapper
         try
         {
             var result = await ExecuteAsync(new[] { FFmpegConstants.VersionCheckArgument }, FFmpegConstants.VersionCheckTimeout);
-            if (!result.Success) return FFmpegConstants.UnknownVersion;
+            if (!result.Success)
+            {
+                return FFmpegConstants.UnknownVersion;
+            }
 
             var lines = result.Output.Split(Environment.NewLine);
             return lines.FirstOrDefault()?.Trim() ?? FFmpegConstants.UnknownVersion;
@@ -131,7 +134,9 @@ public class FFmpegWrapper : IFFmpegWrapper
             };
 
             foreach (var arg in arguments)
+            {
                 psi.ArgumentList.Add(arg);
+            }
 
             using var process = new Process { StartInfo = psi };
             process.Start();
@@ -207,15 +212,21 @@ public class FFmpegWrapper : IFFmpegWrapper
         };
 
         if (parameters.Width > 0 && parameters.Height > 0)
+        {
             args.AddRange(new[] { FFmpegConstants.VideoFilterArgument, $"{FFmpegConstants.ScaleFilterPrefix}{parameters.Width}:{parameters.Height}" });
+        }
 
         if (parameters.UseHardwareAcceleration)
+        {
             args.InsertRange(0, new[] { FFmpegConstants.HardwareAccelerationArgument, FFmpegConstants.HardwareAccelerationAuto });
+        }
 
         args.AddRange(new[] { FFmpegConstants.ProgressArgument, $"{FFmpegConstants.PipePrefix}1", FFmpegConstants.OverwriteArgument, outputFile });
 
         if (progress is null)
+        {
             return await ExecuteAsync(args.ToArray());
+        }
 
         var mediaInfo = await GetMediaInfoAsync(inputFile);
         var totalDurationSeconds = mediaInfo?.DurationInSeconds ?? 0;
@@ -247,7 +258,9 @@ public class FFmpegWrapper : IFFmpegWrapper
             };
 
             foreach (var arg in arguments)
+            {
                 psi.ArgumentList.Add(arg);
+            }
 
             using var process = new Process { StartInfo = psi };
             process.Start();
@@ -300,7 +313,9 @@ public class FFmpegWrapper : IFFmpegWrapper
             var success = process.ExitCode == 0;
 
             if (success)
+            {
                 progress.Report(FFmpegConstants.MaxProgressPercent);
+            }
 
             _logger.LogDebug(
                 $"FFmpeg command: {string.Join(" ", arguments)} - Exit code: {process.ExitCode}",
@@ -410,7 +425,10 @@ public class FFmpegWrapper : IFFmpegWrapper
             };
 
             using var process = Process.Start(psi);
-            if (process is null) return null;
+            if (process is null)
+            {
+                return null;
+            }
 
             var jsonOutput = await process.StandardOutput.ReadToEndAsync();
             await process.WaitForExitAsync();
@@ -485,7 +503,9 @@ internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
     public override double? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Number)
+        {
             return reader.GetDouble();
+        }
 
         if (reader.TokenType == JsonTokenType.String
             && double.TryParse(reader.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value))
@@ -500,9 +520,13 @@ internal sealed class FfprobeDoubleConverter : JsonConverter<double?>
     public override void Write(Utf8JsonWriter writer, double? value, JsonSerializerOptions options)
     {
         if (value.HasValue)
+        {
             writer.WriteNumberValue(value.Value);
+        }
         else
+        {
             writer.WriteNullValue();
+        }
     }
 }
 
@@ -516,7 +540,9 @@ internal sealed class FfprobeLongConverter : JsonConverter<long?>
     public override long? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
         if (reader.TokenType == JsonTokenType.Number)
+        {
             return reader.GetInt64();
+        }
 
         if (reader.TokenType == JsonTokenType.String
             && long.TryParse(reader.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var value))
@@ -531,8 +557,12 @@ internal sealed class FfprobeLongConverter : JsonConverter<long?>
     public override void Write(Utf8JsonWriter writer, long? value, JsonSerializerOptions options)
     {
         if (value.HasValue)
+        {
             writer.WriteNumberValue(value.Value);
+        }
         else
+        {
             writer.WriteNullValue();
+        }
     }
 }

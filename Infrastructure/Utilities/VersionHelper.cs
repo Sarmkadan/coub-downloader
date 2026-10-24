@@ -51,7 +51,9 @@ public static class VersionHelper
         var attribute = assembly.GetCustomAttribute<BuildDateAttribute>();
 
         if (attribute is not null)
+        {
             return attribute.BuildDate;
+        }
 
         // Fallback: use file write time
         var filePath = assembly.Location;

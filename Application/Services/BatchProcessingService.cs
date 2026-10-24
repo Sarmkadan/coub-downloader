@@ -4,12 +4,12 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Diagnostics;
 using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure.Repositories;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace CoubDownloader.Application.Services;
 
@@ -90,10 +90,14 @@ public class BatchProcessingService : IBatchProcessingService
         {
             var batch = await _batchRepository.GetByIdAsync(batchJobId);
             if (batch is null)
+            {
                 throw new ResourceNotFoundException(nameof(BatchJob), batchJobId);
+            }
 
             if (batch.State != ProcessingState.Pending)
+            {
                 throw new InvalidOperationException("Cannot add tasks to a batch that is already processing");
+            }
 
             var taskList = tasks.ToList();
             foreach (var task in taskList)
@@ -132,10 +136,14 @@ public class BatchProcessingService : IBatchProcessingService
         {
             var batch = await _batchRepository.GetByIdAsync(batchJobId);
             if (batch is null)
+            {
                 throw new ResourceNotFoundException(nameof(BatchJob), batchJobId);
+            }
 
             if (!batch.CanStart())
+            {
                 throw new InvalidOperationException($"Batch '{batch.Id}' cannot be started. It must be pending and have tasks.");
+            }
 
             batch.State = ProcessingState.Downloading;
             batch.StartedAt = DateTime.UtcNow;
@@ -211,7 +219,9 @@ public class BatchProcessingService : IBatchProcessingService
         {
             var batch = await _batchRepository.GetByIdAsync(batchJobId);
             if (batch is null)
+            {
                 throw new ResourceNotFoundException(nameof(BatchJob), batchJobId);
+            }
 
             batch.State = ProcessingState.Cancelled;
             batch.CompletedAt = DateTime.UtcNow;
@@ -249,7 +259,9 @@ public class BatchProcessingService : IBatchProcessingService
         {
             var batch = await _batchRepository.GetByIdAsync(batchJobId);
             if (batch is null)
+            {
                 throw new ResourceNotFoundException(nameof(BatchJob), batchJobId);
+            }
 
             return batch;
         }
@@ -315,10 +327,14 @@ public class BatchProcessingService : IBatchProcessingService
         {
             var batch = await _batchRepository.GetByIdAsync(batchJobId);
             if (batch is null)
+            {
                 return false;
+            }
 
             if (batch.State is ProcessingState.Downloading or ProcessingState.Converting or ProcessingState.ProcessingAudio)
+            {
                 throw new InvalidOperationException("Cannot delete a batch that is currently processing");
+            }
 
             return await _batchRepository.DeleteAsync(batchJobId);
         }
@@ -429,11 +445,13 @@ public class BatchProcessingService : IBatchProcessingService
             });
 
             if (!batch.ContinueOnError)
+            {
                 throw new BatchProcessingException(batch.Id, batch.FailedTasks, $"Batch job failed: {ex.Message}")
                 {
                     BatchJobId = batch.Id,
                     FailedTaskCount = batch.FailedTasks
                 };
+            }
         }
         catch (Exception ex)
         {
@@ -459,11 +477,13 @@ public class BatchProcessingService : IBatchProcessingService
             });
 
             if (!batch.ContinueOnError)
+            {
                 throw new BatchProcessingException(batch.Id, batch.FailedTasks, $"Batch job failed: {ex.Message}")
                 {
                     BatchJobId = batch.Id,
                     FailedTaskCount = batch.FailedTasks
                 };
+            }
         }
         finally
         {

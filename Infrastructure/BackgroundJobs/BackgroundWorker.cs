@@ -16,7 +16,10 @@ public abstract class BackgroundWorker
     /// <summary>Start the background worker</summary>
     public void Start()
     {
-        if (IsRunning) return;
+        if (IsRunning)
+        {
+            return;
+        }
 
         _cancellationTokenSource = new CancellationTokenSource();
         IsRunning = true;
@@ -37,7 +40,10 @@ public abstract class BackgroundWorker
     /// <summary>Stop the background worker gracefully</summary>
     public async Task StopAsync()
     {
-        if (!IsRunning) return;
+        if (!IsRunning)
+        {
+            return;
+        }
 
         _cancellationTokenSource?.Cancel();
 
@@ -124,7 +130,9 @@ public class CleanupWorker : PeriodicBackgroundWorker
     protected override async Task DoWorkAsync(CancellationToken cancellationToken)
     {
         if (!Directory.Exists(_downloadDirectory))
+        {
             return;
+        }
 
         var cutoffDate = DateTime.UtcNow.AddDays(-_retentionDays);
 
@@ -133,7 +141,9 @@ public class CleanupWorker : PeriodicBackgroundWorker
             foreach (var file in Directory.GetFiles(_downloadDirectory))
             {
                 if (cancellationToken.IsCancellationRequested)
+                {
                     break;
+                }
 
                 var fileInfo = new FileInfo(file);
                 if (fileInfo.LastWriteTimeUtc < cutoffDate)

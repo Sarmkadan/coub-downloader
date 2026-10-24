@@ -63,10 +63,14 @@ public static class ValidationHelper
     public static bool IsValidCoubUrl(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
             return false;
+        }
 
         if (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)
+        {
             return false;
+        }
 
         return uri.Host.Equals("coub.com", StringComparison.OrdinalIgnoreCase)
             || uri.Host.EndsWith(".coub.com", StringComparison.OrdinalIgnoreCase);
@@ -105,7 +109,9 @@ public static class ValidationHelper
             var fullRequestedPath = Path.TrimEndingDirectorySeparator(Path.GetFullPath(requestedPath));
 
             if (fullRequestedPath.Equals(fullBasePath, StringComparison.Ordinal))
+            {
                 return true;
+            }
 
             // Require a directory separator right after the base path so that
             // "/data/basement" is not treated as being inside "/data/base".
@@ -146,7 +152,9 @@ public class ValidationBuilder
     public ValidationBuilder RequireNotEmpty(string? value, string fieldName)
     {
         if (string.IsNullOrWhiteSpace(value))
+        {
             _errors.Add((fieldName, $"{fieldName} cannot be empty"));
+        }
 
         return this;
     }
@@ -155,7 +163,9 @@ public class ValidationBuilder
     public ValidationBuilder RequirePattern(string value, string pattern, string fieldName)
     {
         if (!ValidationHelper.MatchesPattern(value, pattern))
+        {
             _errors.Add((fieldName, $"{fieldName} has invalid format"));
+        }
 
         return this;
     }
@@ -164,7 +174,9 @@ public class ValidationBuilder
     public ValidationBuilder RequireRange(int value, int min, int max, string fieldName)
     {
         if (value < min || value > max)
+        {
             _errors.Add((fieldName, $"{fieldName} must be between {min} and {max}"));
+        }
 
         return this;
     }

@@ -40,7 +40,9 @@ public class InProcessEventBus : IEventBus
             var eventType = typeof(TEvent);
 
             if (!_handlers.ContainsKey(eventType))
+            {
                 _handlers[eventType] = [];
+            }
 
             _handlers[eventType].Add((Func<TEvent, Task>)(async e => await handler.HandleAsync(e)));
         }
@@ -56,7 +58,10 @@ public class InProcessEventBus : IEventBus
             _handlers.TryGetValue(eventType, out handlerList);
         }
 
-        if (handlerList is null) return;
+        if (handlerList is null)
+        {
+            return;
+        }
 
         var tasks = handlerList
             .Cast<Func<TEvent, Task>>()

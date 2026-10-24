@@ -41,10 +41,14 @@ public static class StringExtensions
         ArgumentException.ThrowIfNullOrEmpty(suffix);
 
         if (value.Length <= maxLength)
+        {
             return value;
+        }
 
         if (maxLength < suffix.Length)
+        {
             throw new ArgumentException("Max length must be greater than or equal to suffix length", nameof(maxLength));
+        }
 
         return value[..(maxLength - suffix.Length)] + suffix;
     }
@@ -92,7 +96,9 @@ public static class StringExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         if (string.IsNullOrEmpty(value))
+        {
             return string.Empty;
+        }
 
         // Convert to lowercase
         var slug = value.ToLowerInvariant();
@@ -124,7 +130,9 @@ public static class StringExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         if (string.IsNullOrEmpty(value) || value.Length == 1)
+        {
             return value;
+        }
 
         return char.ToUpperInvariant(value[0]) + value[1..];
     }
@@ -138,7 +146,9 @@ public static class StringExtensions
         ArgumentNullException.ThrowIfNull(value);
 
         if (string.IsNullOrEmpty(value))
+        {
             return value;
+        }
 
         var textInfo = CultureInfo.InvariantCulture.TextInfo;
         return textInfo.ToTitleCase(value.ToLowerInvariant());
@@ -211,7 +221,9 @@ public static class StringExtensions
 
         var startIndex = value.IndexOf(start);
         if (startIndex == -1)
+        {
             return null;
+        }
 
         startIndex += start.Length;
         var endIndex = value.IndexOf(end, startIndex);
@@ -231,7 +243,9 @@ public static class StringExtensions
         ArgumentNullException.ThrowIfNull(substring);
 
         if (substring.Length == 0)
+        {
             throw new ArgumentException("Substring cannot be empty", nameof(substring));
+        }
 
         return (value.Length - value.Replace(substring, "").Length) / substring.Length;
     }

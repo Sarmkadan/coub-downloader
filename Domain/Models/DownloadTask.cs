@@ -80,7 +80,11 @@ public class DownloadTask
     /// <summary>Get elapsed time since task started</summary>
     public TimeSpan? GetElapsedTime()
     {
-        if (StartedAt is null) return null;
+        if (StartedAt is null)
+        {
+            return null;
+        }
+
         var endTime = CompletedAt ?? DateTime.UtcNow;
         return endTime - StartedAt;
     }

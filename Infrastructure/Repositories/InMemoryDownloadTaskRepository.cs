@@ -36,7 +36,9 @@ public class InMemoryDownloadTaskRepository : IDownloadTaskRepository
     public Task<DownloadTask> CreateAsync(DownloadTask entity)
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
+        {
             entity.Id = Guid.NewGuid().ToString();
+        }
 
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -56,7 +58,9 @@ public class InMemoryDownloadTaskRepository : IDownloadTaskRepository
         lock (_lock)
         {
             if (!_tasks.ContainsKey(entity.Id))
+            {
                 throw new KeyNotFoundException($"Task with ID {entity.Id} not found");
+            }
 
             _tasks[entity.Id] = entity;
         }
@@ -148,10 +152,14 @@ public class InMemoryDownloadTaskRepository : IDownloadTaskRepository
                 task.UpdatedAt = DateTime.UtcNow;
 
                 if (state == ProcessingState.Downloading && task.StartedAt is null)
+                {
                     task.StartedAt = DateTime.UtcNow;
+                }
 
                 if (state is ProcessingState.Completed or ProcessingState.Failed or ProcessingState.Cancelled)
+                {
                     task.CompletedAt = DateTime.UtcNow;
+                }
             }
         }
         return Task.CompletedTask;

@@ -67,7 +67,9 @@ public static class CoubVideoExtensions
         ArgumentNullException.ThrowIfNull(video);
 
         if (video.AudioTrack is null || video.AudioTrack.Duration <= 0)
+        {
             return 0;
+        }
 
         var requiredLoops = Math.Ceiling(video.Duration / video.AudioTrack.Duration);
         return video.AudioTrack.Duration * requiredLoops;
@@ -281,7 +283,10 @@ public static class BatchJobExtensions
         var completedState = ProcessingState.Completed;
         var completedTasks = batch.Tasks.Where(t => t.State == completedState).ToList();
 
-        if (completedTasks.Count == 0) return null;
+        if (completedTasks.Count == 0)
+        {
+            return null;
+        }
 
         var avgTimePerTask = batch.Tasks
             .Where(t => t.State == completedState && t.CompletedAt.HasValue)
@@ -339,7 +344,9 @@ public static class DownloadResultExtensions
         ArgumentOutOfRangeException.ThrowIfNegative(result.ProcessingTimeMs);
 
         if (result.OutputFileSizeBytes == 0 || result.ProcessingTimeMs == 0)
+        {
             return 0;
+        }
 
         var durationSeconds = result.ProcessingTimeMs / 1000.0;
         return result.OutputFileSizeBytes / durationSeconds;
@@ -356,7 +363,9 @@ public static class DownloadResultExtensions
         const long MB = 1024 * 1024;
 
         if (speedBytesPerSec >= MB)
+        {
             return $"{speedBytesPerSec / MB:F2} MB/s";
+        }
 
         return $"{speedBytesPerSec / 1024:F2} KB/s";
     }

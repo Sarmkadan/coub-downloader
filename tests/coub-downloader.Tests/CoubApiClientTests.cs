@@ -1,18 +1,18 @@
-using Xunit;
-using Moq;
-using Moq.Protected;
-using FluentAssertions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Middleware;
-using System.Text.Json;
+using FluentAssertions;
+using Moq;
+using Moq.Protected;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 

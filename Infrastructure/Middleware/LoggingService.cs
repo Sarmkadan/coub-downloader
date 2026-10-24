@@ -42,7 +42,9 @@ public class FileLoggingService : ILoggingService
     public FileLoggingService(string logDirectory = "./logs")
     {
         if (!Directory.Exists(logDirectory))
+        {
             Directory.CreateDirectory(logDirectory);
+        }
 
         _logPath = Path.Combine(logDirectory, $"coub-downloader-{DateTime.Now:yyyy-MM-dd}.log");
     }
@@ -94,7 +96,9 @@ public class FileLoggingService : ILoggingService
                 var logEntry = $"{timestamp} | {level,-5} | {categoryStr}{message}";
 
                 if (!string.IsNullOrEmpty(details))
+                {
                     logEntry += $"\n{details}";
+                }
 
                 File.AppendAllText(_logPath, logEntry + Environment.NewLine);
 

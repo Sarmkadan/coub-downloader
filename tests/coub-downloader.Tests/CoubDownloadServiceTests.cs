@@ -1,18 +1,18 @@
-using Xunit;
-using Moq;
-using Moq.Protected; // Added for mocking protected methods of HttpClient
-using FluentAssertions;
+using System;
+using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using CoubDownloader.Application.Services;
+using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure.Integration;
 using CoubDownloader.Infrastructure.Repositories;
-using CoubDownloader.Domain.Exceptions;
-using System;
-using System.IO;
-using System.Net;
+using FluentAssertions;
+using Moq;
+using Moq.Protected; // Added for mocking protected methods of HttpClient
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -106,10 +106,10 @@ public class CoubDownloadServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public async Task DownloadVideoAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
+    public async Task DownloadVideoAsync_InvalidCoubUrl_ThrowsArgumentException(string? invalidCoubUrl)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.DownloadVideoAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.DownloadVideoAsync(invalidCoubUrl!)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -198,10 +198,10 @@ public class CoubDownloadServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public async Task FetchMetadataAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
+    public async Task FetchMetadataAsync_InvalidCoubUrl_ThrowsArgumentException(string? invalidCoubUrl)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.FetchMetadataAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.FetchMetadataAsync(invalidCoubUrl!)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -255,10 +255,10 @@ public class CoubDownloadServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public async Task ExtractVideoSourceAsync_InvalidCoubUrl_ThrowsArgumentException(string invalidCoubUrl)
+    public async Task ExtractVideoSourceAsync_InvalidCoubUrl_ThrowsArgumentException(string? invalidCoubUrl)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(invalidCoubUrl)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.ExtractVideoSourceAsync(invalidCoubUrl!)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>
@@ -367,10 +367,10 @@ public class CoubDownloadServiceTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData(" ")]
-    public async Task VerifyDownloadAsync_InvalidFilePath_ThrowsArgumentException(string invalidFilePath)
+    public async Task VerifyDownloadAsync_InvalidFilePath_ThrowsArgumentException(string? invalidFilePath)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.VerifyDownloadAsync(invalidFilePath)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.VerifyDownloadAsync(invalidFilePath!)).Should().ThrowAsync<ArgumentException>();
     }
 
     // Test cases for DownloadVideoFileAsync (basic test due to complexity of mocking stream ops)
@@ -428,10 +428,10 @@ public class CoubDownloadServiceTests
     [InlineData("url", null)]
     [InlineData("", "path.webm")]
     [InlineData("url", "")]
-    public async Task DownloadVideoFileAsync_InvalidInputs_ThrowsArgumentException(string sourceUrl, string outputPath)
+    public async Task DownloadVideoFileAsync_InvalidInputs_ThrowsArgumentException(string? sourceUrl, string? outputPath)
     {
         // Act & Assert
-        await FluentActions.Awaiting(() => _sut.DownloadVideoFileAsync(sourceUrl, outputPath)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => _sut.DownloadVideoFileAsync(sourceUrl!, outputPath!)).Should().ThrowAsync<ArgumentException>();
     }
 
     /// <summary>

@@ -1,18 +1,18 @@
-using Xunit;
-using Moq;
-using Moq.Protected;
-using FluentAssertions;
 using System;
+using System.Diagnostics; // For ProcessStartInfo
 using System.IO;
+using System.Text.Json; // For JsonDocument
 using System.Threading;
 using System.Threading.Tasks;
 using CoubDownloader.Application.Services;
-using CoubDownloader.Domain.Models;
-using CoubDownloader.Domain.Exceptions;
-using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Constants; // For ApplicationConstants and VideoProcessingConstants
-using System.Diagnostics; // For ProcessStartInfo
-using System.Text.Json; // For JsonDocument
+using CoubDownloader.Domain.Enums;
+using CoubDownloader.Domain.Exceptions;
+using CoubDownloader.Domain.Models;
+using FluentAssertions;
+using Moq;
+using Moq.Protected;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -32,11 +32,6 @@ public class VideoConversionServiceTests
         // and then set up protected methods. We'll use a specific constructor for mocking
         // that allows setting ffmpeg and ffprobe paths without relying on ResolveExecutable.
         // Or, more simply, instantiate the mock and directly set up protected methods.
-
-        // We need to pass valid paths to the constructor to avoid issues with ResolveExecutable during test setup
-        // For unit testing, these paths won't actually be used if RunFfmpegAsync is mocked.
-        var dummyFfmpegPath = "ffmpeg";
-        var dummyFfprobePath = "ffprobe";
 
         // Create a mock of the concrete class to enable mocking protected methods
         _mockSut = new Mock<VideoConversionService>() { CallBase = true }; // CallBase = true means un-mocked methods will call original implementation
@@ -140,14 +135,14 @@ public class VideoConversionServiceTests
     [Theory]
     [InlineData(null, "output.mp4")]
     [InlineData("input.mp4", null)]
-    public async Task ConvertVideoAsync_InvalidPaths_ThrowsArgumentException(string input, string output)
+    public async Task ConvertVideoAsync_InvalidPaths_ThrowsArgumentException(string? input, string? output)
     {
         // Arrange
         var settings = new ConversionSettings();
         var mockService = CreateMockService();
 
         // Act & Assert
-        await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(input, output, settings)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => mockService.Object.ConvertVideoAsync(input!, output!, settings)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -344,13 +339,13 @@ public class VideoConversionServiceTests
 
     [Theory]
     [InlineData(null)]
-    public async Task GetVideoMetadataAsync_InvalidFilePath_ThrowsArgumentException(string filePath)
+    public async Task GetVideoMetadataAsync_InvalidFilePath_ThrowsArgumentException(string? filePath)
     {
         // Arrange
         var mockService = CreateMockService();
 
         // Act & Assert
-        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => mockService.Object.GetVideoMetadataAsync(filePath!)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -429,14 +424,14 @@ public class VideoConversionServiceTests
     [InlineData(null, "audio.mp3", "output.mp4")]
     [InlineData("video.mp4", null, "output.mp4")]
     [InlineData("video.mp4", "audio.mp3", null)]
-    public async Task ApplyAudioTrackAsync_InvalidPaths_ThrowsArgumentException(string video, string audio, string output)
+    public async Task ApplyAudioTrackAsync_InvalidPaths_ThrowsArgumentException(string? video, string? audio, string? output)
     {
         // Arrange
         var settings = new ConversionSettings();
         var mockService = CreateMockService();
 
         // Act & Assert
-        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(video, audio, output, settings)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => mockService.Object.ApplyAudioTrackAsync(video!, audio!, output!, settings)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]
@@ -522,13 +517,13 @@ public class VideoConversionServiceTests
     [Theory]
     [InlineData(null, "output.mp4", 100, 100)]
     [InlineData("input.mp4", null, 100, 100)]
-    public async Task RescaleVideoAsync_InvalidPaths_ThrowsArgumentException(string input, string output, int width, int height)
+    public async Task RescaleVideoAsync_InvalidPaths_ThrowsArgumentException(string? input, string? output, int width, int height)
     {
         // Arrange
         var mockService = CreateMockService();
 
         // Act & Assert
-        await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(input, output, width, height)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => mockService.Object.RescaleVideoAsync(input!, output!, width, height)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Theory]
@@ -595,13 +590,13 @@ public class VideoConversionServiceTests
     [Theory]
     [InlineData(null, "output.mp4")]
     [InlineData("input.mp4", null)]
-    public async Task ConvertToShortsAsync_InvalidPaths_ThrowsArgumentException(string input, string output)
+    public async Task ConvertToShortsAsync_InvalidPaths_ThrowsArgumentException(string? input, string? output)
     {
         // Arrange
         var mockService = CreateMockService();
 
         // Act & Assert
-        await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(input, output)).Should().ThrowAsync<ArgumentException>();
+        await FluentActions.Awaiting(() => mockService.Object.ConvertToShortsAsync(input!, output!)).Should().ThrowAsync<ArgumentException>();
     }
 
     [Fact]

@@ -42,7 +42,9 @@ public static class VideoEffectsProcessor
         ArgumentNullException.ThrowIfNull(effects);
 
         if (effects.Count == 0)
+        {
             return "null";
+        }
 
         var filters = effects
             .Select(BuildSingleFilter)

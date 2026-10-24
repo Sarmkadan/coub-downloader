@@ -36,7 +36,9 @@ public class InMemoryBatchJobRepository : IBatchJobRepository
     public Task<BatchJob> CreateAsync(BatchJob entity)
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
+        {
             entity.Id = Guid.NewGuid().ToString();
+        }
 
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -56,7 +58,9 @@ public class InMemoryBatchJobRepository : IBatchJobRepository
         lock (_lock)
         {
             if (!_batches.ContainsKey(entity.Id))
+            {
                 throw new KeyNotFoundException($"Batch with ID {entity.Id} not found");
+            }
 
             _batches[entity.Id] = entity;
         }

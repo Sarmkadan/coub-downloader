@@ -64,7 +64,10 @@ public class TableFormatter : CoubDownloader.Presentation.Formatters.TableFormat
         ArgumentNullException.ThrowIfNull(tasks);
 
         var taskList = tasks.Where(task => task is not null).ToList();
-        if (taskList.Count == 0) return "No tasks to display";
+        if (taskList.Count == 0)
+        {
+            return "No tasks to display";
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("╔═══════════════════════════════════════════════════════════════════════════════════════════════╗");
@@ -101,7 +104,10 @@ public class TableFormatter : CoubDownloader.Presentation.Formatters.TableFormat
         ArgumentOutOfRangeException.ThrowIfNegative(completed);
         ArgumentOutOfRangeException.ThrowIfNegative(total);
 
-        if (total == 0) return "0%";
+        if (total == 0)
+        {
+            return "0%";
+        }
 
         var percentage = (completed * 100) / total;
         var filled = percentage / 10;
@@ -122,7 +128,11 @@ public class TableFormatter : CoubDownloader.Presentation.Formatters.TableFormat
         ArgumentNullException.ThrowIfNull(value);
         ArgumentOutOfRangeException.ThrowIfLessThan(maxLength, 3);
 
-        if (value.Length <= maxLength) return value.PadRight(maxLength);
+        if (value.Length <= maxLength)
+        {
+            return value.PadRight(maxLength);
+        }
+
         return value[..(maxLength - 3)] + "...";
     }
 }

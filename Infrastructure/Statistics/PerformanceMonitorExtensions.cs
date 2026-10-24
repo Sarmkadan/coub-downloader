@@ -61,7 +61,9 @@ public static class PerformanceMonitorExtensions
 
         var metrics = monitor.GetAllMetrics();
         if (metrics.Count == 0)
+        {
             return "OperationName,TotalCount,SuccessCount,FailureCount,SuccessRate,AvgTimeMs,MinTimeMs,MaxTimeMs,TotalTimeMs\nNo data available";
+        }
 
         var csv = new StringBuilder();
         csv.AppendLine("OperationName,TotalCount,SuccessCount,FailureCount,SuccessRate,AvgTimeMs,MinTimeMs,MaxTimeMs,TotalTimeMs");

@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Attributes;
-using CoubDownloader.Domain.Models;
-using CoubDownloader.Domain.Extensions;
 using CoubDownloader.Domain.Enums;
+using CoubDownloader.Domain.Extensions;
+using CoubDownloader.Domain.Models;
 
 namespace CoubDownloader.Benchmarks;
 

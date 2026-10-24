@@ -5,8 +5,8 @@
 // =============================================================================
 
 using System.Text;
-using CoubDownloader.Domain.Models;
 using CoubDownloader.Domain.Enums;
+using CoubDownloader.Domain.Models;
 
 namespace CoubDownloader.Presentation.Formatters;
 
@@ -44,7 +44,10 @@ public class TableFormatter
     public string FormatTasksTable(IEnumerable<DownloadTask> tasks)
     {
         var taskList = tasks.ToList();
-        if (taskList.Count == 0) return "No tasks to display";
+        if (taskList.Count == 0)
+        {
+            return "No tasks to display";
+        }
 
         var sb = new StringBuilder();
         sb.AppendLine("╔═══════════════════════════════════════════════════════════════════════════════════════════════╗");
@@ -74,7 +77,10 @@ public class TableFormatter
 
     private string GetProgressBar(int completed, int total)
     {
-        if (total == 0) return "0%";
+        if (total == 0)
+        {
+            return "0%";
+        }
 
         var percentage = (completed * 100) / total;
         var filled = percentage / 10;
@@ -85,7 +91,11 @@ public class TableFormatter
 
     private string TruncateString(string value, int maxLength)
     {
-        if (value.Length <= maxLength) return value.PadRight(maxLength);
+        if (value.Length <= maxLength)
+        {
+            return value.PadRight(maxLength);
+        }
+
         return value[..(maxLength - 3)] + "...";
     }
 }

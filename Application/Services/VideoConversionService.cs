@@ -52,23 +52,29 @@ public VideoConversionService()
         try
         {
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var ffmpegArgs = BuildConversionCommand(inputPath, outputPath, settings);
 
             var (exitCode, _, standardError) = await RunFfmpegAsync(ffmpegArgs, progress, cancellationToken);
 
             if (exitCode != 0)
+            {
                 throw new ProcessExecutionException(
                     $"FFmpeg exited with code {exitCode}",
                     ApplicationConstants.FFmpegExecutable,
                     ffmpegArgs,
                     exitCode,
                     standardError);
+            }
 
             return outputPath;
         }
@@ -89,19 +95,23 @@ public VideoConversionService()
         try
         {
             if (!File.Exists(filePath))
+            {
                 throw new FileOperationException("Video file not found", filePath, FileOperationType.Read);
+            }
 
             var ffprobeArgs = $"{_ffprobePath} -v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
 
             var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
 
             if (exitCode != 0)
+            {
                 throw new ProcessExecutionException(
                     $"FFprobe exited with code {exitCode}",
                     ApplicationConstants.FFprobeExecutable,
                     ffprobeArgs,
                     exitCode,
                     standardError);
+            }
 
             var metadata = new VideoMetadata();
 
@@ -193,9 +203,14 @@ public VideoConversionService()
         try
         {
             if (!File.Exists(videoPath))
+            {
                 throw new FileOperationException("Video file not found", videoPath, FileOperationType.Read);
+            }
+
             if (!File.Exists(audioPath))
+            {
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
+            }
 
             var args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a {settings.AudioCodec} " +
                       $"-b:a {settings.AudioBitrate}k -shortest \"{outputPath}\" -y";
@@ -203,12 +218,14 @@ public VideoConversionService()
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
             if (exitCode != 0)
+            {
                 throw new ProcessExecutionException(
                     "Failed to apply audio track",
                     ApplicationConstants.FFmpegExecutable,
                     args,
                     exitCode,
                     standardError);
+            }
 
             return outputPath;
         }
@@ -237,7 +254,9 @@ public VideoConversionService()
 
             using var process = Process.Start(psi);
             if (process is null)
+            {
                 return false;
+            }
 
             await process.WaitForExitAsync();
             return process.ExitCode == 0;
@@ -265,7 +284,9 @@ public VideoConversionService()
 
             using var process = Process.Start(psi);
             if (process is null)
+            {
                 throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
+            }
 
             var output = await process.StandardOutput.ReadLineAsync();
             await process.WaitForExitAsync();
@@ -295,10 +316,14 @@ public VideoConversionService()
         try
         {
             if (width <= 0 || height <= 0)
+            {
                 throw new ValidationException("Width and height must be greater than 0", nameof(width), width);
+            }
 
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
+            }
 
             var args = $"-i \"{inputPath}\" -vf scale={width}:{height} -c:v h264 -crf 23 " +
                       $"-c:a aac -b:a 128k \"{outputPath}\" -y";
@@ -306,12 +331,14 @@ public VideoConversionService()
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
             if (exitCode != 0)
+            {
                 throw new ProcessExecutionException(
                     $"Failed to rescale video to {width}x{height}",
                     ApplicationConstants.FFmpegExecutable,
                     args,
                     exitCode,
                     standardError);
+            }
 
             return outputPath;
         }
@@ -399,7 +426,9 @@ public VideoConversionService()
 
             using var process = Process.Start(psi);
             if (process is null)
+            {
                 throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
+            }
 
             var stdOutput = new StringWriter();
             var stdError = new StringWriter();
@@ -419,7 +448,9 @@ public VideoConversionService()
             process.ErrorDataReceived += (sender, e) =>
             {
                 if (e.Data is null)
+                {
                     return;
+                }
 
                 lock (errorLock)
                 {
@@ -427,7 +458,9 @@ public VideoConversionService()
                 }
 
                 if (progress is null)
+                {
                     return;
+                }
 
                 // FFmpeg writes "Duration: HH:MM:SS.cc" once per input and
                 // "time=HH:MM:SS.cc" on every status line; combine them into a percentage.
@@ -459,7 +492,9 @@ public VideoConversionService()
                 try
                 {
                     if (!process.HasExited)
+                    {
                         process.Kill(entireProcessTree: true);
+                    }
                 }
                 catch (InvalidOperationException)
                 {
@@ -470,7 +505,9 @@ public VideoConversionService()
             }
 
             if (process.ExitCode == 0)
+            {
                 progress?.Report(100);
+            }
 
             string standardOutput;
             string standardError;
@@ -512,11 +549,15 @@ public VideoConversionService()
         try
         {
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             // Scale source to fill 1080x1920 and blur it for the background, then overlay
             // the source scaled to fit (letterbox) centred on top.
@@ -536,12 +577,14 @@ public VideoConversionService()
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
             if (exitCode != 0)
+            {
                 throw new ProcessExecutionException(
                     "Failed to convert video to Shorts format",
                     ApplicationConstants.FFmpegExecutable,
                     args,
                     exitCode,
                     standardError);
+            }
 
             return outputPath;
         }
@@ -562,7 +605,9 @@ public VideoConversionService()
 
         var parts = value.Split(':');
         if (parts.Length != 3)
+        {
             return false;
+        }
 
         if (!int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var hours)
             || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var minutes)
@@ -583,7 +628,9 @@ public VideoConversionService()
         try
         {
             if (File.Exists(executableName))
+            {
                 return executableName;
+            }
 
             var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
             var paths = pathEnv.Split(Path.PathSeparator);
@@ -592,11 +639,15 @@ public VideoConversionService()
             {
                 var fullPath = Path.Combine(path, executableName);
                 if (File.Exists(fullPath))
+                {
                     return fullPath;
+                }
 
                 var exePath = Path.Combine(path, $"{executableName}.exe");
                 if (File.Exists(exePath))
+                {
                     return exePath;
+                }
             }
 
             return executableName;

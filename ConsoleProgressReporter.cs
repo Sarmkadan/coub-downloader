@@ -24,7 +24,9 @@ public class ConsoleProgressReporter : IProgress<BatchProgress>
     public void Report(BatchProgress value)
     {
         if (value == null)
+        {
             return;
+        }
 
         lock (_lock)
         {

@@ -17,7 +17,7 @@ public static class FileUtilitiesTestsExtensions
     /// <param name="content">The content to write to the file. If null, creates an empty file.</param>
     /// <returns>A tuple containing the file path and a disposable that cleans it up.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="_"/> is null.</exception>
-    public static (string path, IDisposable cleanup) CreateTempFile(this FileUtilitiesTests _, string content = null)
+    public static (string path, IDisposable cleanup) CreateTempFile(this FileUtilitiesTests _, string? content = null)
     {
         ArgumentNullException.ThrowIfNull(_);
 
@@ -109,7 +109,10 @@ public static class FileUtilitiesTestsExtensions
 
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
 
             try
             {
@@ -140,7 +143,10 @@ public static class FileUtilitiesTestsExtensions
 
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+            {
+                return;
+            }
 
             try
             {

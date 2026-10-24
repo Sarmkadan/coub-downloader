@@ -79,7 +79,9 @@ public class CoubApiClient : ICoubApiClient
         ArgumentNullException.ThrowIfNull(url);
 
         if (string.IsNullOrWhiteSpace(url))
+        {
             return null;
+        }
 
         var cacheKey = $"{VideoInfoKeyPrefix}{url}";
 
@@ -99,7 +101,9 @@ public class CoubApiClient : ICoubApiClient
         {
             var videoId = ExtractVideoId(url);
             if (string.IsNullOrEmpty(videoId))
+            {
                 return null;
+            }
 
             var response = await _httpClient.GetAsync($"{BaseUrl}/coubs/{videoId}", cancellationToken);
 
@@ -138,12 +142,16 @@ public class CoubApiClient : ICoubApiClient
         ArgumentNullException.ThrowIfNull(url);
 
         if (string.IsNullOrWhiteSpace(url))
+        {
             return false;
+        }
 
         var cacheKey = $"{VideoExistsKeyPrefix}{url}";
 
         if (_cache.TryGet(cacheKey, out bool cached))
+        {
             return cached;
+        }
 
         var info = await GetVideoInfoAsync(url, cancellationToken);
         var exists = info is not null;
@@ -162,15 +170,21 @@ public class CoubApiClient : ICoubApiClient
         ArgumentNullException.ThrowIfNull(query);
 
         if (string.IsNullOrWhiteSpace(query))
+        {
             return [];
+        }
 
         var cacheKey = $"{SearchKeyPrefix}{query}_{limit}".ToLowerInvariant();
 
         if (_cache.TryGet(cacheKey, out List<CoubVideoInfo>? cached))
+        {
             return cached ?? [];
+        }
 
         if (!_rateLimiter.IsAllowed(RateLimitKeyCoubSearch))
+        {
             return [];
+        }
 
         try
         {
@@ -206,7 +220,9 @@ public class CoubApiClient : ICoubApiClient
     private static string? ExtractVideoId(string url)
     {
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
             return null;
+        }
 
         var segments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
         return segments.LastOrDefault();

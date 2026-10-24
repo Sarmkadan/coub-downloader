@@ -42,7 +42,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
     public Task<CoubVideo> CreateAsync(CoubVideo entity)
     {
         if (string.IsNullOrWhiteSpace(entity.Id))
+        {
             entity.Id = Guid.NewGuid().ToString();
+        }
 
         entity.CreatedAt = DateTime.UtcNow;
         entity.UpdatedAt = DateTime.UtcNow;
@@ -63,7 +65,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
         lock (_lock)
         {
             if (!_videos.ContainsKey(entity.Id))
+            {
                 throw new KeyNotFoundException($"Video with ID {entity.Id} not found");
+            }
 
             // Remove old indexes
             var old = _videos[entity.Id];
@@ -105,7 +109,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
         lock (_lock)
         {
             if (_urlToId.TryGetValue(url, out var id) && _videos.TryGetValue(id, out var video))
+            {
                 return Task.FromResult<CoubVideo?>(video);
+            }
 
             return Task.FromResult<CoubVideo?>(null);
         }
@@ -157,7 +163,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
     {
         // Index by URL
         if (!string.IsNullOrWhiteSpace(video.Url))
+        {
             _urlToId[video.Url] = video.Id;
+        }
 
         // Index by creator name (case‑insensitive)
         if (!string.IsNullOrWhiteSpace(video.CreatorName))
@@ -188,7 +196,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
     {
         // Remove URL index
         if (!string.IsNullOrWhiteSpace(video.Url))
+        {
             _urlToId.Remove(video.Url);
+        }
 
         // Remove creator index
         if (!string.IsNullOrWhiteSpace(video.CreatorName))
@@ -198,7 +208,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
             {
                 set.Remove(video.Id);
                 if (set.Count == 0)
+                {
                     _creatorToIds.Remove(key);
+                }
             }
         }
 
@@ -210,7 +222,9 @@ public class InMemoryCoubVideoRepository : ICoubVideoRepository
             {
                 set.Remove(video.Id);
                 if (set.Count == 0)
+                {
                     _titleToIds.Remove(key);
+                }
             }
         }
     }

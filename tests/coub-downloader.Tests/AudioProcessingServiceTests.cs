@@ -4,8 +4,8 @@
 // CTO & Software Architect
 // =============================================================================
 
-using Xunit;
-using Moq;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using CoubDownloader.Application.Services;
@@ -13,8 +13,8 @@ using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Exceptions;
 using CoubDownloader.Infrastructure.Integration;
 using FluentAssertions;
-using System.IO;
-using System.Text.RegularExpressions;
+using Moq;
+using Xunit;
 
 namespace coub_downloader.Tests;
 

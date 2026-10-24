@@ -5,12 +5,12 @@
 // =============================================================================
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using System.Buffers;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace CoubDownloader.Infrastructure.Utilities;
 
@@ -43,7 +43,10 @@ public static class FileUtilities
         for (int i = 0; i < sizes.Length; i++)
         {
             if (len < 1024)
+            {
                 return $"{len:F2} {sizes[i]}";
+            }
+
             len /= 1024;
         }
 
@@ -54,7 +57,10 @@ public static class FileUtilities
     public static string EnsureDirectory(string path)
     {
         if (!Directory.Exists(path))
+        {
             Directory.CreateDirectory(path);
+        }
+
         return path;
     }
 
@@ -79,10 +85,14 @@ public static class FileUtilities
         try
         {
             foreach (var file in Directory.GetFiles(directory, pattern))
+            {
                 results.Add(file);
+            }
 
             foreach (var subdir in Directory.GetDirectories(directory))
+            {
                 results.AddRange(FindFiles(subdir, pattern));
+            }
         }
         catch (UnauthorizedAccessException)
         {
@@ -121,7 +131,9 @@ public static class FileUtilities
     public static bool DeleteDirectoryRecursively(string path, int maxRetries = 3)
     {
         if (!Directory.Exists(path))
+        {
             return true;
+        }
 
         try
         {
@@ -143,7 +155,9 @@ public static class FileUtilities
     public static string GetUniqueFileName(string path)
     {
         if (!File.Exists(path))
+        {
             return path;
+        }
 
         var directory = Path.GetDirectoryName(path) ?? "";
         var filename = Path.GetFileNameWithoutExtension(path);
@@ -154,7 +168,10 @@ public static class FileUtilities
         {
             var newPath = Path.Combine(directory, $"{filename}_{counter}{extension}");
             if (!File.Exists(newPath))
+            {
                 return newPath;
+            }
+
             counter++;
         }
     }

@@ -19,7 +19,10 @@ public class CommandParser
         for (int i = 1; i < args.Length; i++)
         {
             var arg = args[i];
-            if (!arg.StartsWith("--")) continue;
+            if (!arg.StartsWith("--"))
+            {
+                continue;
+            }
 
             var key = arg[2..].ToLowerInvariant();
             var value = i + 1 < args.Length ? args[i + 1] : null;
@@ -56,7 +59,10 @@ public class CommandParser
         for (int i = 1; i < args.Length; i++)
         {
             var arg = args[i];
-            if (!arg.StartsWith("--")) continue;
+            if (!arg.StartsWith("--"))
+            {
+                continue;
+            }
 
             var key = arg[2..].ToLowerInvariant();
             var value = i + 1 < args.Length ? args[i + 1] : null;
@@ -80,15 +86,27 @@ public class CommandParser
                     i++;
                     break;
                 case "width":
-                    if (int.TryParse(value, out var w)) options.Width = w;
+                    if (int.TryParse(value, out var w))
+                    {
+                        options.Width = w;
+                    }
+
                     i++;
                     break;
                 case "height":
-                    if (int.TryParse(value, out var h)) options.Height = h;
+                    if (int.TryParse(value, out var h))
+                    {
+                        options.Height = h;
+                    }
+
                     i++;
                     break;
                 case "fps":
-                    if (int.TryParse(value, out var fps)) options.FrameRate = fps;
+                    if (int.TryParse(value, out var fps))
+                    {
+                        options.FrameRate = fps;
+                    }
+
                     i++;
                     break;
             }
@@ -105,7 +123,10 @@ public class CommandParser
         for (int i = 1; i < args.Length; i++)
         {
             var arg = args[i];
-            if (!arg.StartsWith("--")) continue;
+            if (!arg.StartsWith("--"))
+            {
+                continue;
+            }
 
             var key = arg[2..].ToLowerInvariant();
             var value = i + 1 < args.Length ? args[i + 1] : null;
@@ -146,7 +167,10 @@ public class CommandParser
         for (int i = 1; i < args.Length; i++)
         {
             var arg = args[i];
-            if (!arg.StartsWith("--")) continue;
+            if (!arg.StartsWith("--"))
+            {
+                continue;
+            }
 
             var key = arg[2..].ToLowerInvariant();
             var value = i + 1 < args.Length ? args[i + 1] : null;

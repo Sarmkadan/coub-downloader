@@ -39,9 +39,20 @@ public class NetworkException : CoubDownloaderException
     {
         var baseString = base.ToString();
         var details = new List<string>();
-        if (Url != null) details.Add($"URL: {Url}");
-        if (HttpStatusCode.HasValue) details.Add($"HTTP Status: {HttpStatusCode}");
-        if (IsTimeout) details.Add("Timeout: true");
+        if (Url != null)
+        {
+            details.Add($"URL: {Url}");
+        }
+
+        if (HttpStatusCode.HasValue)
+        {
+            details.Add($"HTTP Status: {HttpStatusCode}");
+        }
+
+        if (IsTimeout)
+        {
+            details.Add("Timeout: true");
+        }
 
         if (details.Count > 0)
         {

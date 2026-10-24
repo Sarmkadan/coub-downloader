@@ -53,7 +53,10 @@ public class WebhookManager
         lock (_lockObj)
         {
             var subscription = _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
-            if (subscription is null) return false;
+            if (subscription is null)
+            {
+                return false;
+            }
 
             _subscriptions.Remove(subscription);
             _logger.LogInfo($"Webhook subscription removed: {subscriptionId}", "Webhooks");
@@ -84,7 +87,9 @@ public class WebhookManager
         {
             var subscription = _subscriptions.FirstOrDefault(s => s.Id == subscriptionId);
             if (subscription is not null)
+            {
                 subscription.IsActive = false;
+            }
         }
     }
 

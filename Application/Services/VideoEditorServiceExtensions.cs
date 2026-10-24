@@ -1,7 +1,7 @@
 #nullable enable
 
-using CoubDownloader.Domain.Models;
 using CoubDownloader.Domain.Enums;
+using CoubDownloader.Domain.Models;
 
 namespace CoubDownloader.Application.Services;
 
@@ -163,6 +163,7 @@ public static class VideoEditorServiceExtensions
     /// <summary>
     /// Gets the edit history as a formatted string list with timestamps and operation labels.
     /// </summary>
+    /// <param name="service">The video editor service.</param>
     /// <param name="session">The video edit session</param>
     /// <param name="includeTimestamps">Whether to include timestamps in the output</param>
     /// <param name="maxLength">Optional maximum number of history entries to return</param>

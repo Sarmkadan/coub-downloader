@@ -36,7 +36,9 @@ public static class VideoConversionServiceExtensions
         ArgumentNullException.ThrowIfNull(service);
 
         if (!File.Exists(inputPath))
+        {
             throw new FileOperationException("Video file not found", inputPath, FileOperationType.Read);
+        }
 
         var settings = new ConversionSettings
         {
@@ -79,7 +81,9 @@ public static class VideoConversionServiceExtensions
         try
         {
             if (!File.Exists(videoPath))
+            {
                 throw new FileOperationException("Video file not found", videoPath, FileOperationType.Read);
+            }
 
             var args = $@"-i ""{videoPath}"" -vn -acodec copy ""{audioOutputPath}"" -y";
 
@@ -139,19 +143,27 @@ public static class VideoConversionServiceExtensions
         ArgumentNullException.ThrowIfNull(service);
 
         if (timestampSeconds <= 0)
+        {
             throw new ValidationException("Timestamp must be greater than 0", nameof(timestampSeconds), timestampSeconds);
+        }
 
         if (width <= 0 || height <= 0)
+        {
             throw new ValidationException("Width and height must be greater than 0", nameof(width), width);
+        }
 
         try
         {
             if (!File.Exists(videoPath))
+            {
                 throw new FileOperationException("Video file not found", videoPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(thumbnailPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var args = $@"-i ""{videoPath}"" -ss {timestampSeconds} -vframes 1 -vf scale={width}:{height} -y ""{thumbnailPath}""";
 
@@ -201,7 +213,9 @@ public static class VideoConversionServiceExtensions
         var metadata = await service.GetVideoMetadataAsync(filePath, cancellationToken);
 
         if (metadata.Duration <= 0)
+        {
             return "00:00:00";
+        }
 
         var timeSpan = TimeSpan.FromSeconds(metadata.Duration);
         return $"{timeSpan.Hours:D2}:{timeSpan.Minutes:D2}:{timeSpan.Seconds:D2}";

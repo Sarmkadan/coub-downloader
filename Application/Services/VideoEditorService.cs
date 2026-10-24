@@ -48,7 +48,9 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(sourceFilePath))
+            {
                 throw new FileOperationException("Source video file not found", sourceFilePath, FileOperationType.Read);
+            }
 
             var session = VideoEditSession.Create(sourceFilePath);
             logger.LogInfo(
@@ -83,13 +85,19 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video not found", inputPath, FileOperationType.Read);
+            }
 
             if (startTime < TimeSpan.Zero)
+            {
                 throw new ValidationException("Start time must be non-negative", nameof(startTime), startTime);
+            }
 
             if (endTime.HasValue && endTime.Value <= startTime)
+            {
                 throw new ValidationException("End time must be greater than start time", nameof(endTime), endTime);
+            }
 
             EnsureOutputDirectory(outputPath);
             progress?.Report(5);
@@ -156,13 +164,19 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video not found", inputPath, FileOperationType.Read);
+            }
 
             if (start < TimeSpan.Zero)
+            {
                 throw new ValidationException("Start time must be non-negative", nameof(start), start);
+            }
 
             if (duration <= TimeSpan.Zero)
+            {
                 throw new ValidationException("Duration must be positive", nameof(duration), duration);
+            }
 
             var endTime = start + duration;
             EnsureOutputDirectory(outputPath);
@@ -200,11 +214,17 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (inputPaths.Count < 2)
+            {
                 throw new ValidationException("At least two input clips are required for a merge", nameof(inputPaths), inputPaths.Count);
+            }
 
             foreach (var path in inputPaths)
+            {
                 if (!File.Exists(path))
+                {
                     throw new FileOperationException("Clip not found", path, FileOperationType.Read);
+                }
+            }
 
             EnsureOutputDirectory(outputPath);
             progress?.Report(5);
@@ -265,10 +285,14 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(inputPath))
+            {
                 throw new FileOperationException("Input video not found", inputPath, FileOperationType.Read);
+            }
 
             if (effects.Count == 0)
+            {
                 throw new ValidationException("At least one effect must be provided", nameof(effects), effects.Count);
+            }
 
             EnsureOutputDirectory(outputPath);
             progress?.Report(5);
@@ -337,7 +361,9 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(session.SourceFilePath))
+            {
                 throw new FileOperationException("Session source file not found", session.SourceFilePath, FileOperationType.Read);
+            }
 
             EnsureOutputDirectory(outputPath);
 
@@ -363,7 +389,9 @@ public sealed class VideoEditorService : IVideoEditorService
             };
 
             if (options.ClipDuration.HasValue)
+            {
                 args.AddRange(["-t", options.ClipDuration.Value.TotalSeconds.ToString("F3")]);
+            }
 
             args.AddRange(["-y", outputPath]);
 
@@ -411,10 +439,14 @@ public sealed class VideoEditorService : IVideoEditorService
         try
         {
             if (!File.Exists(session.SourceFilePath))
+            {
                 throw new FileOperationException("Session source file not found", session.SourceFilePath, FileOperationType.Read);
+            }
 
             if (session.Operations.Count == 0)
+            {
                 throw new InvalidOperationException("The session has no operations to apply.");
+            }
 
             EnsureOutputDirectory(outputPath);
 
@@ -430,7 +462,9 @@ public sealed class VideoEditorService : IVideoEditorService
             finally
             {
                 foreach (var tmp in tempFiles)
+                {
                     TryDeleteFile(tmp);
+                }
             }
         }
         catch (CoubDownloaderException)
@@ -463,7 +497,9 @@ public sealed class VideoEditorService : IVideoEditorService
             var stepOutput = isLastOp ? outputPath : GetTempPath(".mp4");
 
             if (!isLastOp)
+            {
                 tempFiles.Add(stepOutput);
+            }
 
             var capturedIndex = i;
             var stepProgress = new Progress<int>(p =>
@@ -559,7 +595,9 @@ public sealed class VideoEditorService : IVideoEditorService
             var args = new List<string>(inputArgs);
 
             if (filterParts.Count > 0)
+            {
                 args.AddRange(["-filter_complex", filterComplex, "-map", mapLabel]);
+            }
 
             args.AddRange(["-c:v", "libx264", "-preset", "medium", "-crf", "20", "-y", outputPath]);
 
@@ -600,12 +638,16 @@ public sealed class VideoEditorService : IVideoEditorService
 
             // Pre-input seek enables fast keyframe-aligned copy; post-input seek is precise but slower
             if (mode == TrimMode.KeyframeAligned)
+            {
                 args.AddRange(["-ss", startTime.TotalSeconds.ToString("F3")]);
+            }
 
             args.AddRange(["-i", inputPath]);
 
             if (mode == TrimMode.Precise)
+            {
                 args.AddRange(["-ss", startTime.TotalSeconds.ToString("F3")]);
+            }
 
             if (endTime.HasValue)
             {
@@ -657,7 +699,9 @@ public sealed class VideoEditorService : IVideoEditorService
         {
             var dir = Path.GetDirectoryName(filePath);
             if (!string.IsNullOrEmpty(dir))
+            {
                 Directory.CreateDirectory(dir);
+            }
         }
         catch (Exception ex)
         {

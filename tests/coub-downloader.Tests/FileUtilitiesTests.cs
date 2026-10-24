@@ -1,8 +1,8 @@
-using Xunit;
+using System;
 using System.IO;
 using System.Threading.Tasks;
-using System;
 using CoubDownloader.Infrastructure.Utilities;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -60,7 +60,9 @@ public class FileUtilitiesTests
         finally
         {
             if (Directory.Exists(path))
+            {
                 Directory.Delete(path);
+            }
         }
     }
 
@@ -73,7 +75,10 @@ public class FileUtilitiesTests
     public void GetUniqueFileName_ShouldReturnOriginalIfFileDoesNotExist()
     {
         var path = Path.Combine(Path.GetTempPath(), "test_file.txt");
-        if (File.Exists(path)) File.Delete(path);
+        if (File.Exists(path))
+        {
+            File.Delete(path);
+        }
 
         var result = FileUtilities.GetUniqueFileName(path);
         Assert.Equal(path, result);

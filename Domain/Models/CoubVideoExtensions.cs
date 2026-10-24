@@ -79,7 +79,7 @@ public sealed record CoubVideoProcessingExtensions
     /// Validates the extensions properties.
     /// </summary>
     /// <returns>True if the extensions are valid; otherwise, false.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="Id"/> or <paramref name="VideoId"/> is null or whitespace.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when <c>Id</c> or <c>VideoId</c> is null or empty.</exception>
     public bool IsValid()
     {
         ArgumentNullException.ThrowIfNullOrEmpty(Id);

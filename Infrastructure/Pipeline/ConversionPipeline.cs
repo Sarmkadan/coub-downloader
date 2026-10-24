@@ -131,10 +131,14 @@ public class ValidationStage : IPipelineStage<DownloadTask, DownloadTask>
     public Task<DownloadTask> ExecuteAsync(DownloadTask task, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(task.Url))
+        {
             throw new InvalidOperationException("URL is required");
+        }
 
         if (task.OutputPath is not null && Path.GetInvalidPathChars().Any(c => task.OutputPath.Contains(c)))
+        {
             throw new InvalidOperationException("Invalid output path");
+        }
 
         return Task.FromResult(task);
     }

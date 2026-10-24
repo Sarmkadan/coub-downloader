@@ -281,6 +281,8 @@ async Task DemonstrateApplication(
     {
         Console.WriteLine($"\n✗ Error during demonstration: {ex.Message}");
         if (ex.InnerException is not null)
+        {
             Console.WriteLine($"  Details: {ex.InnerException.Message}");
+        }
     }
 }

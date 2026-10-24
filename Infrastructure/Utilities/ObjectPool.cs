@@ -51,7 +51,10 @@ public sealed class ObjectPool<T> where T : class
     /// <summary>Return an object to the pool</summary>
     public void Return(T item)
     {
-        if (item is null) return;
+        if (item is null)
+        {
+            return;
+        }
 
         lock (_lockObj)
         {
@@ -108,10 +111,15 @@ public struct PooledObject<T> : IDisposable where T : class
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         if (_object is not null)
+        {
             _pool.Return(_object);
+        }
 
         _disposed = true;
     }
@@ -185,9 +193,13 @@ public sealed class ConnectionPool
             _inUse.Remove(connection);
 
             if (_available.Count < _maxConnections)
+            {
                 _available.Push(connection);
+            }
             else
+            {
                 connection.Dispose();
+            }
         }
     }
 
@@ -197,10 +209,14 @@ public sealed class ConnectionPool
         lock (_lockObj)
         {
             while (_available.Count > 0)
+            {
                 _available.Pop().Dispose();
+            }
 
             foreach (var conn in _inUse)
+            {
                 conn.Dispose();
+            }
 
             _inUse.Clear();
         }
@@ -218,7 +234,10 @@ public sealed class ConnectionHandle : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
+        if (_disposed)
+        {
+            return;
+        }
 
         IsOpen = false;
         _disposed = true;

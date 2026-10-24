@@ -272,7 +272,9 @@ public class ReportBuilder
         table += "| --- | --- |\n";
 
         foreach (var kvp in data)
+        {
             table += $"| {kvp.Key} | {kvp.Value} |\n";
+        }
 
         _sections.Add(table);
         return this;

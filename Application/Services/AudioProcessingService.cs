@@ -39,21 +39,27 @@ public class AudioProcessingService : IAudioProcessingService
         try
         {
             if (!File.Exists(videoPath))
+            {
                 throw new FileOperationException("Video file not found", videoPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var result = await _ffmpegWrapper.ExtractAudioAsync(videoPath, outputPath);
 
             if (!result.Success)
+            {
                 throw new ProcessExecutionException(
                     $"FFmpeg failed to extract audio (exit code {result.ExitCode})",
                     ApplicationConstants.FFmpegExecutable,
                     $"Extract audio from {videoPath}",
                     result.ExitCode,
                     result.Error);
+            }
 
             return outputPath;
         }
@@ -80,14 +86,20 @@ public class AudioProcessingService : IAudioProcessingService
         try
         {
             if (targetDuration <= 0)
+            {
                 throw new ValidationException("Target duration must be greater than 0", nameof(targetDuration), targetDuration);
+            }
 
             if (!File.Exists(audioPath))
+            {
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             FFmpegResult result;
             string[] args = Array.Empty<string>();
@@ -139,7 +151,9 @@ public class AudioProcessingService : IAudioProcessingService
             {
                 var audioDuration = await GetAudioDurationAsync(audioPath, cancellationToken);
                 if (audioDuration <= 0)
+                {
                     throw new AudioProcessingException("Could not determine audio duration for stretch.", audioPath);
+                }
 
                 var tempo = audioDuration / targetDuration;
                 var atempoChain = BuildAtempoChain(tempo);
@@ -156,12 +170,14 @@ public class AudioProcessingService : IAudioProcessingService
             }
 
             if (!result.Success)
+            {
                 throw new ProcessExecutionException(
                     $"Failed to loop audio with strategy {strategy}",
                     ApplicationConstants.FFmpegExecutable,
                     string.Join(" ", args),
                     result.ExitCode,
                     result.Error);
+            }
 
             return outputPath;
         }
@@ -188,11 +204,15 @@ public class AudioProcessingService : IAudioProcessingService
         try
         {
             if (!File.Exists(audioPath))
+            {
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var fadeInMs = trackSettings.FadeInMs / 1000.0;
             var fadeOutMs = trackSettings.FadeOutMs / 1000.0;
@@ -201,13 +221,19 @@ public class AudioProcessingService : IAudioProcessingService
             var afFilter = new List<string>();
 
             if (trackSettings.FadeInMs > 0)
+            {
                 afFilter.Add(FormattableString.Invariant($"afade=t=in:d={fadeInMs}"));
+            }
 
             if (trackSettings.FadeOutMs > 0)
+            {
                 afFilter.Add(FormattableString.Invariant($"afade=t=out:st={trackSettings.Duration - fadeOutMs}:d={fadeOutMs}"));
+            }
 
             if (Math.Abs(volume - 1.0) > 0.01)
+            {
                 afFilter.Add(FormattableString.Invariant($"volume={volume}"));
+            }
 
             var filterChain = string.Join(",", afFilter);
             var args = string.IsNullOrEmpty(filterChain)
@@ -216,12 +242,14 @@ public class AudioProcessingService : IAudioProcessingService
 
             var result = await _ffmpegWrapper.ExecuteAsync(args);
             if (!result.Success)
+            {
                 throw new ProcessExecutionException(
                     "Failed to apply audio effects",
                     ApplicationConstants.FFmpegExecutable,
                     string.Join(" ", args),
                     result.ExitCode,
                     result.Error);
+            }
 
             return outputPath;
         }
@@ -251,7 +279,9 @@ public class AudioProcessingService : IAudioProcessingService
             // First, get video duration
             var videoDuration = await ExtractVideoDurationAsync(videoPath, cancellationToken);
             if (videoDuration <= 0)
+            {
                 throw new AudioProcessingException("Could not determine video duration", videoPath);
+            }
 
             // Loop audio to match video duration
             var loopedAudioPath = Path.Combine(Path.GetTempPath(), $"looped_{Guid.NewGuid()}.aac");
@@ -262,26 +292,32 @@ public class AudioProcessingService : IAudioProcessingService
 
                 var directory = Path.GetDirectoryName(outputPath);
                 if (!string.IsNullOrEmpty(directory))
+                {
                     Directory.CreateDirectory(directory);
+                }
 
                 // Combine video with synced audio
                 var args = new[] { "-i", videoPath, "-i", loopedAudioPath, "-c:v", "copy", "-c:a", "aac", "-map", "0:v:0", "-map", "1:a:0", "-y", outputPath };
                 var result = await _ffmpegWrapper.ExecuteAsync(args);
 
                 if (!result.Success)
+                {
                     throw new ProcessExecutionException(
                         "Failed to sync audio with video",
                         ApplicationConstants.FFmpegExecutable,
                         string.Join(" ", args),
                         result.ExitCode,
                         result.Error);
+                }
 
                 return outputPath;
             }
             finally
             {
                 if (File.Exists(loopedAudioPath))
+                {
                     File.Delete(loopedAudioPath);
+                }
             }
         }
         catch (CoubDownloaderException)
@@ -301,11 +337,15 @@ public class AudioProcessingService : IAudioProcessingService
         try
         {
             if (!File.Exists(audioPath))
+            {
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
+            }
 
             var mediaInfo = await _ffmpegWrapper.GetMediaInfoAsync(audioPath);
             if (mediaInfo?.DurationInSeconds == null)
+            {
                 throw new AudioProcessingException($"Could not determine audio duration for file: {audioPath}", audioPath);
+            }
 
             return mediaInfo.DurationInSeconds.Value;
         }
@@ -331,25 +371,33 @@ public class AudioProcessingService : IAudioProcessingService
         try
         {
             if (volumeLevel < 0 || volumeLevel > 2.0)
+            {
                 throw new ValidationException("Volume level must be between 0 and 2.0", nameof(volumeLevel), volumeLevel);
+            }
 
             if (!File.Exists(audioPath))
+            {
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
+            }
 
             var directory = Path.GetDirectoryName(outputPath);
             if (!string.IsNullOrEmpty(directory))
+            {
                 Directory.CreateDirectory(directory);
+            }
 
             var args = new[] { "-i", audioPath, "-af", FormattableString.Invariant($"volume={volumeLevel}"), "-c:a", "aac", "-y", outputPath };
 
             var result = await _ffmpegWrapper.ExecuteAsync(args);
             if (!result.Success)
+            {
                 throw new ProcessExecutionException(
                     "Failed to adjust audio volume",
                     ApplicationConstants.FFmpegExecutable,
                     string.Join(" ", args),
                     result.ExitCode,
                     result.Error);
+            }
 
             return outputPath;
         }
@@ -371,7 +419,9 @@ public class AudioProcessingService : IAudioProcessingService
     private static string BuildAtempoChain(double tempo)
     {
         if (tempo <= 0 || double.IsNaN(tempo) || double.IsInfinity(tempo))
+        {
             throw new ValidationException("Tempo factor must be a positive finite number", nameof(tempo), tempo);
+        }
 
         var factors = new List<double>();
 
@@ -402,7 +452,9 @@ public class AudioProcessingService : IAudioProcessingService
             // Hotfix: Use FFmpegWrapper to get actual media duration via ffprobe.
             var mediaInfo = await _ffmpegWrapper.GetMediaInfoAsync(filePath);
             if (mediaInfo?.DurationInSeconds == null)
+            {
                 throw new AudioProcessingException($"Could not determine duration for file: {filePath}", filePath);
+            }
 
             return mediaInfo.DurationInSeconds.Value;
         }

@@ -34,8 +34,15 @@ public class FileOperationException : CoubDownloaderException
     {
         var baseString = base.ToString();
         var details = new List<string>();
-        if (FilePath != null) details.Add($"File: {FilePath}");
-        if (OperationType != FileOperationType.Unknown) details.Add($"Operation: {OperationType}");
+        if (FilePath != null)
+        {
+            details.Add($"File: {FilePath}");
+        }
+
+        if (OperationType != FileOperationType.Unknown)
+        {
+            details.Add($"Operation: {OperationType}");
+        }
 
         if (details.Count > 0)
         {

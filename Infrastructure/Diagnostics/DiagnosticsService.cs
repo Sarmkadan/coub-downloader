@@ -4,10 +4,10 @@
 // CTO & Software Architect
 // =============================================================================
 
+using CoubDownloader.Infrastructure.Caching;
 using CoubDownloader.Infrastructure.Middleware;
 using CoubDownloader.Infrastructure.Statistics;
 using CoubDownloader.Infrastructure.Utilities;
-using CoubDownloader.Infrastructure.Caching;
 
 namespace CoubDownloader.Infrastructure.Diagnostics;
 
@@ -151,7 +151,10 @@ public class DiagnosticsService
             };
 
             using var process = System.Diagnostics.Process.Start(psi);
-            if (process is null) return false;
+            if (process is null)
+            {
+                return false;
+            }
 
             var completed = process.WaitForExit(5000);
             return completed && process.ExitCode == 0;

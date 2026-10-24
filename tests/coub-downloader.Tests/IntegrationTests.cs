@@ -1,23 +1,23 @@
-using Xunit;
-using Moq;
-using Moq.Protected;
-using FluentAssertions;
 using System;
+using System.Collections.Generic; // Added for List
 using System.IO;
+using System.Net;
+using System.Net.Http;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
 using CoubDownloader.Application.Services;
-using CoubDownloader.Domain.Models; // Note: CoubVideoInfo is duplicated for testing below
-using CoubDownloader.Infrastructure.Integration;
-using CoubDownloader.Infrastructure.Repositories;
-using CoubDownloader.Infrastructure.Caching;
-using CoubDownloader.Infrastructure.Middleware;
-using System.Net.Http;
-using System.Net;
-using System.Text.Json;
 using CoubDownloader.Domain.Enums;
-using System.Collections.Generic; // Added for List
+using CoubDownloader.Domain.Models; // Note: CoubVideoInfo is duplicated for testing below
+using CoubDownloader.Infrastructure.Caching;
+using CoubDownloader.Infrastructure.Integration;
+using CoubDownloader.Infrastructure.Middleware;
+using CoubDownloader.Infrastructure.Repositories;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Moq;
+using Moq.Protected;
+using Xunit;
 
 namespace CoubDownloader.Tests;
 
@@ -180,7 +180,7 @@ public class IntegrationTests
 
 		// 2. Download the video file to a temporary location
 		var tempVideoPath = Path.Combine(outputDir, $"{videoId}.webm");
-		await downloadService.DownloadVideoFileAsync(coubVideo.SourceUrl, tempVideoPath);
+		await downloadService.DownloadVideoFileAsync(coubVideo.SourceUrl!, tempVideoPath);
 		File.Exists(tempVideoPath).Should().BeTrue();
 		(await File.ReadAllTextAsync(tempVideoPath)).Should().Be(videoContent);
 
@@ -215,10 +215,13 @@ public class IntegrationTests
 	public async Task EndToEnd_BatchProcessing_SuccessfulCompletion()
 	{
 		// Arrange
-		var batchJobId = "batch1";
 		var outputDir = Path.Combine(Path.GetTempPath(), "batch_test_outputs");
-		if (Directory.Exists(outputDir)) Directory.Delete(outputDir, true);
-		Directory.CreateDirectory(outputDir);
+		if (Directory.Exists(outputDir))
+        {
+            Directory.Delete(outputDir, true);
+        }
+
+        Directory.CreateDirectory(outputDir);
 
 		var batchName = "Test Batch";
 		var urls = new List<string>

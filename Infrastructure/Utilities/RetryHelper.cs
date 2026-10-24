@@ -28,7 +28,9 @@ public static class RetryHelper
             catch (Exception ex) when (attempt < maxRetries)
             {
                 if (shouldRetry is not null && !shouldRetry(ex, attempt))
+                {
                     throw;
+                }
 
                 attempt++;
                 await Task.Delay(delayMs);

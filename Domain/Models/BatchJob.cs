@@ -74,14 +74,22 @@ public class BatchJob
     /// <summary>Get overall progress percentage</summary>
     public int GetProgressPercent()
     {
-        if (TotalTasks == 0) return 0;
+        if (TotalTasks == 0)
+        {
+            return 0;
+        }
+
         return (int)((CompletedTasks + FailedTasks) * 100 / TotalTasks);
     }
 
     /// <summary>Get elapsed time since batch started</summary>
     public TimeSpan? GetElapsedTime()
     {
-        if (StartedAt is null) return null;
+        if (StartedAt is null)
+        {
+            return null;
+        }
+
         var endTime = CompletedAt ?? DateTime.UtcNow;
         return endTime - StartedAt;
     }

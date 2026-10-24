@@ -58,6 +58,7 @@ public static class DownloadResultExtensions
             Id = result.Id,
             TaskId = result.TaskId,
             Success = result.Success,
+            Title = result.Title,
             OutputFilePath = result.OutputFilePath,
             OutputFileSizeBytes = result.OutputFileSizeBytes,
             ProcessingTimeMs = result.ProcessingTimeMs,

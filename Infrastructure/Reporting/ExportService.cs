@@ -4,6 +4,7 @@
 // CTO & Software Architect
 // =============================================================================
 
+using System.Globalization;
 using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Models;
 using CoubDownloader.Infrastructure.Middleware;
@@ -180,23 +181,47 @@ public class ExportService
 </BatchJob>";
     }
 
-    private string GenerateCsvResults(List<DownloadResult> results)
+    private static string GenerateCsvResults(List<DownloadResult> results)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("TaskID,Success,OutputPath,FileSize,ProcessingTime,Format,Quality,ErrorMessage");
+        sb.AppendLine("id,title,status,size,duration,path");
 
         foreach (var result in results)
         {
-            var path = result.OutputFilePath ?? "";
-            var error = result.ErrorMessage ?? "";
+            var status = result.Success ? "completed" : "failed";
 
-            sb.AppendLine(
-                $"{result.TaskId},{result.Success},{path},{result.OutputFileSizeBytes}," +
-                $"{result.ProcessingTimeMs},{result.Format},{result.Quality},{error}");
+            sb.AppendLine(string.Join(",",
+                EscapeCsvField(result.Id),
+                EscapeCsvField(result.Title),
+                EscapeCsvField(status),
+                result.OutputFileSizeBytes.ToString(CultureInfo.InvariantCulture),
+                result.ProcessingTimeMs.ToString(CultureInfo.InvariantCulture),
+                EscapeCsvField(result.OutputFilePath)));
         }
 
         return sb.ToString();
     }
+
+    /// <summary>
+    /// Escapes a single CSV field per RFC 4180: fields containing a comma, quote, or line break
+    /// are wrapped in double quotes, and embedded quotes are doubled.
+    /// </summary>
+    internal static string EscapeCsvField(string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return string.Empty;
+        }
+
+        if (value.IndexOfAny(CsvSpecialChars) < 0)
+        {
+            return value;
+        }
+
+        return $"\"{value.Replace("\"", "\"\"")}\"";
+    }
+
+    private static readonly char[] CsvSpecialChars = [',', '"', '\r', '\n'];
 
     private string GenerateJsonResults(List<DownloadResult> results)
     {

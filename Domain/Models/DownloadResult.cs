@@ -25,6 +25,9 @@ public class DownloadResult
     /// <summary>Whether the operation was successful</summary>
     public bool Success { get; set; }
 
+    /// <summary>Title of the downloaded video, if known</summary>
+    public string? Title { get; set; }
+
     /// <summary>Path to the resulting output file</summary>
     public string? OutputFilePath { get; set; }
 

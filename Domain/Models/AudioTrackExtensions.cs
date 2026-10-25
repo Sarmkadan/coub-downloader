@@ -5,6 +5,7 @@
 // CTO & Software Architect
 // =====================================================================
 
+using CoubDownloader.Domain.Enums;
 using CoubDownloader.Domain.Models;
 
 namespace CoubDownloader.Domain.Models;
@@ -160,5 +161,19 @@ public static class AudioTrackExtensions
         ArgumentOutOfRangeException.ThrowIfNegative(daysThreshold);
 
         return audioTrack.GetAgeInDays() <= daysThreshold;
+    }
+
+    /// <summary>
+    /// Determines if the audio track actually repeats its content (more than one loop
+    /// with a strategy that repeats audio).
+    /// </summary>
+    /// <param name="audioTrack">The audio track.</param>
+    /// <returns>True if the track loops more than once, false otherwise.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="audioTrack"/> is null.</exception>
+    public static bool IsLooping(this AudioTrack audioTrack)
+    {
+        ArgumentNullException.ThrowIfNull(audioTrack);
+        return audioTrack.LoopCount > 1
+            && audioTrack.LoopStrategy is AudioLoopStrategy.Repeat or AudioLoopStrategy.Crossfade;
     }
 }

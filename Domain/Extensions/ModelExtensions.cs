@@ -305,6 +305,16 @@ public static class BatchJobExtensions
         ArgumentNullException.ThrowIfNull(batch);
         return batch.Tasks.Count == 0 ? 0 : (double)batch.Tasks.Count(t => t.State == ProcessingState.Completed) / batch.Tasks.Count;
     }
+
+    /// <summary>Calculates the failure rate of the batch job (failed tasks / total tasks).</summary>
+    /// <param name="batch">The batch job instance.</param>
+    /// <returns>The failure rate as a value between 0 and 1, or 0 if there are no tasks.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="batch"/> is <see langword="null"/>.</exception>
+    public static double GetFailureRate(this BatchJob batch)
+    {
+        ArgumentNullException.ThrowIfNull(batch);
+        return batch.Tasks.Count == 0 ? 0 : (double)batch.Tasks.Count(t => t.State == ProcessingState.Failed) / batch.Tasks.Count;
+    }
 }
 
 /// <summary>Extension methods for DownloadResult</summary>

@@ -299,9 +299,9 @@ public static class CoubVideoValidation
     /// <exception cref="ArgumentNullException">Thrown when audioTrack is null</exception>
     public static IReadOnlyList<string> Validate(this AudioTrack? audioTrack)
     {
-        return audioTrack is null
-            ? throw new ArgumentNullException(nameof(audioTrack))
-            : ValidateAudioTrack(audioTrack);
+        ArgumentNullException.ThrowIfNull(audioTrack);
+
+        return ValidateAudioTrack(audioTrack);
     }
 
     /// <summary>
@@ -323,10 +323,7 @@ public static class CoubVideoValidation
     /// <exception cref="ArgumentException">Thrown when audioTrack is invalid with detailed error messages</exception>
     public static void EnsureValid(this AudioTrack? audioTrack)
     {
-        if (audioTrack is null)
-        {
-            throw new ArgumentNullException(nameof(audioTrack));
-        }
+        ArgumentNullException.ThrowIfNull(audioTrack);
 
         var errors = ValidateAudioTrack(audioTrack);
         if (errors.Count > 0)

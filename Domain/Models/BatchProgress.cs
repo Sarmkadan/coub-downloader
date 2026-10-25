@@ -69,4 +69,10 @@ public class BatchProgress
             return $"{completedPercent}% complete ({Completed}/{Total} tasks)";
         }
     }
+
+    /// <summary>Summarizes completed/total tasks and overall percentage</summary>
+    public override string ToString()
+    {
+        return $"{Completed}/{Total} completed ({ProgressPercent}%)";
+    }
 }

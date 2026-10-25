@@ -12,9 +12,24 @@ namespace CoubDownloader.Infrastructure.Security;
 /// <summary>Credential and API key management</summary>
 public interface ICredentialManager
 {
+    /// <summary>Stores an API key for the given service, replacing any existing key.</summary>
+    /// <param name="service">Service name.</param>
+    /// <param name="apiKey">API key to store.</param>
     void StoreApiKey(string service, string apiKey);
+
+    /// <summary>Gets the API key stored for the given service.</summary>
+    /// <param name="service">Service name.</param>
+    /// <returns>The stored API key, or null if none is stored.</returns>
     string? GetApiKey(string service);
+
+    /// <summary>Removes the API key stored for the given service, if any.</summary>
+    /// <param name="service">Service name.</param>
     void DeleteApiKey(string service);
+
+    /// <summary>Checks whether the given API key matches the one stored for the service.</summary>
+    /// <param name="service">Service name.</param>
+    /// <param name="apiKey">API key to compare.</param>
+    /// <returns>True if a key is stored for the service and matches; otherwise false.</returns>
     bool ValidateApiKey(string service, string apiKey);
 }
 
@@ -24,6 +39,7 @@ public class InMemoryCredentialManager : ICredentialManager
     private readonly Dictionary<string, string> _credentials = [];
     private readonly object _lockObj = new();
 
+    /// <inheritdoc />
     public void StoreApiKey(string service, string apiKey)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -35,6 +51,7 @@ public class InMemoryCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
     public string? GetApiKey(string service)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -45,6 +62,7 @@ public class InMemoryCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
     public void DeleteApiKey(string service)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -55,6 +73,7 @@ public class InMemoryCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
     public bool ValidateApiKey(string service, string apiKey)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -73,6 +92,12 @@ public class EncryptedCredentialManager : ICredentialManager
     private readonly Dictionary<string, string> _cache = [];
     private readonly object _lockObj = new();
 
+    /// <summary>Creates a credential manager that persists encrypted keys to a file.</summary>
+    /// <param name="storePath">Path to the credential store file. Defaults to "./credentials.enc".</param>
+    /// <param name="encryptionKey">
+    /// Key material for AES encryption. Padded or truncated to 32 characters.
+    /// When null or empty, a built-in fallback key is used.
+    /// </param>
     public EncryptedCredentialManager(string storePath = "./credentials.enc", string? encryptionKey = null)
     {
         ArgumentNullException.ThrowIfNull(storePath);
@@ -85,6 +110,7 @@ public class EncryptedCredentialManager : ICredentialManager
             : Encoding.UTF8.GetBytes(encryptionKey.PadRight(32).Substring(0, 32));
     }
 
+    /// <inheritdoc />
     public void StoreApiKey(string service, string apiKey)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -98,6 +124,8 @@ public class EncryptedCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
+    /// <remarks>Returns null if the stored value cannot be decrypted.</remarks>
     public string? GetApiKey(string service)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -120,6 +148,7 @@ public class EncryptedCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
     public void DeleteApiKey(string service)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -131,6 +160,7 @@ public class EncryptedCredentialManager : ICredentialManager
         }
     }
 
+    /// <inheritdoc />
     public bool ValidateApiKey(string service, string apiKey)
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -199,14 +229,26 @@ public class EncryptedCredentialManager : ICredentialManager
 /// <summary>Request context for tracing and correlation</summary>
 public class RequestContext
 {
+    /// <summary>Unique identifier used to correlate logs and operations.</summary>
     public string TraceId { get; set; } = Guid.NewGuid().ToString();
+
+    /// <summary>UTC time when the request started.</summary>
     public DateTime StartTime { get; set; } = DateTime.UtcNow;
+
+    /// <summary>Identifier of the user the request runs for, if known.</summary>
     public string? UserId { get; set; }
+
+    /// <summary>Name of the operation being traced, if set.</summary>
     public string? OperationName { get; set; }
+
+    /// <summary>Additional key/value data attached to the request.</summary>
     public Dictionary<string, object> Metadata { get; set; } = [];
 
+    /// <summary>Time elapsed since <see cref="StartTime"/>.</summary>
     public TimeSpan ElapsedTime => DateTime.UtcNow - StartTime;
 
+    /// <summary>Returns a short summary with trace ID, operation name and elapsed time.</summary>
+    /// <returns>Formatted trace summary.</returns>
     public override string ToString()
     {
         return $"TraceId={TraceId}, Operation={OperationName}, Elapsed={ElapsedTime.TotalMilliseconds}ms";
@@ -218,12 +260,16 @@ public class RequestContextAccessor
 {
     private static readonly AsyncLocal<RequestContext?> _context = new();
 
+    /// <summary>Gets or sets the request context for the current async flow.</summary>
     public RequestContext? Current
     {
         get => _context.Value;
         set => _context.Value = value;
     }
 
+    /// <summary>Sets the request context for the current async flow.</summary>
+    /// <param name="context">Context to set.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="context"/> is null.</exception>
     public void SetContext(RequestContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -231,6 +277,7 @@ public class RequestContextAccessor
         _context.Value = context;
     }
 
+    /// <summary>Clears the request context for the current async flow.</summary>
     public void ClearContext()
     {
         _context.Value = null;

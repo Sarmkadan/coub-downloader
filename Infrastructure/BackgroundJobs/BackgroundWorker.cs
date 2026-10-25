@@ -120,6 +120,9 @@ public class CleanupWorker : PeriodicBackgroundWorker
     private readonly string _downloadDirectory;
     private readonly int _retentionDays;
 
+    /// <summary>Create a cleanup worker that runs hourly</summary>
+    /// <param name="downloadDirectory">Directory whose files are checked for expiry</param>
+    /// <param name="retentionDays">Files older than this many days are deleted</param>
     public CleanupWorker(string downloadDirectory, int retentionDays = 30)
         : base(TimeSpan.FromHours(1))
     {
@@ -169,8 +172,10 @@ public class CleanupWorker : PeriodicBackgroundWorker
 /// <summary>Monitoring worker for system health checks</summary>
 public class MonitoringWorker : PeriodicBackgroundWorker
 {
+    /// <summary>Raised after each periodic health check with its result</summary>
     public event EventHandler<HealthCheckResult>? HealthCheckCompleted;
 
+    /// <summary>Create a monitoring worker that runs every five minutes</summary>
     public MonitoringWorker() : base(TimeSpan.FromMinutes(5))
     {
     }
@@ -217,9 +222,18 @@ public class MonitoringWorker : PeriodicBackgroundWorker
 /// <summary>Health check result data</summary>
 public class HealthCheckResult
 {
+    /// <summary>UTC time at which the check was performed</summary>
     public DateTime Timestamp { get; set; }
+
+    /// <summary>Managed heap size in bytes, as reported by <c>GC.GetTotalMemory(false)</c></summary>
     public long AvailableMemory { get; set; }
+
+    /// <summary>Number of logical processors on the host</summary>
     public int ProcessorCount { get; set; }
+
+    /// <summary>Free space in bytes on the first drive returned by <c>DriveInfo.GetDrives()</c></summary>
     public long AvailableDiskSpace { get; set; }
+
+    /// <summary>True when at least 100 MB of disk space is free</summary>
     public bool IsHealthy => AvailableDiskSpace > 100 * 1024 * 1024; // At least 100MB free
 }

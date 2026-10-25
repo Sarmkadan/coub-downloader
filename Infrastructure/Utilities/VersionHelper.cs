@@ -63,12 +63,18 @@ public static class VersionHelper
     /// <summary>Compare versions</summary>
     public static int CompareVersions(string version1, string version2)
     {
+        ArgumentNullException.ThrowIfNull(version1);
+        ArgumentNullException.ThrowIfNull(version2);
+
         return Version.Parse(version1).CompareTo(Version.Parse(version2));
     }
 
     /// <summary>Check if current version is greater than specified</summary>
     public static bool IsGreaterThan(string currentVersion, string compareVersion)
     {
+        ArgumentNullException.ThrowIfNull(currentVersion);
+        ArgumentNullException.ThrowIfNull(compareVersion);
+
         return Version.Parse(currentVersion) > Version.Parse(compareVersion);
     }
 
@@ -132,21 +138,29 @@ public class FeatureFlags
 
     public void Enable(string featureName)
     {
+        ArgumentNullException.ThrowIfNull(featureName);
+
         _flags[featureName.ToLowerInvariant()] = true;
     }
 
     public void Disable(string featureName)
     {
+        ArgumentNullException.ThrowIfNull(featureName);
+
         _flags[featureName.ToLowerInvariant()] = false;
     }
 
     public bool IsEnabled(string featureName)
     {
+        ArgumentNullException.ThrowIfNull(featureName);
+
         return _flags.TryGetValue(featureName.ToLowerInvariant(), out var enabled) && enabled;
     }
 
     public bool Toggle(string featureName)
     {
+        ArgumentNullException.ThrowIfNull(featureName);
+
         var key = featureName.ToLowerInvariant();
         var current = _flags.TryGetValue(key, out var val) && val;
         _flags[key] = !current;

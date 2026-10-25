@@ -18,6 +18,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<DownloadResult?> GetByIdAsync(string id)
     {
+        ArgumentNullException.ThrowIfNull(id);
+
         lock (_lock)
         {
             return Task.FromResult(_results.TryGetValue(id, out var result) ? result : null);
@@ -34,6 +36,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<DownloadResult> CreateAsync(DownloadResult entity)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         if (string.IsNullOrWhiteSpace(entity.Id))
         {
             entity.Id = Guid.NewGuid().ToString();
@@ -51,6 +55,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<DownloadResult> UpdateAsync(DownloadResult entity)
     {
+        ArgumentNullException.ThrowIfNull(entity);
+
         lock (_lock)
         {
             if (!_results.ContainsKey(entity.Id))
@@ -66,6 +72,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<bool> DeleteAsync(string id)
     {
+        ArgumentNullException.ThrowIfNull(id);
+
         lock (_lock)
         {
             return Task.FromResult(_results.Remove(id));
@@ -74,6 +82,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<bool> ExistsAsync(string id)
     {
+        ArgumentNullException.ThrowIfNull(id);
+
         lock (_lock)
         {
             return Task.FromResult(_results.ContainsKey(id));
@@ -82,6 +92,8 @@ public class InMemoryDownloadResultRepository : IDownloadResultRepository
 
     public Task<DownloadResult?> GetByTaskIdAsync(string taskId)
     {
+        ArgumentNullException.ThrowIfNull(taskId);
+
         lock (_lock)
         {
             var result = _results.Values.FirstOrDefault(r => r.TaskId == taskId);

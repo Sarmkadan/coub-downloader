@@ -49,14 +49,16 @@ public interface IVideoConversionService
     /// <summary>
     /// Checks if FFmpeg is installed and available.
     /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if FFmpeg is available; otherwise, <c>false</c>.</returns>
-    Task<bool> IsFfmpegAvailableAsync();
+    Task<bool> IsFfmpegAvailableAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Gets the FFmpeg version information.
     /// </summary>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns>The version string.</returns>
-    Task<string> GetFfmpegVersionAsync();
+    Task<string> GetFfmpegVersionAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Rescales the video to target dimensions.

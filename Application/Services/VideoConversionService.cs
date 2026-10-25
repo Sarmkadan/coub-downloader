@@ -238,7 +238,7 @@ public VideoConversionService()
         }
     }
 
-    public virtual async Task<bool> IsFfmpegAvailableAsync()
+    public virtual async Task<bool> IsFfmpegAvailableAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -257,8 +257,12 @@ public VideoConversionService()
                 return false;
             }
 
-            await process.WaitForExitAsync();
+            await process.WaitForExitAsync(cancellationToken);
             return process.ExitCode == 0;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -266,7 +270,7 @@ public VideoConversionService()
         }
     }
 
-    public virtual async Task<string> GetFfmpegVersionAsync()
+    public virtual async Task<string> GetFfmpegVersionAsync(CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(_ffmpegPath);
 
@@ -287,12 +291,16 @@ public VideoConversionService()
                 throw new ToolNotFoundException(ApplicationConstants.FFmpegExecutable);
             }
 
-            var output = await process.StandardOutput.ReadLineAsync();
-            await process.WaitForExitAsync();
+            var output = await process.StandardOutput.ReadLineAsync(cancellationToken);
+            await process.WaitForExitAsync(cancellationToken);
 
             return output ?? "Unknown version";
         }
         catch (CoubDownloaderException)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
         {
             throw;
         }

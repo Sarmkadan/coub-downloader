@@ -51,6 +51,7 @@ public interface ICoubDownloadService
     /// Verifies the integrity of the downloaded file.
     /// </summary>
     /// <param name="filePath">The file path to the downloaded video.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <returns><c>true</c> if the file is valid; otherwise, <c>false</c>.</returns>
-    Task<bool> VerifyDownloadAsync(string filePath);
+    Task<bool> VerifyDownloadAsync(string filePath, CancellationToken cancellationToken = default);
 }

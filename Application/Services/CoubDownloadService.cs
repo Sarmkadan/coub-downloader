@@ -128,9 +128,10 @@ public class CoubDownloadService : ICoubDownloadService
         }
     }
 
-    public async Task<bool> VerifyDownloadAsync(string filePath)
+    public async Task<bool> VerifyDownloadAsync(string filePath, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
+        cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
@@ -177,6 +178,8 @@ public class CoubDownloadService : ICoubDownloadService
             // Use retry logic for the network operations
             return await RetryTransientOperationAsync(async () =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 var resumeFrom = File.Exists(partPath) ? new FileInfo(partPath).Length : 0L;
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, sourceUrl);
@@ -251,7 +254,7 @@ public class CoubDownloadService : ICoubDownloadService
 
                 File.Move(partPath, outputPath, overwrite: true);
                 return outputPath;
-            }, "Download video file", sourceUrl);
+            }, "Download video file", sourceUrl, cancellationToken: cancellationToken);
         }
         catch (Exception ex) when (ex is not CoubDownloaderException)
         {
@@ -282,7 +285,13 @@ public class CoubDownloadService : ICoubDownloadService
         }
     }
 
-    private async Task<T> RetryTransientOperationAsync<T>(Func<Task<T>> operation, string operationName, string url, int maxAttempts = 3, int initialDelayMs = 1000)
+    private async Task<T> RetryTransientOperationAsync<T>(
+        Func<Task<T>> operation,
+        string operationName,
+        string url,
+        int maxAttempts = 3,
+        int initialDelayMs = 1000,
+        CancellationToken cancellationToken = default)
     {
         int attempt = 0;
         Exception? lastException = null;
@@ -300,7 +309,7 @@ public class CoubDownloadService : ICoubDownloadService
                 if (attempt < maxAttempts)
                 {
                     var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
-                    await Task.Delay(delayMs, CancellationToken.None);
+                    await Task.Delay(delayMs, cancellationToken);
                 }
             }
             catch (IOException ex)
@@ -309,7 +318,7 @@ public class CoubDownloadService : ICoubDownloadService
                 if (attempt < maxAttempts)
                 {
                     var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
-                    await Task.Delay(delayMs, CancellationToken.None);
+                    await Task.Delay(delayMs, cancellationToken);
                 }
             }
             catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
@@ -318,7 +327,7 @@ public class CoubDownloadService : ICoubDownloadService
                 if (attempt < maxAttempts)
                 {
                     var delayMs = initialDelayMs * (int)Math.Pow(2, attempt - 1);
-                    await Task.Delay(delayMs, CancellationToken.None);
+                    await Task.Delay(delayMs, cancellationToken);
                 }
             }
         }

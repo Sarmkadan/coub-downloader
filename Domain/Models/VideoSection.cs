@@ -59,4 +59,8 @@ public class VideoSection
             && StartTime >= 0
             && EndTime > StartTime;
     }
+
+    /// <summary>Summarize the section as "start-end label" (times in seconds)</summary>
+    public override string ToString() =>
+        FormattableString.Invariant($"[{Index}] {StartTime:F2}s - {EndTime:F2}s: {Description ?? "(no label)"}");
 }

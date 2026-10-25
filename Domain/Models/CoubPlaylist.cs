@@ -60,4 +60,8 @@ public class CoubPlaylist
     /// <summary>Return the effective list of URLs, respecting <see cref="MaxVideos"/> if set.</summary>
     public IEnumerable<string> GetEffectiveVideoUrls() =>
         MaxVideos.HasValue ? VideoUrls.Take(MaxVideos.Value) : VideoUrls;
+
+    /// <summary>Summarize the playlist as its title and video count</summary>
+    public override string ToString() =>
+        $"CoubPlaylist[Id={Id}, Title={Title}, Items={TotalVideos}]";
 }

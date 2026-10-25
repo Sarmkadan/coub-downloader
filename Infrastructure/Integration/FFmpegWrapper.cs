@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using CoubDownloader.Application.Services;
 using CoubDownloader.Infrastructure.Middleware;
 
 namespace CoubDownloader.Infrastructure.Integration;
@@ -201,37 +202,38 @@ public class FFmpegWrapper : IFFmpegWrapper
         ArgumentNullException.ThrowIfNull(inputFile);
         ArgumentNullException.ThrowIfNull(outputFile);
         ArgumentNullException.ThrowIfNull(parameters);
-        var args = new List<string>
+        var args = new FFmpegArgsBuilder();
+
+        if (parameters.UseHardwareAcceleration)
         {
+            args.Add(FFmpegConstants.HardwareAccelerationArgument, FFmpegConstants.HardwareAccelerationAuto);
+        }
+
+        args.Add(
             FFmpegConstants.InputArgument, inputFile,
             FFmpegConstants.VideoCodecArgument, parameters.VideoCodec,
             FFmpegConstants.AudioCodecArgument, parameters.AudioCodec,
             FFmpegConstants.VideoBitrateArgument, $"{parameters.VideoBitrate}{FFmpegConstants.BitrateKiloSuffix}",
             FFmpegConstants.AudioBitrateArgument, $"{parameters.AudioBitrate}{FFmpegConstants.BitrateKiloSuffix}",
-            FFmpegConstants.FrameRateArgument, parameters.FrameRate.ToString()
-        };
+            FFmpegConstants.FrameRateArgument, parameters.FrameRate.ToString());
 
         if (parameters.Width > 0 && parameters.Height > 0)
         {
-            args.AddRange(new[] { FFmpegConstants.VideoFilterArgument, $"{FFmpegConstants.ScaleFilterPrefix}{parameters.Width}:{parameters.Height}" });
+            args.Add(FFmpegConstants.VideoFilterArgument, $"{FFmpegConstants.ScaleFilterPrefix}{parameters.Width}:{parameters.Height}");
         }
 
-        if (parameters.UseHardwareAcceleration)
-        {
-            args.InsertRange(0, new[] { FFmpegConstants.HardwareAccelerationArgument, FFmpegConstants.HardwareAccelerationAuto });
-        }
+        args.Add(FFmpegConstants.ProgressArgument, $"{FFmpegConstants.PipePrefix}1", FFmpegConstants.OverwriteArgument, outputFile);
 
-        args.AddRange(new[] { FFmpegConstants.ProgressArgument, $"{FFmpegConstants.PipePrefix}1", FFmpegConstants.OverwriteArgument, outputFile });
-
+        var argumentArray = args.ToArray();
         if (progress is null)
         {
-            return await ExecuteAsync(args.ToArray());
+            return await ExecuteAsync(argumentArray);
         }
 
         var mediaInfo = await GetMediaInfoAsync(inputFile);
         var totalDurationSeconds = mediaInfo?.DurationInSeconds ?? 0;
 
-        return await ExecuteWithProgressAsync(args.ToArray(), totalDurationSeconds, progress);
+        return await ExecuteWithProgressAsync(argumentArray, totalDurationSeconds, progress);
     }
 
     /// <summary>
@@ -345,13 +347,12 @@ public class FFmpegWrapper : IFFmpegWrapper
     {
         ArgumentNullException.ThrowIfNull(inputFile);
         ArgumentNullException.ThrowIfNull(outputFile);
-        var args = new[]
-        {
-            FFmpegConstants.InputArgument, inputFile,
-            FFmpegConstants.QualityArgument, "0",
-            FFmpegConstants.MapArgument, "a",
-            FFmpegConstants.OverwriteArgument, outputFile
-        };
+        var args = new FFmpegArgsBuilder()
+            .Add(FFmpegConstants.InputArgument, inputFile)
+            .Add(FFmpegConstants.QualityArgument, "0")
+            .Add(FFmpegConstants.MapArgument, "a")
+            .Add(FFmpegConstants.OverwriteArgument, outputFile)
+            .ToArray();
 
         return await ExecuteAsync(args);
     }
@@ -368,18 +369,17 @@ public class FFmpegWrapper : IFFmpegWrapper
         try
         {
             var concatContent = string.Join(Environment.NewLine,
-                inputFiles.Select(f => $"file '{Path.GetFullPath(f)}'"));
+                inputFiles.Select(f => FFmpegArgsBuilder.ConcatListEntry(Path.GetFullPath(f))));
 
             File.WriteAllText(concatFile, concatContent);
 
-            var args = new[]
-            {
-                FFmpegConstants.FormatArgument, "concat",
-                FFmpegConstants.SafeArgument, "0",
-                FFmpegConstants.InputArgument, concatFile,
-                FFmpegConstants.CodecArgument, FFmpegConstants.CopyCodecArgument,
-                FFmpegConstants.OverwriteArgument, outputFile
-            };
+            var args = new FFmpegArgsBuilder()
+                .Add(FFmpegConstants.FormatArgument, "concat")
+                .Add(FFmpegConstants.SafeArgument, "0")
+                .Add(FFmpegConstants.InputArgument, concatFile)
+                .Add(FFmpegConstants.CodecArgument, FFmpegConstants.CopyCodecArgument)
+                .Add(FFmpegConstants.OverwriteArgument, outputFile)
+                .ToArray();
 
             return await ExecuteAsync(args);
         }
@@ -397,14 +397,13 @@ public class FFmpegWrapper : IFFmpegWrapper
     {
         ArgumentNullException.ThrowIfNull(audioFile);
         ArgumentNullException.ThrowIfNull(outputFile);
-        var args = new[]
-        {
-            FFmpegConstants.StreamLoopArgument, FFmpegConstants.StreamLoopInfinite,
-            FFmpegConstants.InputArgument, audioFile,
-            FFmpegConstants.DurationArgument, targetDuration.ToString(FFmpegConstants.FrameRateFormat, CultureInfo.InvariantCulture),
-            FFmpegConstants.AudioCodecArgument, "aac",
-            FFmpegConstants.OverwriteArgument, outputFile
-        };
+        var args = new FFmpegArgsBuilder()
+            .Add(FFmpegConstants.StreamLoopArgument, FFmpegConstants.StreamLoopInfinite)
+            .Add(FFmpegConstants.InputArgument, audioFile)
+            .Add(FFmpegConstants.DurationArgument, targetDuration.ToString(FFmpegConstants.FrameRateFormat, CultureInfo.InvariantCulture))
+            .Add(FFmpegConstants.AudioCodecArgument, "aac")
+            .Add(FFmpegConstants.OverwriteArgument, outputFile)
+            .ToArray();
 
         return await ExecuteAsync(args);
     }
@@ -418,7 +417,7 @@ public class FFmpegWrapper : IFFmpegWrapper
             var psi = new ProcessStartInfo
             {
                 FileName = _ffprobePath,
-                Arguments = $"-v error -show_entries format=duration,size,bit_rate -of json \"{filePath}\"",
+                Arguments = FFmpegArgsBuilder.MediaInfoProbeCommand(filePath),
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true

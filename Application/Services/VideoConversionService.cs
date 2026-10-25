@@ -99,7 +99,7 @@ public VideoConversionService()
                 throw new FileOperationException("Video file not found", filePath, FileOperationType.Read);
             }
 
-            var ffprobeArgs = $"{_ffprobePath} -v error -select_streams v:0 -show_entries stream=width,height,duration,codec_name,r_frame_rate,bit_rate -show_entries format=size,duration,bit_rate,format_name -of json \"{filePath}\"";
+            var ffprobeArgs = $"{_ffprobePath} {FFmpegArgsBuilder.MetadataProbeCommand(filePath)}";
 
             var (exitCode, standardOutput, standardError) = await RunFfmpegAsync(ffprobeArgs, null, cancellationToken);
 
@@ -212,8 +212,7 @@ public VideoConversionService()
                 throw new FileOperationException("Audio file not found", audioPath, FileOperationType.Read);
             }
 
-            var args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a {settings.AudioCodec} " +
-                      $"-b:a {settings.AudioBitrate}k -shortest \"{outputPath}\" -y";
+            var args = FFmpegArgsBuilder.AudioTrackCommand(videoPath, audioPath, outputPath, settings);
 
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
@@ -325,8 +324,7 @@ public VideoConversionService()
                 throw new FileOperationException("Input video file not found", inputPath, FileOperationType.Read);
             }
 
-            var args = $"-i \"{inputPath}\" -vf scale={width}:{height} -c:v h264 -crf 23 " +
-                      $"-c:a aac -b:a 128k \"{outputPath}\" -y";
+            var args = FFmpegArgsBuilder.RescaleCommand(inputPath, outputPath, width, height);
 
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 
@@ -361,24 +359,7 @@ public VideoConversionService()
 
         try
         {
-            var codecParams = settings.GetFFmpegCodecParams();
-            var scaleFilter = settings.PreserveAspectRatio
-                ? $"scale={settings.Width}:{settings.Height}:force_original_aspect_ratio=decrease"
-                : $"scale={settings.Width}:{settings.Height}";
-
-            var fades = string.Empty;
-            if (settings.ApplyFades)
-            {
-                var fadeIn = settings.FadeInMs / 1000.0;
-                var fadeOut = settings.FadeOutMs / 1000.0;
-                fades = FormattableString.Invariant($",fade=t=in:st=0:d={fadeIn},fade=t=out:st=10:d={fadeOut}");
-            }
-
-            var args = $"-i \"{inputPath}\" -vf \"{scaleFilter}{fades}\" -r {settings.FrameRate} " +
-                      $"{codecParams} -preset {VideoProcessingConstants.FFmpegPreset} " +
-                      $"\"{outputPath}\" -y";
-
-            return args;
+            return FFmpegArgsBuilder.ConversionCommand(inputPath, outputPath, settings);
         }
         catch (Exception ex)
         {
@@ -559,20 +540,7 @@ public VideoConversionService()
                 Directory.CreateDirectory(directory);
             }
 
-            // Scale source to fill 1080x1920 and blur it for the background, then overlay
-            // the source scaled to fit (letterbox) centred on top.
-            const string shortsFilter =
-                "[0:v]split[a][b];" +
-                "[a]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=20:5[blurred];" +
-                "[b]scale=1080:1920:force_original_aspect_ratio=decrease[fg];" +
-                "[blurred][fg]overlay=(W-w)/2:(H-h)/2";
-
-            var args =
-                $"-i \"{inputPath}\" " +
-                $"-vf \"{shortsFilter}\" " +
-                $"-c:v h264 -crf {VideoProcessingConstants.FFmpegCRF} -preset {VideoProcessingConstants.FFmpegPreset} " +
-                $"-c:a aac -b:a {VideoProcessingConstants.DefaultAudioBitrate}k " +
-                $"\"{outputPath}\" -y";
+            var args = FFmpegArgsBuilder.ShortsCommand(inputPath, outputPath);
 
             var (exitCode, _, standardError) = await RunFfmpegAsync(args, null, cancellationToken);
 

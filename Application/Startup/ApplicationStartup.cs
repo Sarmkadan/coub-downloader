@@ -18,14 +18,16 @@ public class ApplicationStartup
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILoggingService _logger;
-    private readonly ConfigurationManager _configManager;
+    private readonly DownloadSettings _downloadSettings;
+    private readonly LoggingSettings _loggingSettings;
     private List<PeriodicBackgroundWorker> _backgroundWorkers = [];
 
-    public ApplicationStartup(IServiceProvider serviceProvider)
+    public ApplicationStartup(IServiceProvider serviceProvider, DownloadSettings downloadSettings, LoggingSettings loggingSettings)
     {
         _serviceProvider = serviceProvider;
         _logger = serviceProvider.GetRequiredService<ILoggingService>();
-        _configManager = serviceProvider.GetRequiredService<ConfigurationManager>();
+        _downloadSettings = downloadSettings;
+        _loggingSettings = loggingSettings;
     }
 
     /// <summary>Initialize the application</summary>
@@ -35,12 +37,11 @@ public class ApplicationStartup
 
         try
         {
-            // Load configuration
-            var config = _configManager.Load();
+            // Configuration is loaded when the typed settings are resolved from DI
             _logger.LogInfo("Configuration loaded successfully", "Startup");
 
             // Create directories
-            EnsureDirectories(config);
+            EnsureDirectories();
 
             // Log application information
             LogApplicationInfo();
@@ -89,12 +90,12 @@ public class ApplicationStartup
         }
     }
 
-    private void EnsureDirectories(ApplicationConfiguration config)
+    private void EnsureDirectories()
     {
         var directories = new[]
         {
-            config.Download.OutputDirectory,
-            config.Logging.LogDirectory,
+            _downloadSettings.OutputDirectory,
+            _loggingSettings.LogDirectory,
             "./temp",
             "./config"
         };

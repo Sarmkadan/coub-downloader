@@ -38,6 +38,9 @@ public static class DependencyInjectionExtended
 
         // Configuration
         services.AddSingleton(new ConfigurationManager("appsettings.json"));
+        services.AddSingleton(sp => sp.GetRequiredService<ConfigurationManager>().GetConfiguration());
+        services.AddSingleton(sp => sp.GetRequiredService<ApplicationConfiguration>().Download);
+        services.AddSingleton(sp => sp.GetRequiredService<ApplicationConfiguration>().Logging);
 
         // CLI & Formatters
         services.AddSingleton<CommandLineInterface>();

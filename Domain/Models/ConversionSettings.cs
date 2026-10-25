@@ -125,4 +125,8 @@ public class ConversionSettings
     {
         return Width > 0 && Height > 0 && VideoBitrate > 0 && AudioBitrate > 0 && FrameRate > 0;
     }
+
+    /// <summary>Summarize format, codecs and bitrates, e.g. "MP4 h264/aac 5000k/128k"</summary>
+    public override string ToString() =>
+        FormattableString.Invariant($"{Format} {VideoCodec}/{AudioCodec} {VideoBitrate}k/{AudioBitrate}k");
 }

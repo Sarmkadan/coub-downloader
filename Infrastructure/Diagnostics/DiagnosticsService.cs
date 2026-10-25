@@ -21,6 +21,9 @@ public class DiagnosticsService
 
     public DiagnosticsService(ILoggingService logger, PerformanceMonitor performanceMonitor, ICacheService? cacheService = null)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(performanceMonitor);
+
         _logger = logger;
         _performanceMonitor = performanceMonitor;
         _cacheService = cacheService;

@@ -96,4 +96,11 @@ public class AudioTrack
 
     /// <summary>Get audio specification as a formatted string</summary>
     public string GetAudioSpec() => $"{SampleRate}Hz {Channels}ch {Bitrate}kbps {Codec}";
+
+    /// <summary>Summarize the key properties of the audio track</summary>
+    public override string ToString()
+    {
+        return $"AudioTrack[Id={Id}, VideoId={VideoId}, Duration={Duration:F2}s, {GetAudioSpec()}, " +
+               $"Loop={LoopStrategy}x{LoopCount}, Volume={VolumeLevel:F2}]";
+    }
 }

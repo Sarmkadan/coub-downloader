@@ -30,6 +30,19 @@ public static class DownloadResultExtensions
     }
 
     /// <summary>
+    /// Determines whether the download failed.
+    /// </summary>
+    /// <param name="result">The download result to check</param>
+    /// <returns>True if the operation was not successful; otherwise false</returns>
+    /// <exception cref="ArgumentNullException">Thrown when result is null</exception>
+    public static bool IsFailure(this DownloadResult result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
+
+        return !result.Success;
+    }
+
+    /// <summary>
     /// Gets the formatted file size with quality indicator.
     /// </summary>
     /// <param name="result">The download result</param>

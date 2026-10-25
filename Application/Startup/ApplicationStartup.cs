@@ -22,6 +22,10 @@ public class ApplicationStartup
     private readonly LoggingSettings _loggingSettings;
     private List<PeriodicBackgroundWorker> _backgroundWorkers = [];
 
+    /// <summary>Creates the startup handler and resolves its logger from the service provider</summary>
+    /// <param name="serviceProvider">Service provider used to resolve startup dependencies</param>
+    /// <param name="downloadSettings">Download settings (provides the output directory)</param>
+    /// <param name="loggingSettings">Logging settings (provides the log directory)</param>
     public ApplicationStartup(IServiceProvider serviceProvider, DownloadSettings downloadSettings, LoggingSettings loggingSettings)
     {
         _serviceProvider = serviceProvider;
@@ -169,36 +173,52 @@ public class StartupConfigurationBuilder
 {
     private readonly StartupConfiguration _config = new();
 
+    /// <summary>Sets the directory where log files are written</summary>
+    /// <param name="directory">Logging directory path</param>
+    /// <returns>This builder, for chaining</returns>
     public StartupConfigurationBuilder WithLoggingDirectory(string directory)
     {
         _config.LoggingDirectory = directory;
         return this;
     }
 
+    /// <summary>Sets the directory where downloaded videos are saved</summary>
+    /// <param name="directory">Download directory path</param>
+    /// <returns>This builder, for chaining</returns>
     public StartupConfigurationBuilder WithDownloadDirectory(string directory)
     {
         _config.DownloadDirectory = directory;
         return this;
     }
 
+    /// <summary>Sets the path to the configuration file</summary>
+    /// <param name="filePath">Configuration file path</param>
+    /// <returns>This builder, for chaining</returns>
     public StartupConfigurationBuilder WithConfigFile(string filePath)
     {
         _config.ConfigFilePath = filePath;
         return this;
     }
 
+    /// <summary>Sets the path or command name of the FFmpeg executable</summary>
+    /// <param name="path">FFmpeg executable path or command name</param>
+    /// <returns>This builder, for chaining</returns>
     public StartupConfigurationBuilder WithFFmpegPath(string path)
     {
         _config.FFmpegPath = path;
         return this;
     }
 
+    /// <summary>Turns on verbose logging</summary>
+    /// <returns>This builder, for chaining</returns>
     public StartupConfigurationBuilder EnableVerboseLogging()
     {
         _config.VerboseLogging = true;
         return this;
     }
 
+    /// <summary>Builds the startup configuration from the values set so far</summary>
+    /// <returns>The configured <see cref="StartupConfiguration"/> instance</returns>
     public StartupConfiguration Build()
     {
         return _config;
@@ -208,9 +228,18 @@ public class StartupConfigurationBuilder
 /// <summary>Startup configuration</summary>
 public class StartupConfiguration
 {
+    /// <summary>Directory where log files are written (default: "./logs")</summary>
     public string LoggingDirectory { get; set; } = "./logs";
+
+    /// <summary>Directory where downloaded videos are saved (default: "./downloads")</summary>
     public string DownloadDirectory { get; set; } = "./downloads";
+
+    /// <summary>Path to the configuration file (default: "appsettings.json")</summary>
     public string ConfigFilePath { get; set; } = "appsettings.json";
+
+    /// <summary>Path or command name of the FFmpeg executable (default: "ffmpeg")</summary>
     public string FFmpegPath { get; set; } = "ffmpeg";
+
+    /// <summary>Whether verbose logging is enabled (default: false)</summary>
     public bool VerboseLogging { get; set; }
 }

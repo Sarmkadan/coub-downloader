@@ -123,6 +123,8 @@ public static class ConversionSettingsValidation
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="value"/> is <see langword="null"/>.</exception>
     public static bool IsValid(this ConversionSettings value)
     {
+        ArgumentNullException.ThrowIfNull(value);
+
         return value.Validate().Count == 0;
     }
 

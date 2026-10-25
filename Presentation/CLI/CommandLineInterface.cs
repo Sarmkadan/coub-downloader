@@ -37,6 +37,10 @@ public class CommandLineInterface
 		IVideoConversionService conversionService,
 		IBatchProcessingService batchService)
 	{
+		ArgumentNullException.ThrowIfNull(downloadService);
+		ArgumentNullException.ThrowIfNull(conversionService);
+		ArgumentNullException.ThrowIfNull(batchService);
+
 		_downloadService = downloadService;
 		_conversionService = conversionService;
 		_batchService = batchService;
@@ -52,6 +56,8 @@ public class CommandLineInterface
 	{
 		try
 		{
+			ArgumentNullException.ThrowIfNull(args);
+
 			if (args.Length == 0)
 			{
 				DisplayHelp();

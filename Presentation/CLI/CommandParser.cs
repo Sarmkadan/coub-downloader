@@ -14,6 +14,8 @@ public class CommandParser
     /// <summary>Parse download command arguments</summary>
     public DownloadCommandOptions ParseDownloadOptions(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         var options = new DownloadCommandOptions();
 
         for (int i = 1; i < args.Length; i++)
@@ -54,6 +56,8 @@ public class CommandParser
     /// <summary>Parse convert command arguments</summary>
     public ConvertCommandOptions ParseConvertOptions(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         var options = new ConvertCommandOptions();
 
         for (int i = 1; i < args.Length; i++)
@@ -118,6 +122,8 @@ public class CommandParser
     /// <summary>Parse batch command arguments</summary>
     public BatchCommandOptions ParseBatchOptions(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         var options = new BatchCommandOptions();
 
         for (int i = 1; i < args.Length; i++)
@@ -162,6 +168,8 @@ public class CommandParser
     /// <summary>Parse info command arguments</summary>
     public InfoCommandOptions ParseInfoOptions(string[] args)
     {
+        ArgumentNullException.ThrowIfNull(args);
+
         var options = new InfoCommandOptions();
 
         for (int i = 1; i < args.Length; i++)

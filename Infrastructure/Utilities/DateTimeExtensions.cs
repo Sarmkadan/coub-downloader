@@ -42,6 +42,36 @@ public static class DateTimeExtensions
         return $"{(int)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
     }
 
+    /// <summary>Format duration as a compact human-readable string, e.g. "2d 3h 5m 7s"; zero yields "0s"</summary>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="duration"/> is negative.</exception>
+    public static string ToHumanReadable(this TimeSpan duration)
+    {
+        if (duration < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(duration), "Duration cannot be negative.");
+        }
+
+        var parts = new List<string>();
+        if (duration.Days > 0)
+        {
+            parts.Add($"{duration.Days}d");
+        }
+        if (duration.Hours > 0)
+        {
+            parts.Add($"{duration.Hours}h");
+        }
+        if (duration.Minutes > 0)
+        {
+            parts.Add($"{duration.Minutes}m");
+        }
+        if (duration.Seconds > 0)
+        {
+            parts.Add($"{duration.Seconds}s");
+        }
+
+        return parts.Count == 0 ? "0s" : string.Join(" ", parts);
+    }
+
     /// <summary>Check if date is within range</summary>
     /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="start"/> is after <paramref name="end"/>.</exception>
     public static bool IsWithinRange(this DateTime dateTime, DateTime start, DateTime end)
